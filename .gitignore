@@ -1,0 +1,30 @@
+# Terraform
+**/.terraform/*
+*.tfstate
+*.tfstate.*
+*.tfvars
+!*.tfvars.example
+*.tfplan
+crash.log
+crash.*.log
+# .terraform.lock.hcl is intentionally NOT ignored — commit it (pins provider versions)
+
+# Never commit real credentials
+.env
+.env.*
+!.env.example
+
+# Go
+/app/bin/
+/app/*.exe
+/app/cloudstore
+
+# OS / editor noise
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# Local scratch
+*.tmp
+*.bak

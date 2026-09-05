@@ -1,0 +1,9 @@
+# Force LF regardless of platform — these run on GitHub Actions (Linux) and a
+# CRLF-mangled shebang fails there silently.
+*.sh text eol=lf
+*.tf text eol=lf
+*.go text eol=lf
+Makefile text eol=lf
+
+# Windows-only files
+*.ps1 text eol=crlf
