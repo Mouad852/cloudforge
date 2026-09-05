@@ -17,7 +17,7 @@
 | 5 | Target architecture |
 | 6 | Architecture decisions (ADRs) |
 | 7 | Repository structure |
-| 8 | Milestones M0–M14 |
+| 8 | Milestones M0–M15 |
 | 9 | The differentiators — why this beats a normal AWS portfolio project |
 | 10 | SLOs, SLIs and the error budget |
 | 11 | The measurements table |
@@ -253,19 +253,20 @@ CloudForge/
 │   ├── cost-report.sh            # Cost Explorer by tag
 │   └── gameday/                  # one script per experiment, each emitting a timestamped log
 │
-├── docs/
-│   ├── architecture.md           # Diagrams, traffic and data flow, why each choice
-│   ├── adr/                      # ADR-001 … ADR-020
-│   ├── security.md               # Threat model, IAM policies, network boundaries, encryption
-│   ├── well-architected.md       # Six-pillar self-review + remediations       ★
-│   ├── slo.md                    # SLIs, SLOs, error budget policy             ★
-│   ├── deployment-strategies.md  # Rolling vs blue/green, implemented + measured ★
-│   ├── capacity-planning.md      # RPS per instance, derived scaling thresholds ★
-│   ├── disaster-recovery.md      # RPO/RTO targets, runbooks, tested results
+├── docs/                          # [SCAFFOLDED] — see docs/README.md for the index
+│   ├── README.md                 # Navigation hub — what lives where            [BUILT]
+│   ├── architecture/              # overview.md — narrative, written once M1–M6 land
+│   ├── diagrams/                 # Mermaid, versioned. architecture-high-level.md done [BUILT]
+│   ├── infrastructure/           # deployment-strategies.md (rolling vs blue/green)    ★
+│   ├── security/                 # threat-model.md, well-architected.md                ★
+│   ├── observability/            # slo.md — SLIs, SLOs, error budget policy            ★
+│   ├── resilience/               # capacity-planning.md — thresholds derived from load tests ★
+│   ├── disaster-recovery/        # strategy.md — backup/restore vs pilot light vs warm standby
+│   ├── experiments/              # One report per game day; 000-template.md ready      [BUILT]
+│   ├── adr/                      # ADR-001 … ADR-020 — the decision log; 000-template.md ready [BUILT]
 │   ├── runbooks/                 # account-teardown.md [BUILT], deploy, rollback, restore, on-call
-│   ├── incidents/                # One postmortem per game day
-│   ├── cost-analysis.md          # Real Cost Explorer numbers + optimizations
-│   └── images/                   # Diagrams, dashboards, k6 output, screenshots
+│   ├── screenshots/              # Evidence by phase, numbered 00-foundations … 15-portfolio-final
+│   └── cost-analysis.md          # Real Cost Explorer numbers + optimizations
 │
 └── .github/workflows/
     ├── terraform.yml             # fmt · validate · tflint · checkov · test · plan · gated apply
@@ -283,7 +284,10 @@ CloudForge/
 
 Each has a **Definition of Done** and an **Evidence** artifact — the thing that ends up in the README. Produce evidence as you go; reconstructing it later never happens.
 
-**~18 weeks at 8–10 h/week.** Sept 2026 → roughly Feb 2027, leaving four months of margin before June 2027.
+**~19 weeks at 8–10 h/week.** Sept 2026 → roughly Feb 2027, leaving four months of margin before June 2027.
+
+Every milestone below carries three kinds of marker, consistently:
+`📝 DECISION RECORD` (write the ADR now), `📐 DIAGRAM CHECKPOINT` (update the visual now), `📸 EVIDENCE REQUIRED` (capture proof now, to the exact path and filename given). Do them at the milestone, not at the end — see §18 for why that's the whole point.
 
 ---
 
@@ -298,7 +302,21 @@ Each has a **Definition of Done** and an **Evidence** artifact — the thing tha
 - Provider `default_tags` shared by both environments.
 
 **DoD:** `terraform init` in an empty env dir reaches the S3 backend and takes a lock.
-**Evidence:** ADR-001; budget screenshot; `docs/security.md` opening section.
+
+📝 **DECISION RECORD** — write `docs/adr/001-state-backend.md`, `docs/adr/002-state-isolation.md`, `docs/adr/003-graviton.md` and `docs/adr/012-two-ephemeral-environments.md` now, while the reasoning is fresh. Commit each in the same commit as the config it describes.
+
+📸 **EVIDENCE REQUIRED**
+Capture:
+- AWS Budget configuration (name, amount, alert thresholds)
+- Billing alarm + confirmed SNS email subscription
+- Cost Anomaly Detection enabled
+- Root MFA screen (already done 2026-09-04 — capture retroactively if not already saved)
+- `terraform init` output showing a successful S3 backend connection and lock acquired
+
+Save to: `docs/screenshots/00-foundations/`
+Suggested files: `budget-config.png`, `billing-alarm.png`, `anomaly-detection.png`, `root-mfa.png`, `terraform-init-backend.png`
+
+Purpose: proves the cost guardrails existed *before* any billable resource was created — this is the safety-net story, and it only works if the timestamps predate M1.
 
 ---
 
@@ -315,7 +333,24 @@ Each has a **Definition of Done** and an **Evidence** artifact — the thing tha
 - First `.tftest.hcl` — assert CIDR maths, subnet count, and that no route table sends `0.0.0.0/0` to the IGW from a private subnet.
 
 **DoD:** `terraform destroy` cleanly removes everything. Run it twice.
-**Evidence:** Network diagram; terminal recording of an SSM session into a private instance with no SSH key in existence.
+
+📝 **DECISION RECORD** — `docs/adr/005-ssm-session-manager.md`, `docs/adr/008-nat-strategy.md`, `docs/adr/016-terraform-native-tests.md` (first `.tftest.hcl`).
+
+📐 **DIAGRAM CHECKPOINT** — replace the target-state diagram with the as-built one: `docs/diagrams/network-vpc.md`, showing the real VPC ID, subnet CIDRs and route tables from this apply (Mermaid, not another ASCII block).
+
+📸 **EVIDENCE REQUIRED**
+Capture:
+- VPC resource map (the console's Resource Map view — shows all subnets/AZs at a glance)
+- Public and private route tables, side by side
+- NAT Gateway or NAT instance detail
+- VPC Flow Logs enabled, showing a log group with entries
+- Terminal recording: SSM Session Manager session into a private-subnet instance
+- `terraform apply` output for the network module
+
+Save to: `docs/screenshots/01-networking/`
+Suggested files: `vpc-resource-map.png`, `route-tables-public.png`, `route-tables-private.png`, `nat-gateway.png`, `flow-logs.png`, `ssm-session-private-instance.png`, `terraform-apply-network.png`
+
+Purpose: proof the multi-AZ, three-tier network was actually deployed, and that a private instance is reachable with no SSH key anywhere in existence.
 
 ---
 
@@ -348,7 +383,17 @@ Requirements:
 > If you are still writing app code in week 4, cut endpoints. Nobody is hiring you for this API.
 
 **DoD:** runs against docker-compose; `go test ./...` green; cross-compiles for arm64.
-**Evidence:** none public — scaffolding. Say so in the README.
+
+📸 **EVIDENCE REQUIRED — minimal, this milestone is scaffolding, not the point of the project**
+Capture:
+- `docker-compose up` with Postgres, Redis and LocalStack all healthy
+- `go test ./...` passing output
+- `go build` cross-compiled arm64 binary — file listing showing its size (~12 MB)
+
+Save to: `docs/screenshots/02-application/`
+Suggested files: `docker-compose-up.png`, `go-test-pass.png`, `arm64-binary-size.png`
+
+Purpose: minimal on purpose. Say plainly in the README that the app is a deliberately trivial prop — don't over-document it here either.
 
 ---
 
@@ -368,7 +413,23 @@ Requirements:
 - **IMDSv2 required** (`http_tokens = "required"`) — mitigates SSRF credential theft, and a good thing to be able to explain.
 
 **DoD:** terminate an instance by hand → replacement appears and serves traffic unattended.
-**Evidence:** IAM policy walkthrough in `docs/security.md`.
+
+📝 **DECISION RECORD** — `docs/adr/004-go-binary-artifact.md`, `docs/adr/007-target-tracking-scaling.md`.
+
+📸 **EVIDENCE REQUIRED**
+Capture:
+- Launch Template configuration (AMI, instance type, IAM instance profile, user-data)
+- Auto Scaling Group detail page — min/desired/max, and instances across both AZs
+- EC2 instances list showing 2 instances, one per AZ
+- The IAM role's policy document (JSON) — proof of hand-written least privilege, no `Resource: "*"`
+- Before/after of a manual termination: the terminated instance, then the replacement healthy in the target group
+
+Save to: `docs/screenshots/03-compute/`
+Suggested files: `launch-template.png`, `asg-detail.png`, `ec2-instances-multi-az.png`, `iam-role-policy.png`, `instance-replacement-before.png`, `instance-replacement-after.png`
+
+Purpose: proof of self-healing compute and least-privilege IAM — two of the project's core claims. Also write the IAM policy walkthrough into `docs/security/README.md` now, while you can still explain each permission's reason.
+
+⏱️ **Rough measurement now, refined properly in M12:** note how long the replacement took to appear and go healthy. Don't build a full experiment file yet — just a line in your notes to compare against the real FIS-driven number later.
 
 ---
 
@@ -381,7 +442,24 @@ Requirements:
 - Route 53 **private** hosted zone: `db.cloudforge.internal`, `cache.cloudforge.internal`.
 
 **DoD:** `curl https://<dist>.cloudfront.net/api/whoami` returns alternating instance IDs with a valid cert, while `curl http://<alb-dns>/...` fails.
-**Evidence:** SSL Labs grade; alternating-`whoami` recording; the ALB-unreachable side-by-side; **a WAF-blocked SQL-injection attempt** (send `' OR 1=1--`, screenshot the 403 and the WAF sampled-requests log). That last one is a genuinely good security artifact.
+
+📝 **DECISION RECORD** — `docs/adr/006-shallow-health-check.md`, `docs/adr/010-cloudfront-two-origins.md`, `docs/adr/011-no-custom-domain.md`, `docs/adr/013-private-hosted-zone.md`, `docs/adr/014-alb-locked-to-cloudfront.md`.
+
+📐 **DIAGRAM CHECKPOINT** — `docs/diagrams/traffic-flow.md`: CDN → WAF → origin routing, with the ALB lockdown mechanism shown explicitly (this is the interesting part, don't just draw arrows).
+
+📸 **EVIDENCE REQUIRED**
+Capture:
+- ALB target group health — both targets healthy, one per AZ
+- CloudFront distribution config showing both origins (S3 + ALB)
+- SSL Labs report for the CloudFront hostname
+- WAF web ACL rules list
+- **A deliberate SQL-injection attempt** (`curl ".../api/products?id=' OR 1=1--"`) blocked — screenshot the 403 response AND the WAF sampled-requests log entry
+- `curl` side-by-side: CloudFront URL succeeds, direct ALB DNS name fails/times out
+
+Save to: `docs/screenshots/04-load-balancing/`
+Suggested files: `alb-target-health.png`, `cloudfront-origins.png`, `ssl-labs-report.png`, `waf-rules.png`, `waf-blocked-sqli.png`, `alb-direct-access-blocked.png`
+
+Purpose: the security-perimeter story — CDN, WAF and origin lockdown working together. The WAF-blocked screenshot is one of the strongest single artifacts in the whole repo; don't skip it.
 
 ---
 
@@ -396,7 +474,21 @@ Requirements:
 - **Snapshot lifecycle** (ADR-015): `snapshot_identifier` + `final_snapshot_identifier`; wire `make dev-down`/`dev-up` and test the round trip before moving on.
 
 **DoD:** app reads/writes through RDS; `psql` from the internet refused; `psql` from an instance via SSM works.
-**Evidence:** SG diagram; connection-refused capture.
+
+📝 **DECISION RECORD** — `docs/adr/009-secrets-manager-rds-password.md`, `docs/adr/015-snapshot-lifecycle.md`.
+
+📸 **EVIDENCE REQUIRED**
+Capture:
+- RDS instance configuration — Multi-AZ toggle visibly on, encryption, subnet group
+- Secrets Manager secret metadata showing rotation configured (**never** the secret value)
+- Security group rules showing RDS accepts connections only from the App security group
+- Terminal capture: `psql` connection attempt from the open internet, refused
+- Terminal capture: successful `psql` session reached via an SSM-tunneled instance
+
+Save to: `docs/screenshots/05-database/`
+Suggested files: `rds-config-multiaz.png`, `secrets-manager-rotation.png`, `rds-security-group.png`, `rds-connection-refused-internet.png`, `rds-psql-via-ssm.png`
+
+Purpose: Multi-AZ resilience and network isolation for the data tier. Double-check every screenshot before saving — never capture a secret's actual value, only its metadata.
 
 ---
 
@@ -410,7 +502,21 @@ Requirements:
 **CloudFront** — add the `/images/*` behavior with **OAC**, long TTL, compression. One distribution, two origins, two cache policies (ADR-010).
 
 **DoD:** image serves from the CDN; direct S3 URL returns 403.
-**Evidence:** cache hit-ratio and latency table; 403-vs-200 side-by-side; both cache behaviours' hit ratios.
+
+📐 **DIAGRAM CHECKPOINT** — `docs/diagrams/data-flow.md`: the cache-aside read path (client → CloudFront → ALB → app → Redis → RDS on miss) and the S3 image-upload path, as two clearly separate flows in one diagram.
+
+📸 **EVIDENCE REQUIRED**
+Capture:
+- ElastiCache Redis cluster configuration
+- All three S3 bucket policies, showing "public access blocked" confirmed on each
+- CloudFront cache behaviors — both `/images/*` and `/api/*`, showing their differing TTLs
+- Cache hit-ratio graph after generating some real traffic
+- Side-by-side: direct S3 object URL returns 403, the same object via CloudFront returns 200
+
+Save to: `docs/screenshots/06-cache-storage-cdn/`
+Suggested files: `elasticache-config.png`, `s3-bucket-policies.png`, `cloudfront-behaviors.png`, `cache-hit-ratio.png`, `s3-403-vs-cloudfront-200.png`
+
+Purpose: demonstrates OAC actually keeps the bucket private, and that the cache is measurably doing something — not just present. Record the p95 latency cold-vs-warm numbers from PLAN.md's cache note directly into this milestone's notes; they feed the measurements table in §11.
 
 ---
 
@@ -437,7 +543,22 @@ Requirements:
 - **SLOs defined here, before any game day** (§10, ADR-020).
 
 **DoD:** trigger a real alarm and receive the email; the canary reports availability.
-**Evidence:** both dashboards; the alarm email; **a runbook per alarm** in `docs/runbooks/` — *what an on-call engineer does when this fires*. Runbooks are what make this read as operations rather than a lab.
+
+📝 **DECISION RECORD** — `docs/adr/020-slos-before-gamedays.md`. Also write `docs/observability/slo.md` in full now (SLIs, SLOs, error-budget policy from PLAN.md §10) — this is the document every M12 experiment measures itself against, so it must exist before M12 starts, not after.
+
+📸 **EVIDENCE REQUIRED**
+Capture:
+- The Four Golden Signals dashboard (full view — latency, traffic, errors, saturation)
+- The SLO dashboard
+- The alarms list (grid view, all configured alarms visible at once)
+- One deliberately triggered alarm, plus the resulting email
+- Synthetics canary results over time (a few hours minimum)
+- A CloudWatch Logs Insights query result showing structured JSON logs
+
+Save to: `docs/screenshots/07-observability/`
+Suggested files: `golden-signals-dashboard.png`, `slo-dashboard.png`, `alarms-list.png`, `alarm-triggered-email.png`, `synthetics-canary-results.png`, `logs-insights-query.png`
+
+Purpose: the Golden Signals dashboard is very likely the README's hero image — spend real time getting it right before screenshotting it. Also write one runbook per alarm into `docs/runbooks/` now, while you remember what each one is actually for.
 
 ---
 
@@ -451,12 +572,29 @@ Requirements:
 
 **`nightly-destroy.yml`** ★ — `terraform destroy` on dev at 23:00, backstop for the night you forget.
 
-- **GitHub OIDC to AWS**, trust policy scoped to your repo *and* branch. No static keys anywhere. Document the trust policy in `docs/security.md` — "how does your CI authenticate to AWS" is a near-guaranteed interview question.
+- **GitHub OIDC to AWS**, trust policy scoped to your repo *and* branch. No static keys anywhere. Document the trust policy in `docs/security/` — "how does your CI authenticate to AWS" is a near-guaranteed interview question.
 - **Blue/green deployment** ★ as a second strategy: two target groups, ALB listener weight shift 100/0 → 0/100, with a soak window and one-command rollback.
 - **k6 in CI with thresholds** as a performance regression gate.
 
 **DoD:** a one-line change reaches prod with zero downtime via both strategies.
-**Evidence:** the deploy measurement (pipeline duration, refresh duration, k6 showing **0 failed requests**); `docs/deployment-strategies.md` comparing rolling and blue/green with measured numbers; a drift alert screenshot from a deliberate console change.
+
+📝 **DECISION RECORD** — `docs/adr/017-bluegreen-second-strategy.md`.
+
+📸 **EVIDENCE REQUIRED**
+Capture:
+- GitHub Actions run: `terraform plan` posted as a PR comment
+- GitHub Actions run: the full `app.yml` pipeline green (test → build → upload → refresh)
+- ASG Instance Refresh detail page in the console (progress bar / activity history)
+- k6 output showing **0 failed requests** during the rolling refresh
+- ALB listener rules before/after a blue/green weight shift (100/0 → 0/100)
+- A deliberate console change triggering the `drift.yml` GitHub issue
+
+Save to: `docs/screenshots/08-cicd/`
+Suggested files: `pr-plan-comment.png`, `app-pipeline-green.png`, `instance-refresh-progress.png`, `k6-zero-failed-refresh.png`, `bluegreen-weight-shift.png`, `drift-detected-issue.png`
+
+Purpose: this is the single strongest technical claim in the whole project — zero-downtime deploy with no orchestrator, done two ways. Document it thoroughly. Record pipeline duration and refresh duration into `docs/infrastructure/deployment-strategies.md`, comparing rolling vs. blue/green with the real numbers side by side — not estimates.
+
+⏱️ **Feeds:** `docs/experiments/06-rolling-deploy.md` and `docs/experiments/07-bluegreen-deploy.md` in M12 reuse these exact measurements under load; capture the k6 raw output now so you don't have to rerun it later.
 
 ---
 
@@ -469,7 +607,17 @@ Requirements:
 - ★ **Publish one module to the public Terraform Registry** — repo named `terraform-aws-<name>`, semver tags. A public URL a recruiter can click, with a download count. Free, and very few juniors have one.
 
 **DoD:** both environments apply from identical module code; `terraform test` green across all modules.
-**Evidence:** side-by-side tfvars diff captioned *"same modules, different posture"*; the Registry link.
+
+📸 **EVIDENCE REQUIRED**
+Capture:
+- `terraform test` output, all green, across every module
+- Side-by-side `dev` vs `prod` `terraform.tfvars` diff
+- The published module's Terraform Registry page
+
+Save to: `docs/screenshots/09-modules/`
+Suggested files: `terraform-test-all-green.png`, `dev-vs-prod-tfvars-diff.png`, `terraform-registry-module-page.png`
+
+Purpose: proof of module reuse and test coverage — "two consumers, one module set," backed by a public, clickable Registry URL.
 
 ---
 
@@ -479,12 +627,25 @@ Requirements:
   > *"I ran a Well-Architected review against my own architecture and remediated 14 of 19 findings; the remaining 5 are documented accepted risks with rationale"* is an exceptionally strong sentence, and almost nobody at your stage has it.
 - **GuardDuty** enabled during its 30-day trial window; document findings; disable before it bills.
 - **Checkov custom policy** — e.g. "no security group may allow `0.0.0.0/0` on port 22", "every S3 bucket must block public access", "all resources must carry the required tags". Enforced in CI.
-- **Threat model** in `docs/security.md`: what an attacker would try, what stops them at each layer, what you consciously did not defend against.
+- **Threat model** in `docs/security/threat-model.md`: what an attacker would try, what stops them at each layer, what you consciously did not defend against.
 - **Encryption inventory**: every data store, at rest and in transit, with the key type.
 - **IAM Access Analyzer** — free; check for unintended external access.
 
 **DoD:** Well-Architected review complete; all high-severity findings either fixed or documented as accepted.
-**Evidence:** `docs/well-architected.md`; GuardDuty findings screenshot; the custom Checkov policy failing a deliberately bad PR.
+
+📐 **DIAGRAM CHECKPOINT** — `docs/diagrams/security-flow.md`: WAF, security-group chain, and IAM boundaries as one connected picture, matching what the threat model in `docs/security/threat-model.md` actually describes.
+
+📸 **EVIDENCE REQUIRED**
+Capture:
+- AWS Well-Architected Tool review summary — all six pillars, finding counts
+- GuardDuty findings dashboard
+- IAM Access Analyzer results
+- A deliberately bad PR failing the custom Checkov policy in CI
+
+Save to: `docs/screenshots/10-security/`
+Suggested files: `well-architected-summary.png`, `guardduty-findings.png`, `access-analyzer-results.png`, `checkov-custom-policy-fail.png`
+
+Purpose: the formal review artifact — a strong, uncommon addition to a junior portfolio. Write `docs/security/well-architected.md` documenting every finding and its remediation or accepted-risk rationale; write `docs/security/threat-model.md` and `docs/security/encryption-inventory.md` in the same pass.
 
 ---
 
@@ -493,10 +654,25 @@ Requirements:
 - **AWS Backup**: vault, backup plan, RDS + EBS selection by tag, retention, lifecycle to cold storage, **cross-region copy** to a second region. Snapshot-cost only, and it turns DR from a paragraph into a configuration.
 - **SSM Automation runbooks** ★ — executable recovery, not prose. E.g. a document that restores the latest RDS snapshot into a new instance, updates the private-zone DNS record, and verifies connectivity. *"My runbooks are executable"* beats *"I wrote a runbook."*
 - **`restore-test.yml`** ★ — scheduled weekly: restore the latest snapshot into a temporary instance, run a data-integrity check, record the restore duration, destroy it. **Automated backup verification is something most production teams do not do**, and it produces a recurring measurement.
-- **DR strategy comparison** in `docs/disaster-recovery.md`: backup/restore vs pilot light vs warm standby vs active-active — cost, RPO and RTO for each, which you chose and why. Shows you know the options, not just the one you built.
+- **DR strategy comparison** in `docs/disaster-recovery/strategy.md`: backup/restore vs pilot light vs warm standby vs active-active — cost, RPO and RTO for each, which you chose and why. Shows you know the options, not just the one you built.
 
 **DoD:** the restore drill runs unattended and reports a duration.
-**Evidence:** restore-test workflow output over several weeks; the SSM Automation execution log; the strategy comparison table.
+
+📝 **DECISION RECORD** — `docs/adr/018-aws-backup-over-native.md`, `docs/adr/019-fis-over-manual-chaos.md`.
+
+📐 **DIAGRAM CHECKPOINT** — `docs/diagrams/dr-recovery-flow.md`: the restore path from a snapshot in the cross-region vault back to a serving instance, with the SSM Automation steps shown as the actual sequence they execute.
+
+📸 **EVIDENCE REQUIRED**
+Capture:
+- AWS Backup vault + plan configuration, including the cross-region copy destination
+- SSM Automation document — one successful execution log, end to end
+- `restore-test.yml` workflow run history — several green runs across different weeks, not just one
+- The restored RDS instance passing its data-integrity check
+
+Save to: `docs/screenshots/11-backup-dr/`
+Suggested files: `backup-vault-plan.png`, `ssm-automation-execution.png`, `restore-test-workflow-history.png`, `restore-integrity-check-pass.png`
+
+Purpose: "my backups are verified weekly" needs a paper trail, not just a claim — the workflow history screenshot across multiple weeks is what actually proves that.
 
 ---
 
@@ -523,7 +699,32 @@ Prod comes up for a session, experiments run back to back, evidence is captured,
 
 Run k6 during **every** experiment so you always have a client-side view, not just AWS's.
 
-**Evidence:** `docs/incidents/01…10.md`, each a postmortem with timeline, graphs, error-budget impact, and resulting changes.
+⏱️ **MEASUREMENT REQUIRED — for every one of the 10 experiments**, filed as `docs/experiments/NN-<name>.md` (copy `docs/experiments/000-template.md`). Never invent a number here — an unmeasured field left honestly blank outranks a plausible invented one. Each file must record:
+- Time the fault was introduced (UTC)
+- Detection time (first alarm / metric change)
+- Recovery action start time
+- Service restoration time
+- Total requests during the window / failed requests / error rate
+- Error budget consumed (%, against `docs/observability/slo.md`)
+- Final steady-state confirmation
+- What surprised you
+- What you changed as a result
+
+📸 **EVIDENCE REQUIRED — per experiment**, capture:
+- Timestamped terminal output of the fault-injection command (the FIS experiment start, or the CLI invocation used)
+- CloudWatch metrics graph spanning the whole incident window — before, during and after
+- ALB target health transitioning unhealthy → healthy
+- k6 live output during the experiment
+- Final "back to steady state" confirmation
+
+Save to: `docs/screenshots/12-gamedays/<NN-experiment-name>/`
+Suggested files: `fis-experiment-start.png`, `metrics-during-incident.png`, `target-health-transition.png`, `k6-live-output.png`, `steady-state-restored.png`
+
+Purpose: this is the core evidence of the entire project. Every number in the §11 measurements table must trace back to a screenshot and an experiment file here.
+
+🎥 **GIF/VIDEO CANDIDATE** — flag experiments **#1** (EC2 failure → replacement), **#3** (load → auto scaling), **#4** (RDS failover) and **#9** (full rebuild) as prime screen-recording material. Record the terminal and a relevant console tab simultaneously if you can; these four are the strongest candidates for the M15 demo reel.
+
+**Evidence (roll-up):** `docs/experiments/01…10.md`, each a postmortem with timeline, graphs, error-budget impact, and resulting changes — this replaces the old `docs/incidents/` naming; the folder is `docs/experiments/`.
 
 ---
 
@@ -531,10 +732,19 @@ Run k6 during **every** experiment so you always have a client-side view, not ju
 
 - State RPO/RTO targets *before* testing, then report actual vs target — **including where you missed**. A missed target you diagnosed is more credible than a perfect scorecard.
 - Honest data-loss analysis: what is recoverable, what is not (in-flight requests, cache), why that is acceptable.
-- ★ **`docs/capacity-planning.md`** — from the load tests: max sustainable RPS per instance, the saturation point, where the bottleneck moved (app → DB → cache), and the scaling thresholds *derived from those numbers* rather than guessed. This is the difference between "I set CPU at 70%" and "I set it at 70% because throughput degrades non-linearly past 74%."
+- ★ **`docs/resilience/capacity-planning.md`** — from the load tests: max sustainable RPS per instance, the saturation point, where the bottleneck moved (app → DB → cache), and the scaling thresholds *derived from those numbers* rather than guessed. This is the difference between "I set CPU at 70%" and "I set it at 70% because throughput degrades non-linearly past 74%."
 - Error-budget report for the game-day period (§10).
 
-**Evidence:** DR results table; capacity-planning doc with graphs.
+📸 **EVIDENCE REQUIRED**
+Capture:
+- The cross-region restore execution and its timing
+- The capacity-planning graph (RPS vs. latency, with the saturation point marked)
+- The RPO/RTO actual-vs-target table, alongside the raw CloudWatch graph it was derived from
+
+Save to: `docs/screenshots/13-dr-validation/`
+Suggested files: `cross-region-restore.png`, `capacity-planning-graph.png`, `saturation-point-graph.png`
+
+Purpose: ties the resilience narrative to concrete, derived numbers rather than guessed thresholds. A missed RPO/RTO target that you diagnosed here is more credible than a perfect scorecard — write that up honestly in `docs/disaster-recovery/strategy.md`.
 
 ---
 
@@ -546,6 +756,44 @@ Run k6 during **every** experiment so you always have a client-side view, not ju
 - ★ **Screen recording, 3–5 minutes**: apply → curl → FIS kills an instance → dashboard reacts → self-heals. This outperforms every screenshot you will ever take.
 - ★ **Write-up** — a blog post or LinkedIn article series on the game-day results and what surprised you. Free, findable by recruiters, and forces you to articulate the project the way you will in an interview. The "what surprised me" fields from M12 are the draft.
 - Repo polish: LICENSE, badges, a `docs/` index, and pinned issues showing planned work.
+
+📸 **EVIDENCE REQUIRED**
+Capture:
+- Cost Explorer grouped by tag, for the full project period
+- Before/after cost comparison — the account-cleanup baseline (§16, ~$0.77/day) vs. the optimized ephemeral run rate
+- The final README as it actually renders on GitHub
+
+Save to: `docs/screenshots/14-final/`
+Suggested files: `cost-explorer-by-tag.png`, `before-after-cost.png`, `readme-rendered-github.png`
+
+Purpose: closes the cost narrative with real Cost Explorer numbers, not estimates.
+
+---
+
+### M15 — Documentation and portfolio finalization · week 19 · 10h
+
+The last mile. Nothing here is new engineering — it's making sure everything built in M0–M14 is actually *visible* to someone who didn't build it.
+
+- **Finalize `README.md`** as the technical case study (§18.5) — every section filled, every `__` placeholder in the CV bullets (§14) and measurements table (§11) replaced with a real number, nothing left saying "not yet."
+- **Confirm every diagram is current**: `docs/diagrams/architecture-high-level.md`, `network-vpc.md`, `traffic-flow.md`, `security-flow.md`, `data-flow.md`, `dr-recovery-flow.md` — six diagrams, all matching what was actually built, not what was planned.
+- **Confirm every `docs/` subfolder has real content**, not the stub READMEs created during planning. A folder that still says "not written yet" at this point is an unfinished milestone, not a finished one.
+- **Compile the GIF/video candidates** flagged through M0–M13 into an actual 3–5 minute demo reel: `terraform apply` → `curl` → FIS kills an instance → dashboard reacts → self-heals.
+- **Write the public write-up** (blog post or LinkedIn article) on the game-day results and what surprised you — the "what surprised me" fields from every `docs/experiments/*.md` file are the draft.
+- **Cross-check the CV bullets (§14)** against the actual measured numbers in §11 line by line.
+- **Final repo polish**: LICENSE, GitHub topics/tags for discoverability, pinned repo on your profile, Actions badges in the README, a GitHub Projects board showing M0–M15 progress.
+- **Cold-read pass**: read the README as a recruiter would, with a 90-second budget. Does it work in that time?
+
+**DoD:** the portfolio artifacts checklist (§12) is fully ticked, with no placeholders left anywhere in the repo.
+
+📸 **EVIDENCE REQUIRED**
+Capture:
+- The final GitHub repo homepage (README render, topics, description)
+- GitHub Insights → commit activity graph, showing sustained work spread across the project, not a single dump
+
+Save to: `docs/screenshots/15-portfolio-final/`
+Suggested files: `github-repo-homepage.png`, `commit-activity-graph.png`
+
+Purpose: the commit history and repo presentation are themselves evidence — a hiring manager checks both, and this is the checkpoint where you verify they hold up.
 
 ---
 
@@ -639,21 +887,22 @@ What must exist when you call this done. Tick these, not the milestones.
 
 - [ ] README with diagram, measurements table and cost figures in the first screenful
 - [ ] 3–5 minute screen recording of a real failure and recovery
-- [ ] Architecture diagram (PNG, not ASCII)
-- [ ] 20 ADRs
-- [ ] 10 incident reports with timelines and resulting changes
-- [ ] `docs/well-architected.md` with findings and remediations
-- [ ] `docs/slo.md` with the error-budget report
-- [ ] `docs/deployment-strategies.md` with measured comparison
-- [ ] `docs/capacity-planning.md` with graphs
-- [ ] `docs/disaster-recovery.md` with tested RPO/RTO
+- [ ] Six diagrams in `docs/diagrams/` — architecture, network, traffic-flow, security-flow, data-flow, DR-flow — all Mermaid, all matching what was actually built
+- [ ] 20 ADRs in `docs/adr/`
+- [ ] 10 experiment reports in `docs/experiments/` with timelines and resulting changes
+- [ ] `docs/security/well-architected.md` with findings and remediations
+- [ ] `docs/observability/slo.md` with the error-budget report
+- [ ] `docs/infrastructure/deployment-strategies.md` with measured comparison
+- [ ] `docs/resilience/capacity-planning.md` with graphs
+- [ ] `docs/disaster-recovery/strategy.md` with tested RPO/RTO
 - [ ] `docs/cost-analysis.md` with before/after numbers
-- [ ] `docs/security.md` with threat model and IAM walkthrough
+- [ ] `docs/security/threat-model.md` with the IAM walkthrough
 - [ ] Runbook per alarm, plus executable SSM Automation runbooks
 - [ ] One module published to the Terraform Registry
 - [ ] Green CI with tests, security scanning and drift detection
 - [ ] A public write-up
-- [ ] Six CV bullets with real numbers (§14)
+- [ ] Six CV bullets with real numbers (§14), matching §11 exactly
+- [ ] Every `docs/screenshots/*` phase folder populated — nothing skipped
 
 ---
 
@@ -760,6 +1009,8 @@ Outstanding: confirm flat spend on the Bills page at +24h and Credits at +48h. B
 
 ## 18. Documentation and proof of work
 
+**Scaffolding for everything in this section already exists** — `docs/README.md` and every subfolder's README, `docs/adr/000-template.md`, `docs/experiments/000-template.md`, and the first diagram (`docs/diagrams/architecture-high-level.md`) were built ahead of M0 specifically so the milestone markers below have somewhere real to point. Nothing in them is filled in yet; that happens milestone by milestone, per the `📸 EVIDENCE REQUIRED` blocks now embedded in §8.
+
 ### 18.1 The problem this section solves
 
 Anyone can now generate a repository full of plausible Terraform in an afternoon. A hiring manager knows that. So the question is not *"does this repo contain good infrastructure code?"* — it is **"did this person actually do this, and do they understand it?"**
@@ -772,8 +1023,8 @@ Everything below is designed to answer that second question. The repo is not doc
 |---|---|---|
 | 1 | **Commit history spread across months** | A repo with ~250 commits between Sept and Feb reads completely differently from one with 4 commits on a single day. The commit graph is the first thing an engineer checks, and a project dumped in one push looks bought or generated. This is the single strongest signal and it costs you nothing except committing as you go. |
 | 2 | **The 3–5 minute screen recording** | A real terminal and a real console showing a real instance dying and the system healing. Nearly impossible to fabricate convincingly. |
-| 3 | **Incident reports with real timestamps and graphs** | CloudWatch graphs carry real dates and real shapes. The "what surprised me" field especially — genuine surprise reads differently from invented surprise. |
-| 4 | **ADRs committed on the day the decision was made** | A dated decision log is a timeline of your thinking. Twenty ADRs added in one commit at the end proves nothing; twenty committed across five months proves everything. |
+| 3 | **Experiment reports with real timestamps and graphs** (`docs/experiments/`) | CloudWatch graphs carry real dates and real shapes. The "what surprised me" field especially — genuine surprise reads differently from invented surprise. |
+| 4 | **ADRs committed on the day the decision was made** (`docs/adr/`) | A dated decision log is a timeline of your thinking. Twenty ADRs added in one commit at the end proves nothing; twenty committed across five months proves everything. |
 | 5 | **Public CI history** | GitHub Actions run logs are public on a public repo. Real runs, real failures, real fixes. A green badge with 300 runs behind it is evidence. |
 | 6 | **Measurements you can defend in conversation** | §15. If you can explain *why* the RDS failover took as long as it did, you did the work. If you can't, no amount of documentation helps. |
 | 7 | **Published Terraform module** | A registry URL with a download count. External, permanent, verifiable. |
@@ -808,7 +1059,7 @@ This is the habit that matters most, and it is free.
 - **GitHub Projects board** mapped to M0–M14, so a visitor sees the plan and the progress.
 - **Releases with tags** at meaningful points (`v0.1-network`, `v0.2-compute`, `v1.0-first-full-prod`). Gives the repo a visible arc.
 - **Actions badges** in the README — build, tests, security scan, drift check.
-- **GitHub Pages** serving `docs/` — free, and makes the incident reports and ADRs browsable rather than requiring a clone.
+- **GitHub Pages** serving `docs/` — free, and makes the experiment reports and ADRs browsable rather than requiring a clone.
 - **Repo topics**: `aws`, `terraform`, `sre`, `high-availability`, `disaster-recovery`, `chaos-engineering`, `infrastructure-as-code`.
 - **Pin the repo** on your GitHub profile.
 - **A `docs/` index** so the depth is navigable rather than a folder of files.
@@ -839,12 +1090,12 @@ Be realistic about the audience. A recruiter gives it 90 seconds and reads only 
 Two paragraphs. Say plainly that the application is a deliberately trivial prop
 and the infrastructure is the product.
 
-## Architecture      → docs/architecture.md
+## Architecture      → docs/architecture/, docs/diagrams/
 ## Decisions (20 ADRs) → docs/adr/
-## Failure experiments → docs/incidents/
-## SLOs & error budget → docs/slo.md
-## Security & Well-Architected review → docs/security.md, docs/well-architected.md
-## Disaster recovery   → docs/disaster-recovery.md
+## Failure experiments → docs/experiments/
+## SLOs & error budget → docs/observability/slo.md
+## Security & Well-Architected review → docs/security/
+## Disaster recovery   → docs/disaster-recovery/
 ## Cost analysis       → docs/cost-analysis.md
 ## Running it yourself → make dev-up
 ```
@@ -867,7 +1118,7 @@ Do not redact the architecture, the IAM policies, or the measurements. Those are
 
 - One link on the CV, to the repo root. Not to your GitHub profile — a hiring manager will not go hunting.
 - The README's first screenful must repeat the CV bullets' numbers, so the claim and the evidence match on sight. A CV bullet saying "recovered in 2m17s" and a README saying the same thing is a coherent story; a mismatch is worse than saying nothing.
-- Link `docs/incidents/` directly in your cover letter or LinkedIn post — it is the most unusual thing in the repo and the most likely to start a conversation.
+- Link `docs/experiments/` directly in your cover letter or LinkedIn post — it is the most unusual thing in the repo and the most likely to start a conversation.
 - Keep the write-up (M14) on LinkedIn or dev.to and link it from the repo, and the repo from it. Two doors into the same work.
 
 ### 18.8 Anti-patterns
@@ -886,6 +1137,11 @@ Do not redact the architecture, the IAM policies, or the measurements. Those are
 1. Confirm **Free Plan vs Paid Plan** (open item 1) — the only thing that could force an architecture rework.
 2. Verify billing has gone flat (+24h / +48h).
 3. Claim remaining activity credits if available.
-4. Start **M0**: budget guardrails and CloudTrail in the console; `git init`, `.gitignore`, pre-commit and `terraform/bootstrap/` in the repo.
+4. Finish **M0**: budget guardrails and CloudTrail in the console; `terraform/bootstrap/` in the repo.
 
-Nothing is built yet. `scripts/aws-inventory.sh`, `scripts/aws-teardown.sh` and `docs/runbooks/account-teardown.md` exist from the cleanup and carry forward into M0.
+**What's already built, ahead of schedule:**
+- Repo initialized, first commit pushed, pre-commit hooks (gitleaks, fmt/validate/tflint/checkov, terraform-docs) installed and passing
+- `scripts/aws-inventory.sh`, `scripts/aws-teardown.sh`, `docs/runbooks/account-teardown.md` — from the account cleanup, carry forward into M0
+- The full `docs/` documentation scaffold (§7, §18): every subfolder's README, the ADR and experiment templates, and the first architecture diagram
+
+No Terraform, no application code, and no AWS resources beyond the account guardrails exist yet. Everything else is scaffolding for evidence that doesn't exist to capture yet.
