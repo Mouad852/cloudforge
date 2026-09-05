@@ -996,14 +996,14 @@ Outstanding: confirm flat spend on the Bills page at +24h and Credits at +48h. B
 | 5 | Region | ✅ **`eu-west-3`** (Paris) — better latency, and makes the choice deliberate rather than inherited from the cleanup |
 | 6 | Budget | ✅ **$158 credits** to 2027-09-02. Plan needs no tightening |
 | 7 | Account cleanup | ✅ Complete, verified across 17 regions |
+| 8 | Free Plan vs Paid Plan | ✅ **Staying on Free Plan.** Confirmed 2026-09-05 the account is on the Free Plan. Decided *not* to upgrade — evidence shows this doesn't restrict service selection: the Pitstop EKS cluster already ran NAT Gateways, EKS and load balancers (none free-tier-eligible) on this same account under this same plan and billed normally against credits. The Free Plan is a spend-cap/auto-suspend safety net, not a service allow-list. **No rework needed for M1/M4/M6.** M0's own Budget + billing alarm are the operative guardrail regardless of AWS's internal threshold. |
+| 9 | Remaining activity credits | ✅ **None hidden.** Credits page confirms exactly $100 signup + 3×$20 Explore AWS = $160 total, matching §16 exactly — the "~$40 more" note below was a pre-verification guess, now resolved. |
+| 10 | Public repo | ✅ **Public**, already pushed to `github.com/Mouad852/cloudforge`. Redaction discipline (§18.6) applies from the first commit onward, not as a later pass. |
 
 **Open:**
 
-1. **`[PENDING]` Free Plan vs Paid Plan.** AWS overhauled the free tier in July 2025 and new accounts choose a plan. Check **Billing → Account / Free tier**. Under a Free Plan the account caps and suspends rather than billing — safe, but it may **restrict which services you can launch**, which would block NAT Gateway, ElastiCache or WAF and force a rework of M1/M4/M6. The fact that EKS ran at all is weak evidence of a Paid Plan, but confirm it before M1.
-2. **`[PENDING]` Remaining activity credits.** 3 of 5 "Explore AWS" activities claimed — **~$40 may still be available**. Check **Billing → Free tier**. Claim only what you can immediately tear down.
-3. **`[PENDING]` Credit service coverage.** Each credit row has a *"See complete list of services"* link. Confirm the $100 credit covers NAT Gateway and data transfer specifically — two of the four largest line items in §4.
-4. **`[PENDING]` Public repo?** Decide before the first push. If public: no account IDs, no ARNs containing your account number, no `.tfvars` with secrets, `gitleaks` over the full history first.
-5. **`[PENDING]` Billing verification.** Bills at +24h, Credits at +48h (§16).
+1. **`[PENDING]` Credit service coverage.** Each credit row has a *"See complete list of services"* link. Confirm the $100 credit covers NAT Gateway and data transfer specifically — two of the four largest line items in §4. Low priority given decision #8 above.
+2. **`[PENDING]` Billing verification.** Bills at +24h, Credits at +48h (§16).
 
 ---
 
@@ -1134,10 +1134,8 @@ Do not redact the architecture, the IAM policies, or the measurements. Those are
 
 ## 19. Immediate next actions
 
-1. Confirm **Free Plan vs Paid Plan** (open item 1) — the only thing that could force an architecture rework.
-2. Verify billing has gone flat (+24h / +48h).
-3. Claim remaining activity credits if available.
-4. Finish **M0**: budget guardrails and CloudTrail in the console; `terraform/bootstrap/` in the repo.
+1. Finish **M0**: budget guardrails and CloudTrail in the console; `terraform/bootstrap/` in the repo.
+2. Verify billing has gone flat (+24h / +48h) — open item 2 in §17.
 
 **What's already built, ahead of schedule:**
 - Repo initialized, first commit pushed, pre-commit hooks (gitleaks, fmt/validate/tflint/checkov, terraform-docs) installed and passing
