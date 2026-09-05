@@ -204,6 +204,7 @@ Write each up in `docs/adr/` **as you make it**. An ADR log is a senior-engineer
 | 018 | **AWS Backup** with a vault and cross-region copy, over RDS-native backups alone | Centralised plan, tested restores, cross-region DR at snapshot cost | RDS automated backups only |
 | 019 | **AWS FIS** for fault injection, over manual console termination | The professional chaos tool; experiments are versioned, repeatable, and stoppable | Clicking "terminate" |
 | 020 | SLOs defined **before** the game days, error budget computed after | Turns "it recovered fast" into "it consumed 12% of the monthly error budget" | Reporting raw recovery times only |
+| 021 | Long-lived `cloudforge-admin` access key, kept over IAM Identity Center | Enabling Identity Center requires an AWS Organization, which immediately upgrades the account to Paid Plan and expires all $158 remaining credits | IAM Identity Center / SSO short-lived credentials (better practice, but not at the cost of the entire credit balance) |
 
 ---
 
@@ -296,14 +297,14 @@ Every milestone below carries three kinds of marker, consistently:
 - AWS Budget $20 + alerts at 50/80/100%; CloudWatch billing alarm → SNS → email (**confirm the subscription email**).
 - **Cost Anomaly Detection** (free).
 - **CloudTrail** — one trail, management events, → S3. First trail per region is free; you get an audit log of every API call for the whole project.
-- Root MFA ✅ (done 2026-09-04). Replace the `cloudforge-admin` access key with **IAM Identity Center** (`aws sso login`, short-lived credentials), then delete the key.
+- Root MFA ✅ (done 2026-09-04). **Not** replacing the `cloudforge-admin` access key with IAM Identity Center — enabling it requires creating an AWS Organization, which immediately forces a Paid Plan upgrade and expires all $158 remaining credits. Not worth it for this project; see ADR-021. Keeping the long-lived key with strict hygiene instead (never committed, rotated periodically, deleted at teardown).
 - `terraform/bootstrap/` — S3 state bucket: versioned, encrypted, public access blocked, `use_lockfile` in consumers. Local state, applied once, committed, never touched again.
 - `git init`, `.gitignore` (`*.tfstate*`, `.terraform/`, `*.tfvars`), `.pre-commit-config.yaml` (fmt, tflint, checkov, terraform-docs, gitleaks).
 - Provider `default_tags` shared by both environments.
 
 **DoD:** `terraform init` in an empty env dir reaches the S3 backend and takes a lock.
 
-📝 **DECISION RECORD** — write `docs/adr/001-state-backend.md`, `docs/adr/002-state-isolation.md`, `docs/adr/003-graviton.md` and `docs/adr/012-two-ephemeral-environments.md` now, while the reasoning is fresh. Commit each in the same commit as the config it describes.
+📝 **DECISION RECORD** — write `docs/adr/001-state-backend.md`, `docs/adr/002-state-isolation.md`, `docs/adr/003-graviton.md`, `docs/adr/012-two-ephemeral-environments.md` and `docs/adr/021-long-lived-key-over-identity-center.md` now, while the reasoning is fresh. Commit each in the same commit as the config it describes.
 
 📸 **EVIDENCE REQUIRED**
 Capture:
