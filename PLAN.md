@@ -312,10 +312,10 @@ Capture:
 - Billing alarm + confirmed SNS email subscription
 - Cost Anomaly Detection enabled
 - Root MFA screen (already done 2026-09-04 — capture retroactively if not already saved)
-- `terraform init` output showing a successful S3 backend connection and lock acquired
+- `terraform apply` output for the bootstrap bucket — **`[PENDING]` deferred 2026-09-06, capture whenever convenient before M0 is called fully closed out**
 
 Save to: `docs/screenshots/00-foundations/`
-Suggested files: `budget-config.png`, `billing-alarm.png`, `anomaly-detection.png`, `root-mfa.png`, `terraform-init-backend.png`
+Suggested files: `budget-config.png`, `billing-alarm.png`, `anomaly-detection.png`, `root-mfa.png`, `terraform-bootstrap-apply.png`
 
 Purpose: proves the cost guardrails existed *before* any billable resource was created — this is the safety-net story, and it only works if the timestamps predate M1.
 
