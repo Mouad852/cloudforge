@@ -1,0 +1,50 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: cloudforge
+      POSTGRES_PASSWORD: cloudforge
+      POSTGRES_DB: cloudforge
+    ports:
+      - "5433:5432" # 5432 is taken by an unrelated project's Postgres on this machine
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U cloudforge"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  localstack:
+    image: localstack/localstack:3
+    environment:
+      SERVICES: s3,secretsmanager
+      DEFAULT_REGION: eu-west-3
+    ports:
+      - "4566:4566"
+    healthcheck:
+      test: ["CMD", "curl", "-sf", "http://localhost:4566/_localstack/health"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  migrate:
+    image: migrate/migrate:v4.18.1
+    profiles: ["tools"] # one-shot; run explicitly via `make migrate`, not part of `up`
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - ./migrations:/migrations
+    command:
+      - "-path=/migrations"
+      - "-database=postgres://cloudforge:cloudforge@postgres:5432/cloudforge?sslmode=disable"
+      - "up"

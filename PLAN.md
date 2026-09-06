@@ -355,7 +355,7 @@ Purpose: proof the multi-AZ, three-tier network was actually deployed, and that 
 
 ---
 
-### M2 — CloudStore API (Go) · week 3 · 8h — **hard timebox**
+### M2 — CloudStore API (Go) · week 3 · 8h — **hard timebox** ✅ complete 2026-09-06
 
 ```
 GET    /api/products              Redis-cached list
@@ -383,7 +383,7 @@ Requirements:
 
 > If you are still writing app code in week 4, cut endpoints. Nobody is hiring you for this API.
 
-**DoD:** runs against docker-compose; `go test ./...` green; cross-compiles for arm64.
+**DoD:** ✅ runs against docker-compose (Postgres, Redis, LocalStack all healthy; full CRUD + image-upload smoke test exercised end-to-end); `go test ./...` green (3/3, against the real stack); cross-compiles for arm64 (`GOOS=linux GOARCH=arm64`, ~14.3 MB stripped binary).
 
 📸 **EVIDENCE REQUIRED — minimal, this milestone is scaffolding, not the point of the project**
 Capture:
