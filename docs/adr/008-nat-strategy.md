@@ -27,3 +27,13 @@ Only the `dev` half exists in code today (`terraform/modules/network`, NAT insta
 - `dev`'s outbound path depends on one EC2 instance staying up; if it's stopped or terminated, `app`/`data` subnets lose internet access until it's replaced. Acceptable for a throwaway dev environment, not for prod.
 - The NAT instance's user-data only sets up forwarding on first boot — a `terraform apply`-driven replacement re-runs it correctly, but a manual stop/start of the same instance would not (not a concern here since the instance is never touched outside Terraform).
 - When `prod` is built, the network module needs a real fork in it (`nat_strategy = "instance" | "gateway"` or two environments simply passing different module inputs) — deferred to that milestone rather than built and left untested now.
+
+## Known issue: hardcoded interface name broke forwarding
+
+While bringing up the throwaway SSM test instance (private subnet, `app-a`), it could never register with SSM — `SSM Agent unable to acquire credentials ... dial tcp ...:443: i/o timeout`. Status checks on the instance itself passed, and the IAM role was attached correctly, so the failure was on the network path, not IAM.
+
+Root cause: the NAT instance's user-data ran `iptables -t nat -A POSTROUTING -o eth0 -j MASQUERADE`, but Amazon Linux 2023 on Nitro-based instances (including `t3.micro`) names its network interface `ens5`, not `eth0`. The rule silently matched nothing, so packets forwarded *from* other hosts were never source-NAT'd. This was easy to miss because the NAT instance's *own* outbound traffic (NTP sync, background port-scan noise visible in the flow logs) worked fine regardless — that traffic never goes through the POSTROUTING/forwarding path at all, only genuinely forwarded traffic does.
+
+**Fix:** dropped the `-o eth0` qualifier entirely (`iptables -t nat -A POSTROUTING -j MASQUERADE`) — a single-NIC instance doesn't need to name the interface. Since EC2 only runs user-data on an instance's first boot, the running NAT instance had to be explicitly replaced (`terraform apply -replace=`) for the corrected script to actually execute, rather than just re-applying the changed config.
+
+This is exactly the kind of operational sharp edge a managed NAT Gateway doesn't have — worth remembering as a concrete point in the instance-vs-gateway trade-off, not just the cost line.
