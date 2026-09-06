@@ -134,7 +134,7 @@ resource "aws_instance" "nat" {
         #!/bin/bash
         echo "net.ipv4.ip_forward = 1" >> /etc/sysctl.conf
         sysctl -p
-        iptables -t nat -A POSTROUTING -o eth0 -j MASQUERADE
+        iptables -t nat -A POSTROUTING -j MASQUERADE
     EOF
 
   tags = {
