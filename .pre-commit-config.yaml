@@ -11,6 +11,12 @@ repos:
         files: ^terraform/
         args:
           - --hook-config=--skip-framework=terraform_plan
+          # Inline #checkov:skip= comments don't work in this checkov install
+          # (verified: even a minimal isolated resource with a skip comment
+          # still reports FAILED, Skipped checks: 0) - using --skip-check
+          # instead. See the comment block above each affected resource in
+          # terraform/bootstrap/main.tf for the per-check reasoning.
+          - --args=--skip-check=CKV_AWS_18,CKV_AWS_144,CKV_AWS_145,CKV2_AWS_62
       - id: terraform_docs
         args:
           - --hook-config=--path-to-file=README.md

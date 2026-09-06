@@ -304,7 +304,7 @@ Every milestone below carries three kinds of marker, consistently:
 
 **DoD:** `terraform init` in an empty env dir reaches the S3 backend and takes a lock.
 
-📝 **DECISION RECORD** — write `docs/adr/001-state-backend.md`, `docs/adr/002-state-isolation.md`, `docs/adr/003-graviton.md`, `docs/adr/012-two-ephemeral-environments.md` and `docs/adr/021-long-lived-key-over-identity-center.md` now, while the reasoning is fresh. Commit each in the same commit as the config it describes.
+📝 **DECISION RECORD** — write `docs/adr/001-state-backend.md`, `docs/adr/002-state-isolation.md` and `docs/adr/021-long-lived-key-over-identity-center.md` now, in the same commit as `terraform/bootstrap/`. (ADR-003 Graviton and ADR-012 two-environments move to M3 and M1 respectively — write those alongside the code that actually makes each decision real, not ahead of it.)
 
 📸 **EVIDENCE REQUIRED**
 Capture:
@@ -335,7 +335,7 @@ Purpose: proves the cost guardrails existed *before* any billable resource was c
 
 **DoD:** `terraform destroy` cleanly removes everything. Run it twice.
 
-📝 **DECISION RECORD** — `docs/adr/005-ssm-session-manager.md`, `docs/adr/008-nat-strategy.md`, `docs/adr/016-terraform-native-tests.md` (first `.tftest.hcl`).
+📝 **DECISION RECORD** — `docs/adr/005-ssm-session-manager.md`, `docs/adr/008-nat-strategy.md`, `docs/adr/012-two-ephemeral-environments.md` (first environment directories land here), `docs/adr/016-terraform-native-tests.md` (first `.tftest.hcl`).
 
 📐 **DIAGRAM CHECKPOINT** — replace the target-state diagram with the as-built one: `docs/diagrams/network-vpc.md`, showing the real VPC ID, subnet CIDRs and route tables from this apply (Mermaid, not another ASCII block).
 
@@ -415,7 +415,7 @@ Purpose: minimal on purpose. Say plainly in the README that the app is a deliber
 
 **DoD:** terminate an instance by hand → replacement appears and serves traffic unattended.
 
-📝 **DECISION RECORD** — `docs/adr/004-go-binary-artifact.md`, `docs/adr/007-target-tracking-scaling.md`.
+📝 **DECISION RECORD** — `docs/adr/003-graviton.md` (ARM launch template lands here), `docs/adr/004-go-binary-artifact.md`, `docs/adr/007-target-tracking-scaling.md`.
 
 📸 **EVIDENCE REQUIRED**
 Capture:
