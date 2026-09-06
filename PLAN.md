@@ -321,7 +321,7 @@ Purpose: proves the cost guardrails existed *before* any billable resource was c
 
 ---
 
-### M1 — Network · week 2 · 8h
+### M1 — Network · week 2 · 8h ✅ complete 2026-09-06
 
 - VPC `10.0.0.0/16`, two AZs, **three tiers** (public / app / data). Three tiers is what production looks like and costs nothing extra.
   ```
@@ -333,7 +333,7 @@ Purpose: proves the cost guardrails existed *before* any billable resource was c
 - Throwaway instance in a private subnet reachable **only** via SSM Session Manager.
 - First `.tftest.hcl` — assert CIDR maths, subnet count, and that no route table sends `0.0.0.0/0` to the IGW from a private subnet.
 
-**DoD:** `terraform destroy` cleanly removes everything. Run it twice.
+**DoD:** ✅ `terraform destroy` run twice from `environments/dev` — 30 resources destroyed on the first run, 0 found on the second.
 
 📝 **DECISION RECORD** — `docs/adr/005-ssm-session-manager.md`, `docs/adr/008-nat-strategy.md`, `docs/adr/012-two-ephemeral-environments.md` (first environment directories land here), `docs/adr/016-terraform-native-tests.md` (first `.tftest.hcl`).
 
