@@ -15,8 +15,27 @@ repos:
           # (verified: even a minimal isolated resource with a skip comment
           # still reports FAILED, Skipped checks: 0) - using --skip-check
           # instead. See the comment block above each affected resource in
-          # terraform/bootstrap/main.tf for the per-check reasoning.
-          - --args=--skip-check=CKV_AWS_18,CKV_AWS_144,CKV_AWS_145,CKV2_AWS_62
+          # terraform/bootstrap/main.tf and this file's own comments for the
+          # per-check reasoning.
+          #
+          # CKV_AWS_18/144/145/CKV2_AWS_62: terraform/bootstrap state bucket
+          #   (access logging, replication, KMS, event notifications - see
+          #   terraform/bootstrap/main.tf).
+          # CKV_AWS_382: NAT instance security group egress to 0.0.0.0/0 - its
+          #   entire job is forwarding traffic to arbitrary internet
+          #   destinations, so this rule is required, not a mistake.
+          # CKV_AWS_126: EC2 detailed monitoring costs extra per-metric, not
+          #   worth it for a throwaway dev NAT instance.
+          # CKV2_AWS_41: NAT instance never calls an AWS API, so an IAM role
+          #   would be an unused artifact added only to satisfy the check.
+          # CKV_AWS_158: VPC flow log group - same call as CKV_AWS_145 above,
+          #   CloudWatch Logs are already encrypted with an AWS-managed key;
+          #   a customer KMS key adds ~$1/mo for marginal gain here.
+          # CKV_AWS_338: VPC flow log group - this exists for debugging a
+          #   dev VPC that's ephemeral by design (ADR-012), not a compliance
+          #   audit trail; paying to store a year of logs for an environment
+          #   that gets torn down is wasted cost.
+          - --args=--skip-check=CKV_AWS_18,CKV_AWS_144,CKV_AWS_145,CKV2_AWS_62,CKV_AWS_382,CKV_AWS_126,CKV2_AWS_41,CKV_AWS_158,CKV_AWS_338
       - id: terraform_docs
         args:
           - --hook-config=--path-to-file=README.md
