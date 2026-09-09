@@ -80,6 +80,11 @@ data "aws_ami" "al2023" {
   owners      = ["amazon"]
 
   filter {
+    name   = "name"
+    values = ["al2023-ami-*-x86_64"]
+  }
+
+  filter {
     name   = "virtualization-type"
     values = ["hvm"]
   }
@@ -120,6 +125,7 @@ resource "aws_instance" "nat" {
   subnet_id              = aws_subnet.this["public-a"].id
   vpc_security_group_ids = [aws_security_group.nat_instance.id]
   source_dest_check      = false
+  iam_instance_profile   = aws_iam_instance_profile.nat_instance.name
 
   metadata_options {
     http_tokens   = "required"
@@ -134,13 +140,58 @@ resource "aws_instance" "nat" {
         #!/bin/bash
         echo "net.ipv4.ip_forward = 1" >> /etc/sysctl.conf
         sysctl -p
-        iptables -t nat -A POSTROUTING -j MASQUERADE
+
+        cat > /etc/systemd/system/nat-masquerade.service <<'UNIT'
+        [Unit]
+        Description=NAT MASQUERADE for VPC private subnets
+        After=network.target
+
+        [Service]
+        Type=oneshot
+        RemainAfterExit=yes
+        ExecStart=/usr/sbin/iptables -t nat -A POSTROUTING -j MASQUERADE
+        ExecStop=/usr/sbin/iptables -t nat -D POSTROUTING -j MASQUERADE
+
+        [Install]
+        WantedBy=multi-user.target
+        UNIT
+
+        systemctl daemon-reload
+        systemctl enable --now nat-masquerade.service
     EOF
 
   tags = {
     Name = "${var.environment}-nat-instance"
   }
 }
+
+# The NAT instance is the single point of failure for all private-subnet egress,
+# and debugging it (iptables rules, forwarding state) otherwise means guessing from
+# console logs. Its own SSM traffic exits via the IGW with its public IP, so this
+# works even when forwarding to the private subnets is broken.
+resource "aws_iam_role" "nat_instance" {
+  name = "${var.environment}-nat-instance"
+
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Effect    = "Allow"
+      Principal = { Service = "ec2.amazonaws.com" }
+      Action    = "sts:AssumeRole"
+    }]
+  })
+}
+
+resource "aws_iam_role_policy_attachment" "nat_instance_ssm" {
+  role       = aws_iam_role.nat_instance.name
+  policy_arn = "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore"
+}
+
+resource "aws_iam_instance_profile" "nat_instance" {
+  name = "${var.environment}-nat-instance"
+  role = aws_iam_role.nat_instance.name
+}
+
 
 resource "aws_eip" "nat" {
   instance = aws_instance.nat.id
