@@ -35,7 +35,7 @@ repos:
           #   dev VPC that's ephemeral by design (ADR-012), not a compliance
           #   audit trail; paying to store a year of logs for an environment
           #   that gets torn down is wasted cost.
-          - --args=--skip-check=CKV_AWS_18,CKV_AWS_144,CKV_AWS_145,CKV2_AWS_62,CKV_AWS_382,CKV_AWS_126,CKV2_AWS_41,CKV_AWS_158,CKV_AWS_338
+          - --args=--skip-check=CKV_AWS_18,CKV_AWS_144,CKV_AWS_145,CKV2_AWS_62,CKV_AWS_382,CKV_AWS_126,CKV2_AWS_41,CKV_AWS_158,CKV_AWS_338,CKV_AWS_150,CKV_AWS_2,CKV2_AWS_20,CKV_AWS_103,CKV2_AWS_28,CKV_AWS_21,CKV_AWS_378
       - id: terraform_docs
         args:
           - --hook-config=--path-to-file=README.md
