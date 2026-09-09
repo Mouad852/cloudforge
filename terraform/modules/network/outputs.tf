@@ -22,3 +22,9 @@ output "nat_instance_public_ip" {
   description = "Public (Elastic) IP of the NAT instance"
   value       = aws_eip.nat.public_ip
 }
+
+
+output "vpc_cidr" {
+  description = "VPC CIDR block"
+  value       = aws_vpc.main.cidr_block
+}

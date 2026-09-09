@@ -69,3 +69,9 @@ variable "target_group_arns" {
   type        = list(string)
   default     = []
 }
+
+
+variable "alb_security_group_id" {
+  description = "ALB's security group ID (modules/edge) - the app SG allows inbound only from this, M4"
+  type        = string
+}

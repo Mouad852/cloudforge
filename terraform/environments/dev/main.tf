@@ -101,6 +101,16 @@ module "storage" {
   environment = "dev"
 }
 
+module "edge" {
+  source = "../../modules/edge"
+
+  environment       = "dev"
+  vpc_id            = module.network.vpc_id
+  vpc_cidr          = module.network.vpc_cidr
+  public_subnet_ids = [module.network.subnet_ids["public-a"], module.network.subnet_ids["public-b"]]
+  app_port          = 8080
+}
+
 module "compute" {
   source = "../../modules/compute"
 
@@ -110,6 +120,8 @@ module "compute" {
   artifacts_bucket_arn  = module.storage.artifacts_bucket_arn
   artifacts_bucket_name = module.storage.artifacts_bucket_name
   images_bucket_name    = "cloudforge-images-dev"
+  alb_security_group_id = module.edge.alb_security_group_id
+  target_group_arns     = [module.edge.blue_target_group_arn]
   # Deliberately t4g.small, not the module's t4g.micro default: eu-west-3a/3b
   # had no t4g.micro capacity when this was built, and this size has since
   # been proven end-to-end. Kept as the standing choice, not a pending revert.

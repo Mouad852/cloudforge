@@ -59,7 +59,7 @@ resource "aws_s3_bucket_policy" "alb_logs" {
 
 resource "aws_security_group" "alb" {
   name_prefix = "${var.environment}-cloudforge-alb-"
-  description = "ALB - inbound restricted to CloudFront's own IP range, never 0.0.0.0/0"
+  description = "ALB - inbound restricted to CloudFront origin-facing IP range only, never 0.0.0.0/0"
   vpc_id      = var.vpc_id
 
   ingress {
@@ -203,6 +203,8 @@ resource "aws_s3_bucket_lifecycle_configuration" "alb_logs" {
   rule {
     id     = "expire-old-access-logs"
     status = "Enabled"
+
+    filter {}
 
     expiration {
       days = 90

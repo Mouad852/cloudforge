@@ -19,6 +19,7 @@
 | Name | Source | Version |
 | ---- | ------ | ------- |
 | <a name="module_compute"></a> [compute](#module\_compute) | ../../modules/compute | n/a |
+| <a name="module_edge"></a> [edge](#module\_edge) | ../../modules/edge | n/a |
 | <a name="module_network"></a> [network](#module\_network) | ../../modules/network | n/a |
 | <a name="module_storage"></a> [storage](#module\_storage) | ../../modules/storage | n/a |
 
@@ -41,6 +42,7 @@ No inputs.
 
 | Name | Description |
 | ---- | ----------- |
+| <a name="output_alb_dns_name"></a> [alb\_dns\_name](#output\_alb\_dns\_name) | n/a |
 | <a name="output_subnet_ids"></a> [subnet\_ids](#output\_subnet\_ids) | n/a |
 | <a name="output_vpc_id"></a> [vpc\_id](#output\_vpc\_id) | n/a |
 <!-- END_TF_DOCS -->

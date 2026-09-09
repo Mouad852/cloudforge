@@ -102,8 +102,16 @@ resource "aws_iam_role_policy" "app" {
 
 resource "aws_security_group" "app" {
   name_prefix = "${var.environment}-cloudforge-app-"
-  description = "CloudStore API instances - no inbound until M4 wires the ALB-SG rule in"
+  description = "CloudStore API instances - inbound only from the ALB (M4)"
   vpc_id      = var.vpc_id
+
+  ingress {
+    description     = "From the ALB only"
+    from_port       = var.app_port
+    to_port         = var.app_port
+    protocol        = "tcp"
+    security_groups = [var.alb_security_group_id]
+  }
 
   egress {
     description = "HTTPS out for SSM, CloudWatch, Secrets Manager, S3 (via gateway endpoint), via NAT"

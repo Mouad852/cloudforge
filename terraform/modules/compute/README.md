@@ -40,6 +40,7 @@ No modules.
 
 | Name | Description | Type | Default | Required |
 | ---- | ----------- | ---- | ------- | :------: |
+| <a name="input_alb_security_group_id"></a> [alb\_security\_group\_id](#input\_alb\_security\_group\_id) | ALB's security group ID (modules/edge) - the app SG allows inbound only from this, M4 | `string` | n/a | yes |
 | <a name="input_app_port"></a> [app\_port](#input\_app\_port) | Port the app listens on | `number` | `8080` | no |
 | <a name="input_app_subnet_ids"></a> [app\_subnet\_ids](#input\_app\_subnet\_ids) | App-tier subnet IDs (both Azs) the ASG launches into | `list(string)` | n/a | yes |
 | <a name="input_artifact_key"></a> [artifact\_key](#input\_artifact\_key) | S3 key of the app binary within the artifacts bucket | `string` | `"cloudstore-api/cloudstore-api"` | no |
