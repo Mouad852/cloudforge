@@ -94,3 +94,24 @@ resource "aws_instance" "ssm_test" {
     Purpose = "M1 evidence - throwaway, safe to destroy"
   }
 }
+
+module "storage" {
+  source = "../../modules/storage"
+
+  environment = "dev"
+}
+
+module "compute" {
+  source = "../../modules/compute"
+
+  environment           = "dev"
+  vpc_id                = module.network.vpc_id
+  app_subnet_ids        = [module.network.subnet_ids["app-a"], module.network.subnet_ids["app-b"]]
+  artifacts_bucket_arn  = module.storage.artifacts_bucket_arn
+  artifacts_bucket_name = module.storage.artifacts_bucket_name
+  images_bucket_name    = "cloudforge-images-dev"
+  # Deliberately t4g.small, not the module's t4g.micro default: eu-west-3a/3b
+  # had no t4g.micro capacity when this was built, and this size has since
+  # been proven end-to-end. Kept as the standing choice, not a pending revert.
+  instance_type = "t4g.small"
+}

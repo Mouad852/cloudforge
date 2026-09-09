@@ -18,7 +18,9 @@
 
 | Name | Source | Version |
 | ---- | ------ | ------- |
+| <a name="module_compute"></a> [compute](#module\_compute) | ../../modules/compute | n/a |
 | <a name="module_network"></a> [network](#module\_network) | ../../modules/network | n/a |
+| <a name="module_storage"></a> [storage](#module\_storage) | ../../modules/storage | n/a |
 
 ## Resources
 
