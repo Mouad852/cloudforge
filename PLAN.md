@@ -398,7 +398,7 @@ Purpose: minimal on purpose. Say plainly in the README that the app is a deliber
 
 ---
 
-### M3 — Compute · weeks 4–5 · 10h
+### M3 — Compute · weeks 4–5 · 10h · ✅ complete 2026-09-09
 
 - IAM role + instance profile, **hand-written least privilege**:
   - `AmazonSSMManagedInstanceCore` (this managed policy is fine)
@@ -413,7 +413,13 @@ Purpose: minimal on purpose. Say plainly in the README that the app is a deliber
 - **ASG lifecycle hook** on terminate, so draining completes before the instance dies.
 - **IMDSv2 required** (`http_tokens = "required"`) — mitigates SSRF credential theft, and a good thing to be able to explain.
 
-**DoD:** terminate an instance by hand → replacement appears and serves traffic unattended.
+**DoD:** ✅ terminated an instance by hand (twice) → the ASG's lifecycle hook held it in
+`Terminating:Wait`, then a replacement appeared unattended, pulled the app binary, started
+the service, and answered `/healthz`/`/whoami` with its own real instance-id/AZ (the M2
+IMDSv2 code proving itself on real hardware for the first time). One run also surfaced a
+real, unrelated NAT bug (see ADR-008) that was found and fixed along the way, not papered
+over. AZ placement across both instances self-corrected on its own; not force-tested further
+once the DoD itself was already proven twice.
 
 📝 **DECISION RECORD** — `docs/adr/003-graviton.md` (ARM launch template lands here), `docs/adr/004-go-binary-artifact.md`, `docs/adr/007-target-tracking-scaling.md`.
 
@@ -431,6 +437,7 @@ Suggested files: `launch-template.png`, `asg-detail.png`, `ec2-instances-multi-a
 Purpose: proof of self-healing compute and least-privilege IAM — two of the project's core claims. Also write the IAM policy walkthrough into `docs/security/README.md` now, while you can still explain each permission's reason.
 
 ⏱️ **Rough measurement now, refined properly in M12:** note how long the replacement took to appear and go healthy. Don't build a full experiment file yet — just a line in your notes to compare against the real FIS-driven number later.
+**Measured:** ~3m 8s from the terminate command to the replacement reaching `InService`/`Healthy` (22:47:19 → 22:50:27 UTC), dominated by the lifecycle hook's 90s heartbeat plus normal EC2 launch time — not under load, just this milestone's rough pass.
 
 ---
 

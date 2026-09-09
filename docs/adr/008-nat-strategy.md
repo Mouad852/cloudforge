@@ -37,3 +37,30 @@ Root cause: the NAT instance's user-data ran `iptables -t nat -A POSTROUTING -o 
 **Fix:** dropped the `-o eth0` qualifier entirely (`iptables -t nat -A POSTROUTING -j MASQUERADE`) — a single-NIC instance doesn't need to name the interface. Since EC2 only runs user-data on an instance's first boot, the running NAT instance had to be explicitly replaced (`terraform apply -replace=`) for the corrected script to actually execute, rather than just re-applying the changed config.
 
 This is exactly the kind of operational sharp edge a managed NAT Gateway doesn't have — worth remembering as a concrete point in the instance-vs-gateway trade-off, not just the cost line.
+
+## Known issue: the MASQUERADE rule didn't survive a reboot
+
+While building M3, every instance behind the NAT (the ASG's app instances, plus the `ssm_test`
+box) silently lost SSM connectivity and internet access at once. The NAT instance itself
+looked completely healthy — running, correct route table pointing at its ENI,
+`source_dest_check` disabled, IAM role attached, `net.ipv4.ip_forward = 1` set. Nothing was
+wrong with the network path; the actual MASQUERADE rule was simply gone from
+`iptables -t nat -L POSTROUTING`.
+
+Root cause: `iptables` rules added by a bare shell command exist only in kernel memory — they
+are never written to disk on AL2023 (no `iptables-services` installed). User-data only runs
+on an instance's *first* boot. So the rule was correctly applied when the NAT instance first
+launched, and then silently wiped out the moment that instance was rebooted for an unrelated
+reason (in this case, to pick up a newly-attached IAM role) — with no error, no log entry
+calling out the loss, just every private-subnet instance losing egress at once.
+
+**Fix:** replaced the bare `iptables` command with a small `systemd` unit
+(`nat-masquerade.service`, `Type=oneshot`, `RemainAfterExit=yes`) that AWS's own `systemd`
+reapplies on every boot, not just the first one. Verified by deliberately rebooting the NAT
+instance again afterward and confirming the rule reappeared with zero manual intervention.
+
+The general lesson, not specific to this project: **a firewall rule set by a one-off command
+in cloud-init/user-data does not survive a reboot unless something reapplies it on every
+boot.** The `eth0`/`ens5` bug above and this one are the same class of mistake twice over —
+user-data is easy to treat as "runs once, done forever," and it very much does not mean that
+for anything living only in kernel state.
