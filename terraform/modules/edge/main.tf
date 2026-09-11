@@ -215,3 +215,202 @@ resource "aws_s3_bucket_lifecycle_configuration" "alb_logs" {
     }
   }
 }
+
+resource "aws_wafv2_web_acl" "cloudfront" {
+  provider = aws.use1
+  name     = "${var.environment}-cloudforge-cloudfront-waf"
+  scope    = "CLOUDFRONT"
+
+  default_action {
+    allow {}
+  }
+
+  rule {
+    name     = "AWSManagedRulesCommonRuleSet"
+    priority = 0
+
+    override_action {
+      none {}
+    }
+
+    statement {
+      managed_rule_group_statement {
+        name        = "AWSManagedRulesCommonRuleSet"
+        vendor_name = "AWS"
+      }
+    }
+
+    visibility_config {
+      cloudwatch_metrics_enabled = true
+      metric_name                = "${var.environment}-common-rule-set"
+      sampled_requests_enabled   = true
+    }
+  }
+
+  rule {
+    name     = "AWSManagedRulesKnownBadInputsRuleSet"
+    priority = 1
+
+    override_action {
+      none {}
+    }
+
+    statement {
+      managed_rule_group_statement {
+        name        = "AWSManagedRulesKnownBadInputsRuleSet"
+        vendor_name = "AWS"
+      }
+    }
+
+    visibility_config {
+      cloudwatch_metrics_enabled = true
+      metric_name                = "${var.environment}-known-bad-inputs"
+      sampled_requests_enabled   = true
+    }
+  }
+
+  rule {
+    name     = "AWSManagedRulesAmazonIpReputationList"
+    priority = 2
+
+    override_action {
+      none {}
+    }
+
+    statement {
+      managed_rule_group_statement {
+        name        = "AWSManagedRulesAmazonIpReputationList"
+        vendor_name = "AWS"
+      }
+    }
+
+    visibility_config {
+      cloudwatch_metrics_enabled = true
+      metric_name                = "${var.environment}-ip-reputation"
+      sampled_requests_enabled   = true
+    }
+  }
+
+  # 2000 req/5min per IP - generous enough not to trip during normal demo
+  # traffic or a load test, low enough to catch an obvious script kiddie.
+  rule {
+    name     = "RateLimitPerIP"
+    priority = 3
+
+    action {
+      block {}
+    }
+
+    statement {
+      rate_based_statement {
+        limit              = 2000
+        aggregate_key_type = "IP"
+      }
+    }
+
+    visibility_config {
+      cloudwatch_metrics_enabled = true
+      metric_name                = "${var.environment}-rate-limit"
+      sampled_requests_enabled   = true
+    }
+  }
+
+  visibility_config {
+    cloudwatch_metrics_enabled = true
+    metric_name                = "${var.environment}-cloudforge-cloudfront-waf"
+    sampled_requests_enabled   = true
+  }
+
+  tags = {
+    Name = "${var.environment}-cloudforge-cloudfront-waf"
+  }
+}
+
+resource "aws_cloudfront_response_headers_policy" "security_headers" {
+  name = "${var.environment}-cloudforge-security-headers"
+
+  security_headers_config {
+    strict_transport_security {
+      access_control_max_age_sec = 63072000
+      include_subdomains         = true
+      preload                    = true
+      override                   = true
+    }
+
+    content_type_options {
+      override = true
+    }
+
+    frame_options {
+      frame_option = "DENY"
+      override     = true
+    }
+
+    referrer_policy {
+      referrer_policy = "same-origin"
+      override        = true
+    }
+  }
+}
+
+# Second origin (S3, /images/*) is added in M6 once the images bucket
+# exists - this behavior is written to be extended, not replaced (ADR-010).
+resource "aws_cloudfront_distribution" "app" {
+  enabled         = true
+  is_ipv6_enabled = true
+  comment         = "${var.environment}-cloudforge"
+  price_class     = "PriceClass_100"
+  web_acl_id      = aws_wafv2_web_acl.cloudfront.arn
+
+  origin {
+    domain_name = aws_lb.app.dns_name
+    origin_id   = "alb"
+
+    custom_origin_config {
+      http_port              = 80
+      https_port             = 443
+      origin_protocol_policy = "http-only"
+      origin_ssl_protocols   = ["TLSv1.2"]
+    }
+
+    custom_header {
+      name  = var.origin_secret_header_name
+      value = random_password.origin_secret.result
+    }
+  }
+
+  default_cache_behavior {
+    allowed_methods            = ["GET", "HEAD", "OPTIONS", "PUT", "POST", "PATCH", "DELETE"]
+    cached_methods             = ["GET", "HEAD"]
+    target_origin_id           = "alb"
+    viewer_protocol_policy     = "redirect-to-https"
+    cache_policy_id            = "4135ea2d-6df8-44a3-9df3-4b5a84be39ad" # AWS managed "CachingDisabled"
+    response_headers_policy_id = aws_cloudfront_response_headers_policy.security_headers.id
+    compress                   = true
+  }
+
+  ordered_cache_behavior {
+    path_pattern               = "/api/*"
+    allowed_methods            = ["GET", "HEAD", "OPTIONS", "PUT", "POST", "PATCH", "DELETE"]
+    cached_methods             = ["GET", "HEAD"]
+    target_origin_id           = "alb"
+    viewer_protocol_policy     = "redirect-to-https"
+    cache_policy_id            = "4135ea2d-6df8-44a3-9df3-4b5a84be39ad"
+    response_headers_policy_id = aws_cloudfront_response_headers_policy.security_headers.id
+    compress                   = true
+  }
+
+  restrictions {
+    geo_restriction {
+      restriction_type = "none"
+    }
+  }
+
+  viewer_certificate {
+    cloudfront_default_certificate = true
+  }
+
+  tags = {
+    Name = "${var.environment}-cloudforge-cdn"
+  }
+}

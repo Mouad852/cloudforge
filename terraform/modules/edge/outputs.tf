@@ -28,3 +28,12 @@ output "origin_secret_header_value" {
   value     = random_password.origin_secret.result
   sensitive = true
 }
+
+output "cloudfront_domain_name" {
+  description = "Public HTTPS entry point (M4 DoD: this works, the ALB DNS name directly does not)"
+  value       = aws_cloudfront_distribution.app.domain_name
+}
+
+output "waf_web_acl_arn" {
+  value = aws_wafv2_web_acl.cloudfront.arn
+}

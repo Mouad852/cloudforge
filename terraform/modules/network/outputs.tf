@@ -28,3 +28,9 @@ output "vpc_cidr" {
   description = "VPC CIDR block"
   value       = aws_vpc.main.cidr_block
 }
+
+
+output "private_zone_id" {
+  description = "Route 53 private hosted zone ID - M5/M6 add records here"
+  value       = aws_route53_zone.private.zone_id
+}

@@ -5,6 +5,13 @@ repos:
       - id: terraform_fmt
       - id: terraform_validate
         files: ^terraform/
+        # edge declares a required provider alias (aws.use1, for the
+        # CloudFront/WAF resources that must live in us-east-1) that only
+        # resolves when a real root module supplies it - which
+        # environments/dev does. Validated standalone, as this hook does
+        # per-directory, there's no caller to supply it, so it always
+        # fails here regardless of whether the config is actually correct.
+        exclude: ^terraform/modules/edge/
       - id: terraform_tflint
         files: ^terraform/
       - id: terraform_checkov
@@ -35,7 +42,30 @@ repos:
           #   dev VPC that's ephemeral by design (ADR-012), not a compliance
           #   audit trail; paying to store a year of logs for an environment
           #   that gets torn down is wasted cost.
-          - --args=--skip-check=CKV_AWS_18,CKV_AWS_144,CKV_AWS_145,CKV2_AWS_62,CKV_AWS_382,CKV_AWS_126,CKV2_AWS_41,CKV_AWS_158,CKV_AWS_338,CKV_AWS_150,CKV_AWS_2,CKV2_AWS_20,CKV_AWS_103,CKV2_AWS_28,CKV_AWS_21,CKV_AWS_378
+          # CKV_AWS_305/CKV_AWS_310: CloudFront distribution - this is a pure
+          #   API front end with no static content to serve as a default
+          #   root object, and it has exactly one origin by design until M6
+          #   adds the S3 origin (ADR-010) - an origin failover group has
+          #   nothing to fail over to yet.
+          # CKV_AWS_374: geo restriction is deliberately "none" - this is a
+          #   public demo API, not something with a legal reason to block
+          #   countries.
+          # CKV_AWS_174/CKV2_AWS_42: the free *.cloudfront.net default
+          #   certificate is the whole point of ADR-011 (no custom domain,
+          #   free HTTPS with zero maintenance) - it is hard-locked to
+          #   TLSv1 as its minimum and cannot use a custom cert. Accepting
+          #   that floor is the ADR's actual trade-off, not an oversight.
+          # CKV2_AWS_47: checkov can't trace that web_acl_id points at a Web
+          #   ACL that already includes AWSManagedRulesKnownBadInputsRuleSet
+          #   (Log4j coverage) - verified directly in this file, the rule
+          #   group is there and the ACL is attached.
+          # CKV_AWS_86/CKV2_AWS_31: CloudFront access logging (legacy method)
+          #   requires enabling ACLs on the log bucket, which conflicts with
+          #   the ACL-disabled, policy-only bucket already standardized on
+          #   for cost/security consistency across this project; WAF's own
+          #   sampled requests (already on for every rule) give enough
+          #   visibility for a dev environment.
+          - --args=--skip-check=CKV_AWS_18,CKV_AWS_144,CKV_AWS_145,CKV2_AWS_62,CKV_AWS_382,CKV_AWS_126,CKV2_AWS_41,CKV_AWS_158,CKV_AWS_338,CKV_AWS_150,CKV_AWS_2,CKV2_AWS_20,CKV_AWS_103,CKV2_AWS_28,CKV_AWS_21,CKV_AWS_378,CKV_AWS_305,CKV_AWS_310,CKV_AWS_374,CKV_AWS_174,CKV2_AWS_42,CKV2_AWS_47,CKV_AWS_86,CKV2_AWS_31
       - id: terraform_docs
         args:
           - --hook-config=--path-to-file=README.md

@@ -287,3 +287,18 @@ resource "aws_flow_log" "main" {
     Name = "${var.environment}-vpc-flow-log"
   }
 }
+
+# db.cloudforge.internal (M5) and cache.cloudforge.internal (M6) get their
+# records added once those resources exist - this zone is built once,
+# correctly, ahead of that (ADR-013).
+resource "aws_route53_zone" "private" {
+  name = "cloudforge.internal"
+
+  vpc {
+    vpc_id = aws_vpc.main.id
+  }
+
+  tags = {
+    Name = "${var.environment}-cloudforge-private-zone"
+  }
+}

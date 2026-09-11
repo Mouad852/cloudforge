@@ -10,6 +10,20 @@ provider "aws" {
   }
 }
 
+provider "aws" {
+  alias  = "use1"
+  region = "us-east-1"
+
+  default_tags {
+    tags = {
+      Project     = "cloudforge"
+      managedBy   = "terraform"
+      Environment = "dev"
+    }
+  }
+}
+
+
 module "network" {
   source = "../../modules/network"
 
@@ -103,6 +117,11 @@ module "storage" {
 
 module "edge" {
   source = "../../modules/edge"
+
+  providers = {
+    aws      = aws
+    aws.use1 = aws.use1
+  }
 
   environment       = "dev"
   vpc_id            = module.network.vpc_id
