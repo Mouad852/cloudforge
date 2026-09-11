@@ -6,7 +6,7 @@ Versioned as Mermaid (renders natively on GitHub, diffs like text) so they live 
 |---|---|---|---|
 | High-level architecture | `architecture-high-level.md` | Planning | ✅ drafted from PLAN.md §5 |
 | Network / VPC | `network-vpc.md` | M1 | ✅ as-built (generated image, not Mermaid — see file) |
-| Traffic flow (CDN → ALB → ASG) | `traffic-flow.md` | M4 | not yet |
+| Traffic flow (CDN → ALB → ASG) | `traffic-flow.md` | M4 | ✅ as-built |
 | Security flow (WAF, security groups, IAM boundaries) | `security-flow.md` | M10 | not yet |
 | Data flow (cache-aside, S3 upload path) | `data-flow.md` | M6 | not yet |
 | DR / recovery flow | `dr-recovery-flow.md` | M11 | not yet |
