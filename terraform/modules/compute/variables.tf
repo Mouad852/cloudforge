@@ -75,3 +75,8 @@ variable "alb_security_group_id" {
   description = "ALB's security group ID (modules/edge) - the app SG allows inbound only from this, M4"
   type        = string
 }
+
+variable "data_tier_cidr_blocks" {
+  description = "Data-tier subnet CIDRs - the app SG's egress for RDS/Redis is scoped to these, not the whole VPC"
+  type        = list(string)
+}

@@ -49,6 +49,7 @@ No modules.
 | <a name="input_asg_desired_capacity"></a> [asg\_desired\_capacity](#input\_asg\_desired\_capacity) | ASG desired capacity | `number` | `2` | no |
 | <a name="input_asg_max_size"></a> [asg\_max\_size](#input\_asg\_max\_size) | ASG maximum size | `number` | `6` | no |
 | <a name="input_asg_min_size"></a> [asg\_min\_size](#input\_asg\_min\_size) | ASG minimum size | `number` | `2` | no |
+| <a name="input_data_tier_cidr_blocks"></a> [data\_tier\_cidr\_blocks](#input\_data\_tier\_cidr\_blocks) | Data-tier subnet CIDRs - the app SG's egress for RDS/Redis is scoped to these, not the whole VPC | `list(string)` | n/a | yes |
 | <a name="input_environment"></a> [environment](#input\_environment) | Environment name (dev or prod), used in resource naming/tags | `string` | n/a | yes |
 | <a name="input_images_bucket_name"></a> [images\_bucket\_name](#input\_images\_bucket\_name) | Name of the M6 images bucket. Not created yet - the IAM role is pre-scoped to this name so M6 needs no policy changes, only rewiring this variable to the real bucket once it exists. | `string` | n/a | yes |
 | <a name="input_instance_type"></a> [instance\_type](#input\_instance\_type) | EC2 instance type (Graviton/arm64, ADR-003) | `string` | `"t4g.micro"` | no |
@@ -57,5 +58,7 @@ No modules.
 
 ## Outputs
 
-No outputs.
+| Name | Description |
+| ---- | ----------- |
+| <a name="output_app_security_group_id"></a> [app\_security\_group\_id](#output\_app\_security\_group\_id) | App instances' security group ID - RDS/Redis security groups allow ingress from this only |
 <!-- END_TF_DOCS -->

@@ -121,6 +121,14 @@ resource "aws_security_group" "app" {
     cidr_blocks = ["0.0.0.0/0"]
   }
 
+  egress {
+    description = "PostgreSQL to the data tier only (M5) - Redis (M7) adds 6379 the same way"
+    from_port   = 5432
+    to_port     = 5432
+    protocol    = "tcp"
+    cidr_blocks = var.data_tier_cidr_blocks
+  }
+
   tags = {
     Name = "${var.environment}-cloudforge-app-sg"
   }

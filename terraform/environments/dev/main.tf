@@ -141,6 +141,7 @@ module "compute" {
   images_bucket_name    = "cloudforge-images-dev"
   alb_security_group_id = module.edge.alb_security_group_id
   target_group_arns     = [module.edge.blue_target_group_arn]
+  data_tier_cidr_blocks = ["10.0.21.0/24", "10.0.22.0/24"]
   # Deliberately t4g.small, not the module's t4g.micro default: eu-west-3a/3b
   # had no t4g.micro capacity when this was built, and this size has since
   # been proven end-to-end. Kept as the standing choice, not a pending revert.
