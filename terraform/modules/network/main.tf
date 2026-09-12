@@ -138,6 +138,12 @@ resource "aws_instance" "nat" {
 
   user_data = <<-EOF
         #!/bin/bash
+        # AL2023's "minimal" AMI variant doesn't ship iptables preinstalled -
+        # the standard variant does, but the AMI filter above matches both
+        # and most_recent has picked minimal before. Install explicitly so
+        # this works regardless of which variant lands next.
+        dnf install -y iptables
+
         echo "net.ipv4.ip_forward = 1" >> /etc/sysctl.conf
         sysctl -p
 

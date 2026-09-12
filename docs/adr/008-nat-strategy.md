@@ -64,3 +64,13 @@ in cloud-init/user-data does not survive a reboot unless something reapplies it 
 boot.** The `eth0`/`ens5` bug above and this one are the same class of mistake twice over —
 user-data is easy to treat as "runs once, done forever," and it very much does not mean that
 for anything living only in kernel state.
+
+## Known issue: the AMI filter matched AL2023's "minimal" variant, which has no `iptables`
+
+While building M5, both app instances and the throwaway `ssm_test` box lost SSM connectivity again, right around when an unrelated `terraform apply` (picking up newer AMIs, the same catalog-drift behavior noted elsewhere in this project) replaced the NAT instance. This time `nat-masquerade.service` failed outright on first boot — `systemctl status` showed the unit's control process exiting immediately, not a rule silently vanishing like the two issues above.
+
+Root cause: the data source's AMI filter (`al2023-ami-*-x86_64`) is a wildcard broad enough to match both AL2023's standard image and its `minimal` variant (`al2023-ami-minimal-<version>-x86_64`) — and this time `most_recent = true` picked the minimal one. The minimal variant doesn't ship `iptables` preinstalled, so the systemd unit's `ExecStart=/usr/sbin/iptables ...` had nothing to execute. Confirmed via `aws ec2 describe-images` on the instance's actual AMI ID, which came back named `al2023-ami-minimal-...`.
+
+**Fix:** added `dnf install -y iptables` to the user-data script, ahead of writing the systemd unit — makes the NAT instance's forwarding setup work regardless of which AL2023 variant the AMI filter happens to match next, rather than trying to make the filter itself variant-proof against AWS's naming changes over time.
+
+Same underlying lesson as the `eth0`/`ens5` bug: user-data that assumes a tool is already present is one AMI refresh away from silently not being true anymore. Three for three now on "the NAT instance's user-data assumed something that wasn't actually there" — worth treating that whole script as the single most fragile piece of this project's infrastructure, not a one-off annoyance.
