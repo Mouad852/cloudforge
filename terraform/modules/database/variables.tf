@@ -70,3 +70,15 @@ variable "private_zone_id" {
   description = "Route 53 private hosted zone ID (ADR-013) - the DNS record lives here"
   type        = string
 }
+
+variable "snapshot_identifier" {
+  description = "Restore from this snapshot instead of creating an empty DB - set to a final snapshot ID to bring data back after a dev-down (ADR-015)"
+  type        = string
+  default     = null
+}
+
+variable "apply_immediately" {
+  description = "Apply modifications right away instead of waiting for the next maintenance window - on in dev for fast iteration, should be off in prod to avoid mid-day disruption"
+  type        = bool
+  default     = true
+}

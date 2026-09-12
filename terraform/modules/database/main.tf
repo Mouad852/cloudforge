@@ -44,9 +44,13 @@ resource "aws_db_parameter_group" "main" {
     value = "1"
   }
 
+  # rds.force_ssl is a "static" RDS parameter - AWS always applies it as
+  # pending-reboot regardless of what's requested, so declaring it any
+  # other way here just creates a perpetual diff against real state.
   parameter {
-    name  = "rds.force_ssl"
-    value = "1"
+    name         = "rds.force_ssl"
+    value        = "1"
+    apply_method = "pending-reboot"
   }
 
   tags = {
@@ -76,12 +80,16 @@ resource "aws_db_instance" "main" {
   db_name                     = var.db_name
   username                    = var.master_username
   manage_master_user_password = true
+  # Restoring from a snapshot ignores db_name/username above (RDS inherits
+  # them from the snapshot itself) - null means create fresh (ADR-015).
+  snapshot_identifier = var.snapshot_identifier
 
   db_subnet_group_name   = aws_db_subnet_group.main.name
   vpc_security_group_ids = [aws_security_group.rds.id]
   parameter_group_name   = aws_db_parameter_group.main.name
 
   publicly_accessible = false
+  apply_immediately   = var.apply_immediately
 
   multi_az            = var.multi_az
   deletion_protection = var.deletion_protection

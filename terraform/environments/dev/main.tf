@@ -23,6 +23,11 @@ provider "aws" {
   }
 }
 
+variable "snapshot_identifier" {
+  description = "Restore dev-cloudforge-db from this snapshot instead of creating an empty one - set by `make dev-up` after a `make dev-down` (ADR-015)"
+  type        = string
+  default     = null
+}
 
 module "network" {
   source = "../../modules/network"
@@ -156,4 +161,5 @@ module "database" {
   data_subnet_ids       = [module.network.subnet_ids["data-a"], module.network.subnet_ids["data-b"]]
   app_security_group_id = module.compute.app_security_group_id
   private_zone_id       = module.network.private_zone_id
+  snapshot_identifier   = var.snapshot_identifier
 }

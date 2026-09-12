@@ -37,6 +37,7 @@ No modules.
 | ---- | ----------- | ---- | ------- | :------: |
 | <a name="input_allocated_storage"></a> [allocated\_storage](#input\_allocated\_storage) | Allocated storage in GB | `number` | `20` | no |
 | <a name="input_app_security_group_id"></a> [app\_security\_group\_id](#input\_app\_security\_group\_id) | App instances' security group ID - the only allowed ingress source | `string` | n/a | yes |
+| <a name="input_apply_immediately"></a> [apply\_immediately](#input\_apply\_immediately) | Apply modifications right away instead of waiting for the next maintenance window - on in dev for fast iteration, should be off in prod to avoid mid-day disruption | `bool` | `true` | no |
 | <a name="input_backup_retention_period"></a> [backup\_retention\_period](#input\_backup\_retention\_period) | Automated backup retention in days | `number` | `1` | no |
 | <a name="input_data_subnet_ids"></a> [data\_subnet\_ids](#input\_data\_subnet\_ids) | Data-tier subnet IDs (both AZs) for the DB subnet group | `list(string)` | n/a | yes |
 | <a name="input_db_name"></a> [db\_name](#input\_db\_name) | Initial database name | `string` | `"cloudstore"` | no |
@@ -47,6 +48,7 @@ No modules.
 | <a name="input_master_username"></a> [master\_username](#input\_master\_username) | Master username - the password itself is AWS-managed (ADR-009), never set here | `string` | `"cloudforge_admin"` | no |
 | <a name="input_multi_az"></a> [multi\_az](#input\_multi\_az) | Multi-AZ deployment - on in prod, off in dev | `bool` | `false` | no |
 | <a name="input_private_zone_id"></a> [private\_zone\_id](#input\_private\_zone\_id) | Route 53 private hosted zone ID (ADR-013) - the DNS record lives here | `string` | n/a | yes |
+| <a name="input_snapshot_identifier"></a> [snapshot\_identifier](#input\_snapshot\_identifier) | Restore from this snapshot instead of creating an empty DB - set to a final snapshot ID to bring data back after a dev-down (ADR-015) | `string` | `null` | no |
 | <a name="input_vpc_id"></a> [vpc\_id](#input\_vpc\_id) | VPC ID the RDS security group lives in | `string` | n/a | yes |
 
 ## Outputs
