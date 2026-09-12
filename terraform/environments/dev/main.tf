@@ -147,3 +147,13 @@ module "compute" {
   # been proven end-to-end. Kept as the standing choice, not a pending revert.
   instance_type = "t4g.small"
 }
+
+module "database" {
+  source = "../../modules/database"
+
+  environment           = "dev"
+  vpc_id                = module.network.vpc_id
+  data_subnet_ids       = [module.network.subnet_ids["data-a"], module.network.subnet_ids["data-b"]]
+  app_security_group_id = module.compute.app_security_group_id
+  private_zone_id       = module.network.private_zone_id
+}
