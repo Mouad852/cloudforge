@@ -65,7 +65,19 @@ repos:
           #   for cost/security consistency across this project; WAF's own
           #   sampled requests (already on for every rule) give enough
           #   visibility for a dev environment.
-          - --args=--skip-check=CKV_AWS_18,CKV_AWS_144,CKV_AWS_145,CKV2_AWS_62,CKV_AWS_382,CKV_AWS_126,CKV2_AWS_41,CKV_AWS_158,CKV_AWS_338,CKV_AWS_150,CKV_AWS_2,CKV2_AWS_20,CKV_AWS_103,CKV2_AWS_28,CKV_AWS_21,CKV_AWS_378,CKV_AWS_305,CKV_AWS_310,CKV_AWS_374,CKV_AWS_174,CKV2_AWS_42,CKV2_AWS_47,CKV_AWS_86,CKV2_AWS_31
+          # CKV_AWS_157/CKV_AWS_293: RDS Multi-AZ and deletion protection are
+          #   both deliberately environment-driven variables (PLAN.md M5) -
+          #   on in prod, off in dev so a throwaway dev DB can actually be
+          #   destroyed and doesn't pay for a standby replica it doesn't need.
+          # CKV_AWS_354: Performance Insights uses the default AWS-managed
+          #   key rather than a customer-managed KMS key - same cost-vs-
+          #   marginal-benefit call already made for CloudWatch Logs
+          #   elsewhere in this project (CKV_AWS_158), applied consistently.
+          # CKV_AWS_118: Enhanced Monitoring needs its own IAM role and adds
+          #   OS-level metrics on top of Performance Insights (already on,
+          #   CKV_AWS_353) - query-level visibility already covers what
+          #   this dev database actually needs to debug.
+          - --args=--skip-check=CKV_AWS_18,CKV_AWS_144,CKV_AWS_145,CKV2_AWS_62,CKV_AWS_382,CKV_AWS_126,CKV2_AWS_41,CKV_AWS_158,CKV_AWS_338,CKV_AWS_150,CKV_AWS_2,CKV2_AWS_20,CKV_AWS_103,CKV2_AWS_28,CKV_AWS_21,CKV_AWS_378,CKV_AWS_305,CKV_AWS_310,CKV_AWS_374,CKV_AWS_174,CKV2_AWS_42,CKV2_AWS_47,CKV_AWS_86,CKV2_AWS_31,CKV_AWS_157,CKV_AWS_293,CKV_AWS_354,CKV_AWS_118
       - id: terraform_docs
         args:
           - --hook-config=--path-to-file=README.md
