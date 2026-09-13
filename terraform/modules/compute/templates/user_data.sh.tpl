@@ -31,6 +31,9 @@ KillSignal=SIGTERM
 Environment=PORT=${app_port}
 Environment=AWS_REGION=${aws_region}
 Environment=DB_SECRET_ARN=${db_secret_arn}
+Environment=REDIS_ADDR=${redis_addr}
+Environment=REDIS_AUTH_SECRET_ARN=${redis_secret_arn}
+Environment=REDIS_TLS_SERVER_NAME=${redis_tls_server_name}
 StandardOutput=append:/var/log/cloudforge/app.log
 StandardError=append:/var/log/cloudforge/app.log
 

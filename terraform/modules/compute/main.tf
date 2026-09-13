@@ -194,12 +194,15 @@ resource "aws_launch_template" "app" {
   }
 
   user_data = base64encode(templatefile("${path.module}/templates/user_data.sh.tpl", {
-    artifacts_bucket = var.artifacts_bucket_name
-    artifact_key     = var.artifact_key
-    aws_region       = data.aws_region.current.name
-    app_port         = var.app_port
-    log_group_name   = local.log_group_name
-    db_secret_arn    = var.db_secret_arn
+    artifacts_bucket      = var.artifacts_bucket_name
+    artifact_key          = var.artifact_key
+    aws_region            = data.aws_region.current.name
+    app_port              = var.app_port
+    log_group_name        = local.log_group_name
+    db_secret_arn         = var.db_secret_arn
+    redis_addr            = var.redis_addr
+    redis_secret_arn      = var.redis_secret_arn
+    redis_tls_server_name = var.redis_tls_server_name
   }))
 
   tag_specifications {

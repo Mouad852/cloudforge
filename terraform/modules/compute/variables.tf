@@ -86,3 +86,21 @@ variable "db_secret_arn" {
   type        = string
   default     = ""
 }
+
+variable "redis_addr" {
+  description = "Redis host:port app instances connect to (M6)"
+  type        = string
+  default     = "cache.cloudforge.internal:6379"
+}
+
+variable "redis_secret_arn" {
+  description = "Secrets Manager ARN for the Redis AUTH token (M6) - empty string means no cache configured yet"
+  type        = string
+  default     = ""
+}
+
+variable "redis_tls_server_name" {
+  description = "Real ElastiCache hostname for TLS certificate verification (M6) - differs from redis_addr, which is our own Route 53 CNAME (ADR-013); empty string means no cache configured yet"
+  type        = string
+  default     = ""
+}
