@@ -1,8 +1,9 @@
-# Only the artifacts bucket lives here for now. M3's compute layer needs
+# Only the artifacts bucket lived here until M6. M3's compute layer needs
 # somewhere to pull the app binary from (ADR-004) before it can boot at all,
-# so this can't wait for M6. The images and logs buckets are M6 scope and
-# will be added to this same module rather than a new one - all three are
-# the same "storage" concern, and will reuse this same bucket_suffix.
+# so it couldn't wait. The "logs" bucket this module's repo-structure comment
+# once anticipated turned out to already be covered by modules/edge's
+# alb_logs bucket (M4) - no separate one is added here. Images (below) reuses
+# this same bucket_suffix, as originally planned.
 
 resource "random_id" "bucket_suffix" {
   byte_length = 4
@@ -83,4 +84,43 @@ resource "aws_s3_bucket_policy" "artifacts" {
       }
     }]
   })
+}
+
+# No aws_s3_bucket_policy resource here for images, unlike artifacts above -
+# the policy needs the CloudFront distribution's ARN (for the OAC condition),
+# and that distribution is built in modules/edge, not here. Rather than have
+# two separate aws_s3_bucket_policy resources fight over the same bucket
+# (S3 buckets have exactly one policy document), modules/edge owns the whole
+# policy for this bucket - both the CloudFront-allow statement AND the
+# TLS-deny statement duplicated from above. See modules/edge/main.tf.
+resource "aws_s3_bucket" "images" {
+  bucket        = "cloudforge-images-${var.environment}-${random_id.bucket_suffix.hex}"
+  force_destroy = var.environment == "dev"
+}
+
+resource "aws_s3_bucket_versioning" "images" {
+  bucket = aws_s3_bucket.images.id
+
+  versioning_configuration {
+    status = "Enabled"
+  }
+}
+
+resource "aws_s3_bucket_server_side_encryption_configuration" "images" {
+  bucket = aws_s3_bucket.images.id
+
+  rule {
+    apply_server_side_encryption_by_default {
+      sse_algorithm = "AES256"
+    }
+  }
+}
+
+resource "aws_s3_bucket_public_access_block" "images" {
+  bucket = aws_s3_bucket.images.id
+
+  block_public_acls       = true
+  block_public_policy     = true
+  ignore_public_acls      = true
+  restrict_public_buckets = true
 }

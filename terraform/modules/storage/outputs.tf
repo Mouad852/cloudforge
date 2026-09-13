@@ -7,3 +7,18 @@ output "artifacts_bucket_arn" {
   description = "ARN of the deploy-artifacts bucket"
   value       = aws_s3_bucket.artifacts.arn
 }
+
+output "images_bucket_id" {
+  description = "Name/ID of the CDN images bucket (M6)"
+  value       = aws_s3_bucket.images.id
+}
+
+output "images_bucket_arn" {
+  description = "ARN of the CDN images bucket (M6)"
+  value       = aws_s3_bucket.images.arn
+}
+
+output "images_bucket_regional_domain_name" {
+  description = "Regional domain name of the images bucket - CloudFront's OAC origin (M6)"
+  value       = aws_s3_bucket.images.bucket_regional_domain_name
+}
