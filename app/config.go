@@ -2,7 +2,9 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
+	"net/url"
 	"os"
 	"time"
 
@@ -34,11 +36,20 @@ func loadConfig(ctx context.Context) (config, error) {
 	}
 
 	if arn := os.Getenv("DB_SECRET_ARN"); arn != "" {
-		dsn, err := fetchDBSecret(ctx, cfg.AWSRegion, arn)
+		username, password, err := fetchDBSecret(ctx, cfg.AWSRegion, arn)
 		if err != nil {
 			return cfg, fmt.Errorf("fetching DB secret %s: %w", arn, err)
 		}
-		cfg.DatabaseURL = dsn
+		dbHost := envOr("DB_HOST", "db.cloudforge.internal")
+		dbName := envOr("DB_NAME", "cloudstore")
+		dsn := url.URL{
+			Scheme:   "postgres",
+			User:     url.UserPassword(username, password),
+			Host:     fmt.Sprintf("%s:5432", dbHost),
+			Path:     "/" + dbName,
+			RawQuery: "sslmode=require",
+		}
+		cfg.DatabaseURL = dsn.String()
 	} else {
 		cfg.DatabaseURL = envOr("DATABASE_URL", "postgres://cloudforge:cloudforge@localhost:5433/cloudforge?sslmode=disable")
 	}
@@ -53,20 +64,32 @@ func envOr(key, fallback string) string {
 	return fallback
 }
 
-// fetchDBSecret reads a Postgres DSN out of Secrets Manager. Only used in
+// fetchDBSecret reads the AWS-managed master-user credentials out of
+// Secrets Manager (ADR-009). The secret itself is just {"username",
+// "password"} - RDS doesn't include host/port/dbname in it, so those come
+// from DB_HOST/DB_NAME (or their defaults, matching ADR-013's private zone
+// and the database module's db_name) to build the actual DSN. Only used in
 // deployed environments (DB_SECRET_ARN set) — local dev passes DATABASE_URL
 // directly, since there's no Secrets Manager to talk to.
-func fetchDBSecret(ctx context.Context, region, arn string) (string, error) {
+func fetchDBSecret(ctx context.Context, region, arn string) (username, password string, err error) {
 	awsCfg, err := awsconfig.LoadDefaultConfig(ctx, awsconfig.WithRegion(region))
 	if err != nil {
-		return "", err
+		return "", "", err
 	}
 	client := secretsmanager.NewFromConfig(awsCfg)
 	out, err := client.GetSecretValue(ctx, &secretsmanager.GetSecretValueInput{
 		SecretId: aws.String(arn),
 	})
 	if err != nil {
-		return "", err
+		return "", "", err
 	}
-	return aws.ToString(out.SecretString), nil
+
+	var secret struct {
+		Username string `json:"username"`
+		Password string `json:"password"`
+	}
+	if err := json.Unmarshal([]byte(aws.ToString(out.SecretString)), &secret); err != nil {
+		return "", "", fmt.Errorf("parsing secret JSON: %w", err)
+	}
+	return secret.Username, secret.Password, nil
 }
