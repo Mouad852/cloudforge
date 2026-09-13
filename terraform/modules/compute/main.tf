@@ -120,11 +120,18 @@ resource "aws_security_group" "app" {
     protocol    = "tcp"
     cidr_blocks = ["0.0.0.0/0"]
   }
-
   egress {
-    description = "PostgreSQL to the data tier only (M5) - Redis (M7) adds 6379 the same way"
+    description = "PostgreSQL to the data tier only (M5)"
     from_port   = 5432
     to_port     = 5432
+    protocol    = "tcp"
+    cidr_blocks = var.data_tier_cidr_blocks
+  }
+
+  egress {
+    description = "Redis to the data tier only (M6)"
+    from_port   = 6379
+    to_port     = 6379
     protocol    = "tcp"
     cidr_blocks = var.data_tier_cidr_blocks
   }
