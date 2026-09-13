@@ -45,7 +45,7 @@ func main() {
 
 	s := &server{
 		store:   st,
-		cache:   newCache(cfg.RedisAddr, log),
+		cache:   newCache(cfg.RedisAddr, cfg.RedisAuthToken, cfg.RedisTLS, cfg.RedisTLSServerName, log),
 		objects: objects,
 		log:     log,
 	}

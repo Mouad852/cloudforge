@@ -31,7 +31,7 @@ func newTestServer(t *testing.T) *server {
 	log := newTestLogger()
 	return &server{
 		store: st,
-		cache: newCache(envOr("REDIS_ADDR", "localhost:6379"), log),
+		cache: newCache(envOr("REDIS_ADDR", "localhost:6379"), "", false, "", log),
 		log:   log,
 	}
 }

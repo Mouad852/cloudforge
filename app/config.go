@@ -16,13 +16,16 @@ import (
 // config holds everything read at boot. No config is re-read at runtime —
 // a restart is the deploy mechanism (see M3's ASG instance refresh).
 type config struct {
-	Port         string
-	DatabaseURL  string
-	RedisAddr    string
-	S3Bucket     string
-	S3Endpoint   string // set for LocalStack; empty in AWS, where the SDK resolves the real endpoint
-	AWSRegion    string
-	DrainTimeout time.Duration
+	Port               string
+	DatabaseURL        string
+	RedisAddr          string
+	RedisAuthToken     string
+	RedisTLS           bool
+	RedisTLSServerName string
+	S3Bucket           string
+	S3Endpoint         string // set for LocalStack; empty in AWS, where the SDK resolves the real endpoint
+	AWSRegion          string
+	DrainTimeout       time.Duration
 }
 
 func loadConfig(ctx context.Context) (config, error) {
@@ -52,6 +55,20 @@ func loadConfig(ctx context.Context) (config, error) {
 		cfg.DatabaseURL = dsn.String()
 	} else {
 		cfg.DatabaseURL = envOr("DATABASE_URL", "postgres://cloudforge:cloudforge@localhost:5433/cloudforge?sslmode=disable")
+	}
+
+	if arn := os.Getenv("REDIS_AUTH_SECRET_ARN"); arn != "" {
+		token, err := fetchRedisSecret(ctx, cfg.AWSRegion, arn)
+		if err != nil {
+			return cfg, fmt.Errorf("fetching Redis AUTH secret %s: %w", arn, err)
+		}
+		cfg.RedisAuthToken = token
+		cfg.RedisTLS = true
+		// ElastiCache's certificate is issued for its own generated hostname,
+		// not our cache.cloudforge.internal CNAME (ADR-013) - TLS hostname
+		// verification needs the real name even though we still dial the
+		// friendly one via RedisAddr.
+		cfg.RedisTLSServerName = os.Getenv("REDIS_TLS_SERVER_NAME")
 	}
 
 	return cfg, nil
@@ -92,4 +109,30 @@ func fetchDBSecret(ctx context.Context, region, arn string) (username, password 
 		return "", "", fmt.Errorf("parsing secret JSON: %w", err)
 	}
 	return secret.Username, secret.Password, nil
+}
+
+// fetchRedisSecret reads the ElastiCache AUTH token out of Secrets Manager
+// (M6). Unlike the RDS-managed secret above, this shape ({"auth_token":
+// "..."}) isn't AWS-imposed - modules/cache creates it, so we chose the
+// field name ourselves.
+func fetchRedisSecret(ctx context.Context, region, arn string) (authToken string, err error) {
+	awsCfg, err := awsconfig.LoadDefaultConfig(ctx, awsconfig.WithRegion(region))
+	if err != nil {
+		return "", err
+	}
+	client := secretsmanager.NewFromConfig(awsCfg)
+	out, err := client.GetSecretValue(ctx, &secretsmanager.GetSecretValueInput{
+		SecretId: aws.String(arn),
+	})
+	if err != nil {
+		return "", err
+	}
+
+	var secret struct {
+		AuthToken string `json:"auth_token"`
+	}
+	if err := json.Unmarshal([]byte(aws.ToString(out.SecretString)), &secret); err != nil {
+		return "", fmt.Errorf("parsing secret JSON: %w", err)
+	}
+	return secret.AuthToken, nil
 }

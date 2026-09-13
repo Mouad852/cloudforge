@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"crypto/tls"
 	"log/slog"
 	"time"
 
@@ -15,9 +16,33 @@ type cache struct {
 	log *slog.Logger
 }
 
-func newCache(addr string, log *slog.Logger) *cache {
+// newCache connects to Redis directly (empty authToken, useTLS=false) for
+// local dev's unauthenticated docker-compose instance, or with the
+// ElastiCache AUTH token and TLS enabled in deployed environments (M6) -
+// transit_encryption_enabled on the replication group requires TLS, the
+// plain redis:// protocol is refused.
+//
+// tlsServerName is deliberately separate from addr: addr is our own Route 53
+// private-zone CNAME (cache.cloudforge.internal, ADR-013 - keeps app config
+// decoupled from AWS-generated hostnames), but ElastiCache's certificate is
+// issued for its own generated hostname, not our CNAME. Go's TLS client
+// verifies the certificate against whatever hostname it's told to expect
+// (ServerName), which defaults to addr's host if left unset - so without
+// this, every connection attempt fails hostname verification. Dialing one
+// name while verifying against another is exactly what ServerName is for.
+func newCache(addr, authToken string, useTLS bool, tlsServerName string, log *slog.Logger) *cache {
+	opts := &redis.Options{
+		Addr:     addr,
+		Password: authToken,
+	}
+	if useTLS {
+		opts.TLSConfig = &tls.Config{
+			MinVersion: tls.VersionTLS12,
+			ServerName: tlsServerName,
+		}
+	}
 	return &cache{
-		rdb: redis.NewClient(&redis.Options{Addr: addr}),
+		rdb: redis.NewClient(opts),
 		log: log,
 	}
 }
