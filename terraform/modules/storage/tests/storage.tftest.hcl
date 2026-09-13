@@ -9,6 +9,14 @@ variables {
 run "bucket_naming_and_lockdown" {
   command = plan
 
+  override_resource {
+    target          = random_id.bucket_suffix
+    override_during = plan
+    values = {
+      hex = "00000000"
+    }
+  }
+
   assert {
     condition     = startswith(aws_s3_bucket.artifacts.bucket, "cloudforge-artifacts-test-")
     error_message = "Artifacts bucket name must follow the cloudforge-artifacts-<environment>-<suffix> convention"
