@@ -47,6 +47,9 @@
 | Name | Description |
 | ---- | ----------- |
 | <a name="output_alb_dns_name"></a> [alb\_dns\_name](#output\_alb\_dns\_name) | n/a |
+| <a name="output_cloudfront_domain_name"></a> [cloudfront\_domain\_name](#output\_cloudfront\_domain\_name) | n/a |
+| <a name="output_images_bucket_name"></a> [images\_bucket\_name](#output\_images\_bucket\_name) | n/a |
+| <a name="output_redis_primary_endpoint"></a> [redis\_primary\_endpoint](#output\_redis\_primary\_endpoint) | n/a |
 | <a name="output_subnet_ids"></a> [subnet\_ids](#output\_subnet\_ids) | n/a |
 | <a name="output_vpc_id"></a> [vpc\_id](#output\_vpc\_id) | n/a |
 <!-- END_TF_DOCS -->
