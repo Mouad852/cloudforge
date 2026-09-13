@@ -30,3 +30,13 @@ Proven end-to-end in M1: `dev-ssm-test-instance` sits in the `app-a` private sub
 - Every session is attributable and audited via CloudTrail, unlike a shared bastion key where "who connected" is much harder to answer.
 - No instance in this project needs a public IP purely to be reachable for administration — reachability for ops access and reachability from the internet are now fully decoupled.
 - The trade-off: Session Manager depends on the SSM agent successfully reaching AWS's SSM endpoints. For a private-subnet instance, that means it inherits whatever is true of the NAT path at the time — when the NAT instance's forwarding rule was broken (see the known issue in ADR-008), this instance's SSM connectivity broke right along with it. A bastion with direct routing wouldn't have shared that specific failure mode, though it would have its own.
+
+## Known issue: the app instances' AMI shipped with no SSM agent at all
+
+While testing the M5 snapshot round trip (ADR-015), the ASG's replacement instances came up healthy at the target group (the app itself was serving traffic fine) but never appeared in Session Manager, no matter how long I waited — not "slow to register," genuinely never registering.
+
+Root cause: the same class of bug ADR-008 documents twice for the NAT instance. `compute`'s AMI data source filter (`al2023-ami-*-arm64`) matches both AL2023's standard and "minimal" image variants, and `most_recent` picked the minimal one this time (`al2023-ami-minimal-2023.12.20260909.0-...-arm64`). Unlike the standard variant, minimal doesn't ship the SSM agent preinstalled — so there was never an agent to register, regardless of how correct the networking, IAM role, or security groups were. Everything I checked (route tables, NAT masquerade, the app SG's egress rules, the IAM instance profile) was fine, which is exactly what made this one worth tracking down carefully rather than assuming a transient blip.
+
+**Fix:** added `dnf install -y amazon-ssm-agent` plus `systemctl enable --now amazon-ssm-agent` to the app instances' `user_data`, ahead of everything else — installs and starts the agent explicitly regardless of which AMI variant the filter happens to match. Since `user_data` only runs on an instance's first boot, fixing this for already-running instances required an actual ASG instance refresh, not just updating the launch template.
+
+This is the third time this exact bug shape has appeared in this project (NAT's missing `iptables`, ADR-008; now this) — worth treating "the AMI filter can silently hand back the minimal variant" as a standing risk on every module that provisions an AL2023 instance, not a one-off surprise.

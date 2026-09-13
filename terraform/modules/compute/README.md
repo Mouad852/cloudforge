@@ -50,6 +50,7 @@ No modules.
 | <a name="input_asg_max_size"></a> [asg\_max\_size](#input\_asg\_max\_size) | ASG maximum size | `number` | `6` | no |
 | <a name="input_asg_min_size"></a> [asg\_min\_size](#input\_asg\_min\_size) | ASG minimum size | `number` | `2` | no |
 | <a name="input_data_tier_cidr_blocks"></a> [data\_tier\_cidr\_blocks](#input\_data\_tier\_cidr\_blocks) | Data-tier subnet CIDRs - the app SG's egress for RDS/Redis is scoped to these, not the whole VPC | `list(string)` | n/a | yes |
+| <a name="input_db_secret_arn"></a> [db\_secret\_arn](#input\_db\_secret\_arn) | Secrets Manager ARN for the RDS master password (ADR-009) - empty string means no database configured yet | `string` | `""` | no |
 | <a name="input_environment"></a> [environment](#input\_environment) | Environment name (dev or prod), used in resource naming/tags | `string` | n/a | yes |
 | <a name="input_images_bucket_name"></a> [images\_bucket\_name](#input\_images\_bucket\_name) | Name of the M6 images bucket. Not created yet - the IAM role is pre-scoped to this name so M6 needs no policy changes, only rewiring this variable to the real bucket once it exists. | `string` | n/a | yes |
 | <a name="input_instance_type"></a> [instance\_type](#input\_instance\_type) | EC2 instance type (Graviton/arm64, ADR-003) | `string` | `"t4g.micro"` | no |

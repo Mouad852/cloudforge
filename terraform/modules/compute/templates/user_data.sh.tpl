@@ -3,6 +3,14 @@ set -euo pipefail
 
 mkdir -p /opt/cloudforge /var/log/cloudforge
 
+# AL2023's "minimal" AMI variant doesn't ship the SSM agent preinstalled -
+# the standard variant does, but the AMI filter matches both and
+# most_recent has picked minimal before (same class of issue as the NAT
+# instance's missing iptables, ADR-008). Install explicitly so instance
+# management works regardless of which variant lands.
+dnf install -y amazon-ssm-agent
+systemctl enable --now amazon-ssm-agent
+
 dnf install -y amazon-cloudwatch-agent
 
 aws s3 cp "s3://${artifacts_bucket}/${artifact_key}" /opt/cloudforge/cloudstore-api
@@ -22,6 +30,7 @@ TimeoutStopSec=40
 KillSignal=SIGTERM
 Environment=PORT=${app_port}
 Environment=AWS_REGION=${aws_region}
+Environment=DB_SECRET_ARN=${db_secret_arn}
 StandardOutput=append:/var/log/cloudforge/app.log
 StandardError=append:/var/log/cloudforge/app.log
 

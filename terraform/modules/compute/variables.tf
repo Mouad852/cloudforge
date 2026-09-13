@@ -80,3 +80,9 @@ variable "data_tier_cidr_blocks" {
   description = "Data-tier subnet CIDRs - the app SG's egress for RDS/Redis is scoped to these, not the whole VPC"
   type        = list(string)
 }
+
+variable "db_secret_arn" {
+  description = "Secrets Manager ARN for the RDS master password (ADR-009) - empty string means no database configured yet"
+  type        = string
+  default     = ""
+}

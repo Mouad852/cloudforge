@@ -192,6 +192,7 @@ resource "aws_launch_template" "app" {
     aws_region       = data.aws_region.current.name
     app_port         = var.app_port
     log_group_name   = local.log_group_name
+    db_secret_arn    = var.db_secret_arn
   }))
 
   tag_specifications {
@@ -226,6 +227,7 @@ resource "aws_autoscaling_group" "app" {
 
   instance_refresh {
     strategy = "Rolling"
+    triggers = ["launch_template"]
 
     preferences {
       min_healthy_percentage = 100
