@@ -128,11 +128,14 @@ module "edge" {
     aws.use1 = aws.use1
   }
 
-  environment       = "dev"
-  vpc_id            = module.network.vpc_id
-  vpc_cidr          = module.network.vpc_cidr
-  public_subnet_ids = [module.network.subnet_ids["public-a"], module.network.subnet_ids["public-b"]]
-  app_port          = 8080
+  environment                        = "dev"
+  vpc_id                             = module.network.vpc_id
+  vpc_cidr                           = module.network.vpc_cidr
+  public_subnet_ids                  = [module.network.subnet_ids["public-a"], module.network.subnet_ids["public-b"]]
+  app_port                           = 8080
+  images_bucket_id                   = module.storage.images_bucket_id
+  images_bucket_arn                  = module.storage.images_bucket_arn
+  images_bucket_regional_domain_name = module.storage.images_bucket_regional_domain_name
 }
 
 module "compute" {
@@ -143,7 +146,7 @@ module "compute" {
   app_subnet_ids        = [module.network.subnet_ids["app-a"], module.network.subnet_ids["app-b"]]
   artifacts_bucket_arn  = module.storage.artifacts_bucket_arn
   artifacts_bucket_name = module.storage.artifacts_bucket_name
-  images_bucket_name    = "cloudforge-images-dev"
+  images_bucket_name    = module.storage.images_bucket_id
   alb_security_group_id = module.edge.alb_security_group_id
   target_group_arns     = [module.edge.blue_target_group_arn]
   data_tier_cidr_blocks = ["10.0.21.0/24", "10.0.22.0/24"]
@@ -151,7 +154,19 @@ module "compute" {
   # Deliberately t4g.small, not the module's t4g.micro default: eu-west-3a/3b
   # had no t4g.micro capacity when this was built, and this size has since
   # been proven end-to-end. Kept as the standing choice, not a pending revert.
-  instance_type = "t4g.small"
+  instance_type         = "t4g.small"
+  redis_secret_arn      = module.cache.auth_secret_arn
+  redis_tls_server_name = module.cache.redis_primary_endpoint
+}
+
+module "cache" {
+  source = "../../modules/cache"
+
+  environment           = "dev"
+  vpc_id                = module.network.vpc_id
+  data_subnet_ids       = [module.network.subnet_ids["data-a"], module.network.subnet_ids["data-b"]]
+  app_security_group_id = module.compute.app_security_group_id
+  private_zone_id       = module.network.private_zone_id
 }
 
 module "database" {

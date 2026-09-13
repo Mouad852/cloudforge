@@ -18,6 +18,7 @@
 
 | Name | Source | Version |
 | ---- | ------ | ------- |
+| <a name="module_cache"></a> [cache](#module\_cache) | ../../modules/cache | n/a |
 | <a name="module_compute"></a> [compute](#module\_compute) | ../../modules/compute | n/a |
 | <a name="module_database"></a> [database](#module\_database) | ../../modules/database | n/a |
 | <a name="module_edge"></a> [edge](#module\_edge) | ../../modules/edge | n/a |
