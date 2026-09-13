@@ -35,3 +35,18 @@ variable "origin_secret_header_name" {
   type        = string
   default     = "X-Origin-Verify"
 }
+
+variable "images_bucket_id" {
+  description = "S3 images bucket name (modules/storage) - the OAC bucket policy target, M6"
+  type        = string
+}
+
+variable "images_bucket_arn" {
+  description = "S3 images bucket ARN (modules/storage) - used in the OAC bucket policy, M6"
+  type        = string
+}
+
+variable "images_bucket_regional_domain_name" {
+  description = "S3 images bucket regional domain name (modules/storage) - CloudFront's /images/* origin, M6"
+  type        = string
+}

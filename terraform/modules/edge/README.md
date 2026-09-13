@@ -26,6 +26,7 @@ No modules.
 | Name | Type |
 | ---- | ---- |
 | [aws_cloudfront_distribution.app](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/cloudfront_distribution) | resource |
+| [aws_cloudfront_origin_access_control.images](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/cloudfront_origin_access_control) | resource |
 | [aws_cloudfront_response_headers_policy.security_headers](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/cloudfront_response_headers_policy) | resource |
 | [aws_lb.app](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/lb) | resource |
 | [aws_lb_listener.http](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/lb_listener) | resource |
@@ -35,6 +36,7 @@ No modules.
 | [aws_s3_bucket.alb_logs](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/s3_bucket) | resource |
 | [aws_s3_bucket_lifecycle_configuration.alb_logs](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/s3_bucket_lifecycle_configuration) | resource |
 | [aws_s3_bucket_policy.alb_logs](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/s3_bucket_policy) | resource |
+| [aws_s3_bucket_policy.images](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/s3_bucket_policy) | resource |
 | [aws_s3_bucket_public_access_block.alb_logs](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/s3_bucket_public_access_block) | resource |
 | [aws_s3_bucket_server_side_encryption_configuration.alb_logs](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/s3_bucket_server_side_encryption_configuration) | resource |
 | [aws_security_group.alb](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/security_group) | resource |
@@ -51,6 +53,9 @@ No modules.
 | <a name="input_app_port"></a> [app\_port](#input\_app\_port) | Port the app instances listen on | `number` | `8080` | no |
 | <a name="input_environment"></a> [environment](#input\_environment) | Environment name (dev or prod), used in resource naming/tags | `string` | n/a | yes |
 | <a name="input_health_check_path"></a> [health\_check\_path](#input\_health\_check\_path) | Shallow health check path the app exposes | `string` | `"/healthz"` | no |
+| <a name="input_images_bucket_arn"></a> [images\_bucket\_arn](#input\_images\_bucket\_arn) | S3 images bucket ARN (modules/storage) - used in the OAC bucket policy, M6 | `string` | n/a | yes |
+| <a name="input_images_bucket_id"></a> [images\_bucket\_id](#input\_images\_bucket\_id) | S3 images bucket name (modules/storage) - the OAC bucket policy target, M6 | `string` | n/a | yes |
+| <a name="input_images_bucket_regional_domain_name"></a> [images\_bucket\_regional\_domain\_name](#input\_images\_bucket\_regional\_domain\_name) | S3 images bucket regional domain name (modules/storage) - CloudFront's /images/* origin, M6 | `string` | n/a | yes |
 | <a name="input_origin_secret_header_name"></a> [origin\_secret\_header\_name](#input\_origin\_secret\_header\_name) | Header name CloudFront injects and the ALB listener checks for - the real authorization boundary, ADR-014 | `string` | `"X-Origin-Verify"` | no |
 | <a name="input_public_subnet_ids"></a> [public\_subnet\_ids](#input\_public\_subnet\_ids) | Public-tier subnet IDs (both AZs) the ALB is deployed into | `list(string)` | n/a | yes |
 | <a name="input_vpc_cidr"></a> [vpc\_cidr](#input\_vpc\_cidr) | VPC CIDR block - scopes the ALB's egress to app instances instead of 0.0.0.0/0 | `string` | n/a | yes |

@@ -356,8 +356,15 @@ resource "aws_cloudfront_response_headers_policy" "security_headers" {
   }
 }
 
-# Second origin (S3, /images/*) is added in M6 once the images bucket
-# exists - this behavior is written to be extended, not replaced (ADR-010).
+resource "aws_cloudfront_origin_access_control" "images" {
+  name                              = "${var.environment}-cloudforge-images-oac"
+  origin_access_control_origin_type = "s3"
+  signing_behavior                  = "always"
+  signing_protocol                  = "sigv4"
+}
+
+# Two origins, two cache policies (ADR-010): alb for /api/* (CachingDisabled),
+# images-s3 for /images/* (CachingOptimized) below.
 resource "aws_cloudfront_distribution" "app" {
   enabled         = true
   is_ipv6_enabled = true
@@ -382,6 +389,12 @@ resource "aws_cloudfront_distribution" "app" {
     }
   }
 
+  origin {
+    domain_name              = var.images_bucket_regional_domain_name
+    origin_id                = "images-s3"
+    origin_access_control_id = aws_cloudfront_origin_access_control.images.id
+  }
+
   default_cache_behavior {
     allowed_methods            = ["GET", "HEAD", "OPTIONS", "PUT", "POST", "PATCH", "DELETE"]
     cached_methods             = ["GET", "HEAD"]
@@ -403,6 +416,17 @@ resource "aws_cloudfront_distribution" "app" {
     compress                   = true
   }
 
+  ordered_cache_behavior {
+    path_pattern               = "/images/*"
+    allowed_methods            = ["GET", "HEAD", "OPTIONS"]
+    cached_methods             = ["GET", "HEAD"]
+    target_origin_id           = "images-s3"
+    viewer_protocol_policy     = "redirect-to-https"
+    cache_policy_id            = "658327ea-f89d-4fab-a63d-7e88639e58f6" # AWS managed "CachingOptimized"
+    response_headers_policy_id = aws_cloudfront_response_headers_policy.security_headers.id
+    compress                   = true
+  }
+
   restrictions {
     geo_restriction {
       restriction_type = "none"
@@ -416,4 +440,44 @@ resource "aws_cloudfront_distribution" "app" {
   tags = {
     Name = "${var.environment}-cloudforge-cdn"
   }
+}
+
+# Owns the images bucket's entire policy (not just the CloudFront-allow half)
+# because a bucket can only have one aws_s3_bucket_policy resource, and this
+# one needs the distribution's ARN for the OAC condition - modules/storage
+# can't reference that without a circular module dependency. The TLS-deny
+# statement is duplicated from modules/storage's artifacts bucket policy.
+resource "aws_s3_bucket_policy" "images" {
+  bucket = var.images_bucket_id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Sid       = "DenyInsecureTransport"
+        Effect    = "Deny"
+        Principal = "*"
+        Action    = "s3:*"
+        Resource = [
+          var.images_bucket_arn,
+          "${var.images_bucket_arn}/*",
+        ]
+        Condition = {
+          Bool = { "aws:SecureTransport" = "false" }
+        }
+      },
+      {
+        Sid       = "AllowCloudFrontOAC"
+        Effect    = "Allow"
+        Principal = { Service = "cloudfront.amazonaws.com" }
+        Action    = "s3:GetObject"
+        Resource  = "${var.images_bucket_arn}/*"
+        Condition = {
+          StringEquals = {
+            "AWS:SourceArn" = aws_cloudfront_distribution.app.arn
+          }
+        }
+      },
+    ]
+  })
 }
