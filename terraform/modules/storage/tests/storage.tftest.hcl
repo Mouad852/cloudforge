@@ -37,3 +37,35 @@ run "bucket_naming_and_lockdown" {
     error_message = "Artifacts bucket must block all public access"
   }
 }
+
+run "images_bucket_naming_and_lockdown" {
+  command = plan
+
+  override_resource {
+    target          = random_id.bucket_suffix
+    override_during = plan
+    values = {
+      hex = "00000000"
+    }
+  }
+
+  assert {
+    condition     = startswith(aws_s3_bucket.images.bucket, "cloudforge-images-test-")
+    error_message = "Images bucket name must follow the cloudforge-images-<environment>-<suffix> convention"
+  }
+
+  assert {
+    condition     = aws_s3_bucket_versioning.images.versioning_configuration[0].status == "Enabled"
+    error_message = "Images bucket must be versioned"
+  }
+
+  assert {
+    condition = (
+      aws_s3_bucket_public_access_block.images.block_public_acls &&
+      aws_s3_bucket_public_access_block.images.block_public_policy &&
+      aws_s3_bucket_public_access_block.images.ignore_public_acls &&
+      aws_s3_bucket_public_access_block.images.restrict_public_buckets
+    )
+    error_message = "Images bucket must block all public access"
+  }
+}
