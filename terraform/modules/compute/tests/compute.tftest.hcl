@@ -1,14 +1,15 @@
 provider "aws" {
   region = "eu-west-3"
 }
-
 variables {
   environment           = "test"
-  vpc_id                 = "vpc-0123456789abcdef0"
-  artifacts_bucket_arn   = "arn:aws:s3:::cloudforge-artifacts-test-00000000"
-  artifacts_bucket_name  = "cloudforge-artifacts-test-00000000"
-  images_bucket_name     = "cloudforge-images-test"
-  app_subnet_ids         = ["subnet-aaaaaaaaaaaaaaaaa", "subnet-bbbbbbbbbbbbbbbbb"]
+  vpc_id                = "vpc-0123456789abcdef0"
+  artifacts_bucket_arn  = "arn:aws:s3:::cloudforge-artifacts-test-00000000"
+  artifacts_bucket_name = "cloudforge-artifacts-test-00000000"
+  images_bucket_name    = "cloudforge-images-test"
+  app_subnet_ids        = ["subnet-aaaaaaaaaaaaaaaaa", "subnet-bbbbbbbbbbbbbbbbb"]
+  alb_security_group_id = "sg-0123456789abcdef0"
+  data_tier_cidr_blocks  = ["10.0.21.0/24", "10.0.22.0/24"]
 }
 
 # The security group's "no ingress yet" claim isn't covered here: AWS's
