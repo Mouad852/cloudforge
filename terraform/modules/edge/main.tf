@@ -21,6 +21,9 @@ resource "random_id" "alb_logs_bucket_suffix" {
 
 resource "aws_s3_bucket" "alb_logs" {
   bucket = "cloudforge-alb-logs-${var.environment}-${random_id.alb_logs_bucket_suffix.hex}"
+  # dev is meant to be fully destroyable (ADR-012/ADR-015) - without this,
+  # a populated, versioned bucket blocks terraform destroy outright.
+  force_destroy = var.environment == "dev"
 }
 
 resource "aws_s3_bucket_public_access_block" "alb_logs" {

@@ -10,6 +10,9 @@ resource "random_id" "bucket_suffix" {
 
 resource "aws_s3_bucket" "artifacts" {
   bucket = "cloudforge-artifacts-${var.environment}-${random_id.bucket_suffix.hex}"
+  # dev is meant to be fully destroyable (ADR-012/ADR-015) - without this,
+  # a populated, versioned bucket blocks terraform destroy outright.
+  force_destroy = var.environment == "dev"
 }
 
 resource "aws_s3_bucket_versioning" "artifacts" {
