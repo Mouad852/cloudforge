@@ -2,11 +2,19 @@ provider "aws" {
   region = "eu-west-3"
 }
 
+provider "aws" {
+  alias  = "use1"
+  region = "us-east-1"
+}
+
 variables {
-  environment       = "test"
-  vpc_id            = "vpc-0123456789abcdef0"
-  vpc_cidr          = "10.0.0.0/16"
-  public_subnet_ids = ["subnet-aaaaaaaaaaaaaaaaa", "subnet-bbbbbbbbbbbbbbbbb"]
+  environment                        = "test"
+  vpc_id                             = "vpc-0123456789abcdef0"
+  vpc_cidr                           = "10.0.0.0/16"
+  public_subnet_ids                  = ["subnet-aaaaaaaaaaaaaaaaa", "subnet-bbbbbbbbbbbbbbbbb"]
+  images_bucket_id                   = "cloudforge-images-test-00000000"
+  images_bucket_arn                  = "arn:aws:s3:::cloudforge-images-test-00000000"
+  images_bucket_regional_domain_name = "cloudforge-images-test-00000000.s3.eu-west-3.amazonaws.com"
 }
 
 # aws_security_group's ingress/egress blocks are marked unknown at plan time
@@ -14,6 +22,11 @@ variables {
 # modules/compute/tests) - not asserted here, verify by reading main.tf.
 run "target_groups_and_listener" {
   command = plan
+
+  providers = {
+    aws      = aws
+    aws.use1 = aws.use1
+  }
 
   assert {
     condition     = aws_lb_target_group.blue.health_check[0].path == "/healthz" && aws_lb_target_group.green.health_check[0].path == "/healthz"
@@ -42,5 +55,43 @@ run "target_groups_and_listener" {
       ]
     ]))
     error_message = "Listener rule must gate on the shared secret header"
+  }
+}
+
+run "cloudfront_images_behavior" {
+  command = plan
+
+  providers = {
+    aws      = aws
+    aws.use1 = aws.use1
+  }
+
+  override_resource {
+    target          = aws_cloudfront_origin_access_control.images
+    override_during = plan
+    values = {
+      id = "E1TESTOACIDXXXXX"
+    }
+  }
+
+  assert {
+    condition     = aws_cloudfront_origin_access_control.images.signing_behavior == "always"
+    error_message = "Images OAC must always sign requests to S3"
+  }
+
+  assert {
+    condition = anytrue([
+      for b in aws_cloudfront_distribution.app.ordered_cache_behavior :
+      b.path_pattern == "/images/*" && b.target_origin_id == "images-s3"
+    ])
+    error_message = "Distribution must route /images/* to the images-s3 origin"
+  }
+
+  assert {
+    condition = anytrue([
+      for o in aws_cloudfront_distribution.app.origin :
+      o.origin_id == "images-s3" && o.origin_access_control_id == "E1TESTOACIDXXXXX"
+    ])
+    error_message = "The images-s3 origin must use the OAC, not a public bucket"
   }
 }
