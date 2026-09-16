@@ -17,3 +17,8 @@ output "app_log_group_arn" {
   description = "ARN of the app log group"
   value       = aws_cloudwatch_log_group.app.arn
 }
+
+output "green_asg_name" {
+  description = "Green Auto Scaling Group name - blue/green deploy tooling scales this during a cutover"
+  value       = aws_autoscaling_group.app_green.name
+}

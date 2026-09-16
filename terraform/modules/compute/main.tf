@@ -267,6 +267,45 @@ resource "aws_autoscaling_lifecycle_hook" "terminating" {
   heartbeat_timeout      = 90
 }
 
+# Green fleet for blue/green deploys (M8, ADR-017) - same launch template as
+# blue, but a separate ASG so a deploy can run entirely new instances
+# alongside the still-serving blue fleet, verify them, then shift ALB
+# traffic (edge module's weighted listener) before blue is scaled down.
+# No instance_refresh block: green starts at 0 and always launches fresh
+# instances against the launch template's latest version, so there's
+# nothing to "refresh" - a rolling deploy still only ever touches blue.
+resource "aws_autoscaling_group" "app_green" {
+  name = "${var.environment}-cloudforge-app-green"
+
+  launch_template {
+    id      = aws_launch_template.app.id
+    version = "$Latest"
+  }
+
+  vpc_zone_identifier = var.app_subnet_ids
+  min_size            = var.green_asg_min_size
+  max_size            = var.green_asg_max_size
+  desired_capacity    = var.green_asg_desired_capacity
+
+  health_check_type         = "ELB"
+  health_check_grace_period = 300
+  target_group_arns         = var.green_target_group_arns
+
+  tag {
+    key                 = "Name"
+    value               = "${var.environment}-cloudforge-app-green"
+    propagate_at_launch = true
+  }
+}
+
+resource "aws_autoscaling_lifecycle_hook" "terminating_green" {
+  name                   = "${var.environment}-drain-on-terminate-green"
+  autoscaling_group_name = aws_autoscaling_group.app_green.name
+  lifecycle_transition   = "autoscaling:EC2_INSTANCE_TERMINATING"
+  default_result         = "CONTINUE"
+  heartbeat_timeout      = 90
+}
+
 # ADR-007's ALBRequestCountPerTarget half is added once M4's target group
 # exists - can't reference a resource_label for a target group that isn't
 # built yet.

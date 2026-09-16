@@ -104,3 +104,27 @@ variable "redis_tls_server_name" {
   type        = string
   default     = ""
 }
+
+variable "green_asg_min_size" {
+  description = "Green ASG minimum size - 0 by default so the idle blue/green fleet costs nothing outside a deploy window"
+  type        = number
+  default     = 0
+}
+
+variable "green_asg_max_size" {
+  description = "Green ASG maximum size - matches blue's ceiling so it can take over blue's full traffic during a cutover"
+  type        = number
+  default     = 6
+}
+
+variable "green_asg_desired_capacity" {
+  description = "Green ASG desired capacity - 0 by default, scaled up only during a blue/green deploy"
+  type        = number
+  default     = 0
+}
+
+variable "green_target_group_arns" {
+  description = "ALB green target group ARNs to attach the green ASG to"
+  type        = list(string)
+  default     = []
+}

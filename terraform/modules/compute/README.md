@@ -23,7 +23,9 @@ No modules.
 | Name | Type |
 | ---- | ---- |
 | [aws_autoscaling_group.app](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/autoscaling_group) | resource |
+| [aws_autoscaling_group.app_green](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/autoscaling_group) | resource |
 | [aws_autoscaling_lifecycle_hook.terminating](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/autoscaling_lifecycle_hook) | resource |
+| [aws_autoscaling_lifecycle_hook.terminating_green](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/autoscaling_lifecycle_hook) | resource |
 | [aws_autoscaling_policy.cpu_target_tracking](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/autoscaling_policy) | resource |
 | [aws_cloudwatch_log_group.app](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/cloudwatch_log_group) | resource |
 | [aws_iam_instance_profile.app](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_instance_profile) | resource |
@@ -52,6 +54,10 @@ No modules.
 | <a name="input_data_tier_cidr_blocks"></a> [data\_tier\_cidr\_blocks](#input\_data\_tier\_cidr\_blocks) | Data-tier subnet CIDRs - the app SG's egress for RDS/Redis is scoped to these, not the whole VPC | `list(string)` | n/a | yes |
 | <a name="input_db_secret_arn"></a> [db\_secret\_arn](#input\_db\_secret\_arn) | Secrets Manager ARN for the RDS master password (ADR-009) - empty string means no database configured yet | `string` | `""` | no |
 | <a name="input_environment"></a> [environment](#input\_environment) | Environment name (dev or prod), used in resource naming/tags | `string` | n/a | yes |
+| <a name="input_green_asg_desired_capacity"></a> [green\_asg\_desired\_capacity](#input\_green\_asg\_desired\_capacity) | Green ASG desired capacity - 0 by default, scaled up only during a blue/green deploy | `number` | `0` | no |
+| <a name="input_green_asg_max_size"></a> [green\_asg\_max\_size](#input\_green\_asg\_max\_size) | Green ASG maximum size - matches blue's ceiling so it can take over blue's full traffic during a cutover | `number` | `6` | no |
+| <a name="input_green_asg_min_size"></a> [green\_asg\_min\_size](#input\_green\_asg\_min\_size) | Green ASG minimum size - 0 by default so the idle blue/green fleet costs nothing outside a deploy window | `number` | `0` | no |
+| <a name="input_green_target_group_arns"></a> [green\_target\_group\_arns](#input\_green\_target\_group\_arns) | ALB green target group ARNs to attach the green ASG to | `list(string)` | `[]` | no |
 | <a name="input_images_bucket_name"></a> [images\_bucket\_name](#input\_images\_bucket\_name) | Name of the M6 images bucket. Not created yet - the IAM role is pre-scoped to this name so M6 needs no policy changes, only rewiring this variable to the real bucket once it exists. | `string` | n/a | yes |
 | <a name="input_instance_type"></a> [instance\_type](#input\_instance\_type) | EC2 instance type (Graviton/arm64, ADR-003) | `string` | `"t4g.micro"` | no |
 | <a name="input_redis_addr"></a> [redis\_addr](#input\_redis\_addr) | Redis host:port app instances connect to (M6) | `string` | `"cache.cloudforge.internal:6379"` | no |
@@ -68,4 +74,5 @@ No modules.
 | <a name="output_app_log_group_name"></a> [app\_log\_group\_name](#output\_app\_log\_group\_name) | CloudWatch Logs group receiving structured app logs - source for M7 metric filters |
 | <a name="output_app_security_group_id"></a> [app\_security\_group\_id](#output\_app\_security\_group\_id) | App instances' security group ID - RDS/Redis security groups allow ingress from this only |
 | <a name="output_asg_name"></a> [asg\_name](#output\_asg\_name) | Auto Scaling Group name - CloudWatch alarm dimension (GroupInServiceInstances, ASGAverageCPUUtilization) |
+| <a name="output_green_asg_name"></a> [green\_asg\_name](#output\_green\_asg\_name) | Green Auto Scaling Group name - blue/green deploy tooling scales this during a cutover |
 <!-- END_TF_DOCS -->

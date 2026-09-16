@@ -146,16 +146,17 @@ module "edge" {
 module "compute" {
   source = "../../modules/compute"
 
-  environment           = "dev"
-  vpc_id                = module.network.vpc_id
-  app_subnet_ids        = [module.network.subnet_ids["app-a"], module.network.subnet_ids["app-b"]]
-  artifacts_bucket_arn  = module.storage.artifacts_bucket_arn
-  artifacts_bucket_name = module.storage.artifacts_bucket_name
-  images_bucket_name    = module.storage.images_bucket_id
-  alb_security_group_id = module.edge.alb_security_group_id
-  target_group_arns     = [module.edge.blue_target_group_arn]
-  data_tier_cidr_blocks = ["10.0.21.0/24", "10.0.22.0/24"]
-  db_secret_arn         = module.database.master_user_secret_arn
+  environment             = "dev"
+  vpc_id                  = module.network.vpc_id
+  app_subnet_ids          = [module.network.subnet_ids["app-a"], module.network.subnet_ids["app-b"]]
+  artifacts_bucket_arn    = module.storage.artifacts_bucket_arn
+  artifacts_bucket_name   = module.storage.artifacts_bucket_name
+  images_bucket_name      = module.storage.images_bucket_id
+  alb_security_group_id   = module.edge.alb_security_group_id
+  target_group_arns       = [module.edge.blue_target_group_arn]
+  green_target_group_arns = [module.edge.green_target_group_arn]
+  data_tier_cidr_blocks   = ["10.0.21.0/24", "10.0.22.0/24"]
+  db_secret_arn           = module.database.master_user_secret_arn
   # Deliberately t4g.small, not the module's t4g.micro default: eu-west-3a/3b
   # had no t4g.micro capacity when this was built, and this size has since
   # been proven end-to-end. Kept as the standing choice, not a pending revert.
