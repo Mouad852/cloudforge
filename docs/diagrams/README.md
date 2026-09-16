@@ -8,7 +8,7 @@ Versioned as Mermaid (renders natively on GitHub, diffs like text) so they live 
 | Network / VPC | `network-vpc.md` | M1 | ✅ as-built (generated image, not Mermaid — see file) |
 | Traffic flow (CDN → ALB → ASG) | `traffic-flow.md` | M4 | ✅ as-built |
 | Security flow (WAF, security groups, IAM boundaries) | `security-flow.md` | M10 | not yet |
-| Data flow (cache-aside, S3 upload path) | `data-flow.md` | M6 | not yet |
+| Data flow (cache-aside, S3 upload path) | `data-flow.md` | M6 | ✅ as-built (S3-403-vs-CloudFront-200 verification pending CloudFront) |
 | DR / recovery flow | `dr-recovery-flow.md` | M11 | not yet |
 
 Update the relevant diagram in the same commit as the implementation it describes. A diagram that lags the actual code is worse than no diagram — it actively misleads a reader.
