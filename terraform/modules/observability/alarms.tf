@@ -224,8 +224,8 @@ resource "aws_cloudwatch_metric_alarm" "billing" {
     Currency = "USD"
   }
 
-  alarm_actions = [aws_sns_topic.alerts.arn]
-  ok_actions    = [aws_sns_topic.alerts.arn]
+  alarm_actions = [aws_sns_topic.billing_alerts.arn]
+  ok_actions    = [aws_sns_topic.billing_alerts.arn]
 }
 
 # "Service degraded": unhealthy targets AND an elevated 5xx rate at the same time.

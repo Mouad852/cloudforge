@@ -46,7 +46,9 @@ No modules.
 | [aws_iam_role.canary](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_role) | resource |
 | [aws_iam_role_policy.canary](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_role_policy) | resource |
 | [aws_sns_topic.alerts](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/sns_topic) | resource |
+| [aws_sns_topic.billing_alerts](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/sns_topic) | resource |
 | [aws_sns_topic_subscription.alerts_email](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/sns_topic_subscription) | resource |
+| [aws_sns_topic_subscription.billing_alerts_email](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/sns_topic_subscription) | resource |
 | [aws_synthetics_canary.api](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/synthetics_canary) | resource |
 | [local_file.canary_script](https://registry.terraform.io/providers/hashicorp/local/latest/docs/resources/file) | resource |
 | [archive_file.canary](https://registry.terraform.io/providers/hashicorp/archive/latest/docs/data-sources/file) | data source |
@@ -77,9 +79,10 @@ No modules.
 
 | Name | Description |
 | ---- | ----------- |
+| <a name="output_billing_sns_topic_arn"></a> [billing\_sns\_topic\_arn](#output\_billing\_sns\_topic\_arn) | Billing alarm's dedicated us-east-1 SNS topic ARN - CloudWatch alarms can't target a topic outside their own region |
 | <a name="output_canary_name"></a> [canary\_name](#output\_canary\_name) | Synthetics canary name |
 | <a name="output_composite_alarm_name"></a> [composite\_alarm\_name](#output\_composite\_alarm\_name) | The "service degraded" composite alarm name |
 | <a name="output_golden_signals_dashboard_name"></a> [golden\_signals\_dashboard\_name](#output\_golden\_signals\_dashboard\_name) | Four Golden Signals dashboard name |
 | <a name="output_slo_dashboard_name"></a> [slo\_dashboard\_name](#output\_slo\_dashboard\_name) | SLO dashboard name |
-| <a name="output_sns_topic_arn"></a> [sns\_topic\_arn](#output\_sns\_topic\_arn) | Alerts SNS topic ARN - every alarm and the composite alarm publish here |
+| <a name="output_sns_topic_arn"></a> [sns\_topic\_arn](#output\_sns\_topic\_arn) | Alerts SNS topic ARN - every regional alarm and the composite alarm publish here (the billing alarm uses its own us-east-1 topic - see billing\_sns\_topic\_arn) |
 <!-- END_TF_DOCS -->

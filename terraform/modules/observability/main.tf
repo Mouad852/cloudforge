@@ -16,6 +16,24 @@ resource "aws_sns_topic_subscription" "alerts_email" {
   endpoint  = var.alert_email
 }
 
+# CloudWatch alarms can only target an SNS topic in their own region. The
+# billing alarm below is forced into us-east-1 (AWS/Billing metrics only
+# publish there), while the shared alerts topic above lives in this
+# environment's primary region - a second, us-east-1-only topic is the only
+# way to actually deliver its notifications.
+resource "aws_sns_topic" "billing_alerts" {
+  provider          = aws.use1
+  name              = "${local.name_prefix}-billing-alerts"
+  kms_master_key_id = "alias/aws/sns"
+}
+
+resource "aws_sns_topic_subscription" "billing_alerts_email" {
+  provider  = aws.use1
+  topic_arn = aws_sns_topic.billing_alerts.arn
+  protocol  = "email"
+  endpoint  = var.alert_email
+}
+
 resource "aws_cloudwatch_log_metric_filter" "error_count" {
   name           = "${local.name_prefix}-error-count"
   log_group_name = var.app_log_group_name
