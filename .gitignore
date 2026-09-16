@@ -9,6 +9,10 @@ crash.log
 crash.*.log
 # .terraform.lock.hcl is intentionally NOT ignored — commit it (pins provider versions)
 
+# Generated at plan/apply time from templates/canary.js.tpl — not the source of truth
+/terraform/modules/observability/build/
+/terraform/modules/observability/build.zip
+
 # Never commit real credentials
 .env
 .env.*
