@@ -21,3 +21,15 @@ output "images_bucket_name" {
 output "redis_primary_endpoint" {
   value = module.cache.redis_primary_endpoint
 }
+
+output "golden_signals_dashboard_name" {
+  value = module.observability.golden_signals_dashboard_name
+}
+
+output "slo_dashboard_name" {
+  value = module.observability.slo_dashboard_name
+}
+
+output "alerts_sns_topic_arn" {
+  value = module.observability.sns_topic_arn
+}

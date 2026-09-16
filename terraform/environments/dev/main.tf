@@ -29,6 +29,11 @@ variable "snapshot_identifier" {
   default     = null
 }
 
+variable "alert_email" {
+  description = "Email address subscribed to the M7 observability SNS alerts topic"
+  type        = string
+}
+
 module "network" {
   source = "../../modules/network"
 
@@ -178,4 +183,25 @@ module "database" {
   app_security_group_id = module.compute.app_security_group_id
   private_zone_id       = module.network.private_zone_id
   snapshot_identifier   = var.snapshot_identifier
+}
+
+module "observability" {
+  source = "../../modules/observability"
+
+  providers = {
+    aws      = aws
+    aws.use1 = aws.use1
+  }
+
+  environment                = "dev"
+  alert_email                = var.alert_email
+  alb_arn_suffix             = module.edge.alb_arn_suffix
+  target_group_arn_suffix    = module.edge.blue_target_group_arn_suffix
+  asg_name                   = module.compute.asg_name
+  app_log_group_name         = module.compute.app_log_group_name
+  db_instance_id             = module.database.instance_id
+  redis_replication_group_id = module.cache.replication_group_id
+  artifacts_bucket_name      = module.storage.artifacts_bucket_name
+  artifacts_bucket_arn       = module.storage.artifacts_bucket_arn
+  cloudfront_domain_name     = module.edge.cloudfront_domain_name
 }
