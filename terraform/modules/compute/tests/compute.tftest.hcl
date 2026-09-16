@@ -9,7 +9,7 @@ variables {
   images_bucket_name    = "cloudforge-images-test"
   app_subnet_ids        = ["subnet-aaaaaaaaaaaaaaaaa", "subnet-bbbbbbbbbbbbbbbbb"]
   alb_security_group_id = "sg-0123456789abcdef0"
-  data_tier_cidr_blocks  = ["10.0.21.0/24", "10.0.22.0/24"]
+  data_tier_cidr_blocks = ["10.0.21.0/24", "10.0.22.0/24"]
 }
 
 # The security group's "no ingress yet" claim isn't covered here: AWS's
