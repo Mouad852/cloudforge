@@ -18,7 +18,9 @@
 
 ## Modules
 
-No modules.
+| Name | Source | Version |
+| ---- | ------ | ------- |
+| <a name="module_cicd_oidc"></a> [cicd\_oidc](#module\_cicd\_oidc) | ../modules/cicd-oidc | n/a |
 
 ## Resources
 
@@ -43,4 +45,6 @@ No modules.
 | Name | Description |
 | ---- | ----------- |
 | <a name="output_state_bucket_name"></a> [state\_bucket\_name](#output\_state\_bucket\_name) | S3 bucket holding Terraform state for dev/prod environments |
+| <a name="output_terraform_apply_role_arn"></a> [terraform\_apply\_role\_arn](#output\_terraform\_apply\_role\_arn) | GitHub Actions role ARN for main-branch terraform apply and app deploys - set as the AWS\_ROLE\_ARN repository variable for those jobs |
+| <a name="output_terraform_plan_role_arn"></a> [terraform\_plan\_role\_arn](#output\_terraform\_plan\_role\_arn) | GitHub Actions role ARN for PR-triggered terraform plan - set as the AWS\_ROLE\_ARN repository variable for the plan job |
 <!-- END_TF_DOCS -->

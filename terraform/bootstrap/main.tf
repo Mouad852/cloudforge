@@ -109,3 +109,9 @@ resource "aws_s3_bucket_policy" "state" {
     ]
   })
 }
+
+module "cicd_oidc" {
+  source = "../modules/cicd-oidc"
+
+  github_repository = "Mouad852/cloudforge"
+}
