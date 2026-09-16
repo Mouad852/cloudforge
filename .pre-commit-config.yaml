@@ -5,13 +5,14 @@ repos:
       - id: terraform_fmt
       - id: terraform_validate
         files: ^terraform/
-        # edge declares a required provider alias (aws.use1, for the
-        # CloudFront/WAF resources that must live in us-east-1) that only
+        # edge and observability both declare a required provider alias
+        # (aws.use1 - edge for CloudFront/WAF, observability for the
+        # AWS/Billing alarm, both of which must live in us-east-1) that only
         # resolves when a real root module supplies it - which
         # environments/dev does. Validated standalone, as this hook does
         # per-directory, there's no caller to supply it, so it always
         # fails here regardless of whether the config is actually correct.
-        exclude: ^terraform/modules/edge/
+        exclude: ^terraform/modules/(edge|observability)/
       - id: terraform_tflint
         files: ^terraform/
       - id: terraform_checkov
