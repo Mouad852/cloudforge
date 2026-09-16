@@ -45,3 +45,11 @@ triggered by a pipeline instead of a person.
   uploading the binary means the first boot's `aws s3 cp` fails, `set -euo pipefail` aborts
   the rest of user-data, and the instance comes up with no app running and no obvious symptom
   beyond "nothing answers on port 8080."
+- The same gap resurfaced during M6, in a more misleading form: editing `app/cache.go` and
+  `app/config.go` for the Redis TLS fix and rerunning `terraform apply` changes nothing at
+  runtime by itself — the S3 key still holds the pre-fix binary until a manual `make build` +
+  `aws s3 cp` happens, followed by an instance refresh onto the new launch template version.
+  Running instances kept the old code while every other signal (launch template version,
+  environment variables, Terraform state) looked correct, which turned a one-line Go fix into
+  a long `/readyz`-timeout debugging detour that looked like a Redis configuration problem.
+  Automating this gap away is exactly what M8's `app.yml` pipeline exists to do.
