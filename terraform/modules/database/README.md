@@ -57,6 +57,7 @@ No modules.
 | ---- | ----------- |
 | <a name="output_db_address"></a> [db\_address](#output\_db\_address) | RDS instance hostname only, no port - what Route 53's CNAME will point at |
 | <a name="output_db_endpoint"></a> [db\_endpoint](#output\_db\_endpoint) | RDS instance endpoint (host:port) |
+| <a name="output_instance_id"></a> [instance\_id](#output\_instance\_id) | RDS DBInstanceIdentifier - CloudWatch alarm dimension |
 | <a name="output_master_user_secret_arn"></a> [master\_user\_secret\_arn](#output\_master\_user\_secret\_arn) | Secrets Manager ARN holding the AWS-managed master password (ADR-009) |
 | <a name="output_security_group_id"></a> [security\_group\_id](#output\_security\_group\_id) | RDS security group ID |
 <!-- END_TF_DOCS -->

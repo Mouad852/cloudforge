@@ -17,3 +17,8 @@ output "auth_secret_arn" {
   description = "Secrets Manager ARN holding the Redis AUTH token"
   value       = aws_secretsmanager_secret.redis_auth.arn
 }
+
+output "replication_group_id" {
+  description = "ElastiCache replication group ID - CloudWatch alarm dimension (CacheClusterId)"
+  value       = aws_elasticache_replication_group.main.id
+}

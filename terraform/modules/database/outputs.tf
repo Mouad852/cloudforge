@@ -17,3 +17,8 @@ output "security_group_id" {
   description = "RDS security group ID"
   value       = aws_security_group.rds.id
 }
+
+output "instance_id" {
+  description = "RDS DBInstanceIdentifier - CloudWatch alarm dimension"
+  value       = aws_db_instance.main.id
+}

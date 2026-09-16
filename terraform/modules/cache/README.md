@@ -52,5 +52,6 @@ No modules.
 | <a name="output_auth_secret_arn"></a> [auth\_secret\_arn](#output\_auth\_secret\_arn) | Secrets Manager ARN holding the Redis AUTH token |
 | <a name="output_redis_port"></a> [redis\_port](#output\_redis\_port) | Redis port |
 | <a name="output_redis_primary_endpoint"></a> [redis\_primary\_endpoint](#output\_redis\_primary\_endpoint) | ElastiCache Redis primary endpoint address, no port |
+| <a name="output_replication_group_id"></a> [replication\_group\_id](#output\_replication\_group\_id) | ElastiCache replication group ID - CloudWatch alarm dimension (CacheClusterId) |
 | <a name="output_security_group_id"></a> [security\_group\_id](#output\_security\_group\_id) | Redis security group ID |
 <!-- END_TF_DOCS -->

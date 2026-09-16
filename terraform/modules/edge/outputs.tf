@@ -7,8 +7,18 @@ output "alb_arn" {
   value = aws_lb.app.arn
 }
 
+output "alb_arn_suffix" {
+  description = "Shortened ALB identifier CloudWatch metrics key on (not the full ARN - AWS/ApplicationELB dimension quirk)"
+  value       = aws_lb.app.arn_suffix
+}
+
 output "blue_target_group_arn" {
   value = aws_lb_target_group.blue.arn
+}
+
+output "blue_target_group_arn_suffix" {
+  description = "Shortened target-group identifier for the CloudWatch TargetGroup dimension"
+  value       = aws_lb_target_group.blue.arn_suffix
 }
 
 output "green_target_group_arn" {
