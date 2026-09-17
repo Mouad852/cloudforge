@@ -50,3 +50,15 @@ variable "images_bucket_regional_domain_name" {
   description = "S3 images bucket regional domain name (modules/storage) - CloudFront's /images/* origin, M6"
   type        = string
 }
+
+variable "blue_weight" {
+  description = "Percentage weight (0-100) of listener traffic sent to the blue target group - Terraform-driven blue/green shifting, ADR-017"
+  type        = number
+  default     = 100
+}
+
+variable "green_weight" {
+  description = "Percentage weight (0-100) of listener traffic sent to the green target group - Terraform-driven blue/green shifting, ADR-017"
+  type        = number
+  default     = 0
+}
