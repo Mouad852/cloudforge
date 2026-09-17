@@ -1,0 +1,297 @@
+name: terraform
+
+on:
+  pull_request:
+    paths:
+      - "terraform/**"
+      - ".github/workflows/terraform.yml"
+  push:
+    branches: [main]
+    paths:
+      - "terraform/**"
+      - ".github/workflows/terraform.yml"
+
+permissions:
+  contents: read
+
+env:
+  TF_VERSION: "1.11.4"
+  AWS_REGION: "eu-west-3"
+
+jobs:
+  lint:
+    name: fmt / tflint / checkov
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: ${{ env.TF_VERSION }}
+          terraform_wrapper: false
+
+      - name: terraform fmt
+        run: terraform fmt -check -recursive terraform/
+
+      - uses: terraform-linters/setup-tflint@v4
+        with:
+          tflint_version: latest
+
+      - name: tflint
+        run: |
+          tflint --init
+          tflint --recursive --chdir=terraform
+
+      - name: checkov
+        uses: bridgecrewio/checkov-action@v12
+        with:
+          directory: terraform/
+          skip_check: CKV_AWS_18,CKV_AWS_144,CKV_AWS_145,CKV2_AWS_62,CKV_AWS_382,CKV_AWS_126,CKV2_AWS_41,CKV_AWS_158,CKV_AWS_338,CKV_AWS_150,CKV_AWS_2,CKV2_AWS_20,CKV_AWS_103,CKV2_AWS_28,CKV_AWS_21,CKV_AWS_378,CKV_AWS_305,CKV_AWS_310,CKV_AWS_374,CKV_AWS_174,CKV2_AWS_42,CKV2_AWS_47,CKV_AWS_86,CKV2_AWS_31,CKV_AWS_157,CKV_AWS_293,CKV_AWS_354,CKV_AWS_118,CKV_AWS_149,CKV_AWS_191,CKV2_AWS_50,CKV2_AWS_57,CKV_SECRET_6,CKV2_AWS_61
+          skip_framework: terraform_plan
+          quiet: true
+
+  plan:
+    name: plan (${{ matrix.environment }})
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        environment: [dev, prod]
+    permissions:
+      id-token: write
+      contents: read
+      pull-requests: write
+    defaults:
+      run:
+        working-directory: terraform/environments/${{ matrix.environment }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ vars.AWS_PLAN_ROLE_ARN }}
+          role-session-name: gha-terraform-plan-${{ matrix.environment }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: ${{ env.TF_VERSION }}
+          terraform_wrapper: false
+
+      - name: terraform init
+        run: terraform init -input=false
+
+      - name: terraform plan
+        id: plan
+        run: |
+          terraform plan -lock=false -input=false -no-color \
+            -var="alert_email=${{ vars.ALERT_EMAIL }}" \
+            -out=tfplan 2>&1 | tee plan.txt
+          echo "exitcode=$?" >> "$GITHUB_OUTPUT"
+        continue-on-error: true
+
+      - name: find previous comment
+        uses: peter-evans/find-comment@v3
+        id: fc
+        with:
+          issue-number: ${{ github.event.pull_request.number }}
+          comment-author: "github-actions[bot]"
+          body-includes: "<!-- tfplan-${{ matrix.environment }} -->"
+
+      - name: post plan as PR comment
+        uses: peter-evans/create-or-update-comment@v4
+        with:
+          comment-id: ${{ steps.fc.outputs.comment-id }}
+          issue-number: ${{ github.event.pull_request.number }}
+          edit-mode: replace
+          body: |
+            <!-- tfplan-${{ matrix.environment }} -->
+            ### Terraform plan — `${{ matrix.environment }}`
+            ```
+            ${{ steps.plan.outputs.stdout }}
+            ```
+
+      - name: fail if plan failed
+        if: steps.plan.outcome == 'failure'
+        run: exit 1
+
+  infracost:
+    name: infracost (${{ matrix.environment }})
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        environment: [dev, prod]
+    permissions:
+      id-token: write
+      contents: read
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ vars.AWS_PLAN_ROLE_ARN }}
+          role-session-name: gha-infracost-${{ matrix.environment }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - uses: infracost/actions/setup@v3
+        with:
+          api-key: ${{ secrets.INFRACOST_API_KEY }}
+
+      - name: infracost breakdown
+        run: |
+          infracost breakdown \
+            --path=terraform/environments/${{ matrix.environment }} \
+            --terraform-var="alert_email=${{ vars.ALERT_EMAIL }}" \
+            --format=json \
+            --out-file=infracost-${{ matrix.environment }}.json
+
+      - name: post cost diff as PR comment
+        run: |
+          infracost comment github \
+            --path=infracost-${{ matrix.environment }}.json \
+            --repo=$GITHUB_REPOSITORY \
+            --github-token=${{ secrets.GITHUB_TOKEN }} \
+            --pull-request=${{ github.event.pull_request.number }} \
+            --tag=${{ matrix.environment }} \
+            --behavior=update
+
+  test-readonly:
+    name: test (${{ matrix.module }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        module: [cache, compute, edge, observability, storage]
+    permissions:
+      id-token: write
+      contents: read
+    defaults:
+      run:
+        working-directory: terraform/modules/${{ matrix.module }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ vars.AWS_PLAN_ROLE_ARN }}
+          role-session-name: gha-test-${{ matrix.module }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: ${{ env.TF_VERSION }}
+          terraform_wrapper: false
+
+      - name: terraform init
+        run: terraform init -input=false
+
+      - name: terraform test
+        run: terraform test
+
+  test-network:
+    name: test (network)
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
+    defaults:
+      run:
+        working-directory: terraform/modules/network
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ vars.AWS_APPLY_ROLE_ARN }}
+          role-session-name: gha-test-network
+          aws-region: ${{ env.AWS_REGION }}
+
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: ${{ env.TF_VERSION }}
+          terraform_wrapper: false
+
+      - name: terraform init
+        run: terraform init -input=false
+
+      - name: terraform test
+        run: terraform test
+
+  apply-dev:
+    name: apply (dev)
+    if: github.event_name == 'push'
+    needs: [lint, test-readonly, test-network]
+    runs-on: ubuntu-latest
+    environment: dev
+    concurrency:
+      group: cloudforge-apply-dev
+      cancel-in-progress: false
+    permissions:
+      id-token: write
+      contents: read
+    defaults:
+      run:
+        working-directory: terraform/environments/dev
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ vars.AWS_APPLY_ROLE_ARN }}
+          role-session-name: gha-apply-dev
+          aws-region: ${{ env.AWS_REGION }}
+
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: ${{ env.TF_VERSION }}
+          terraform_wrapper: false
+
+      - name: terraform init
+        run: terraform init -input=false
+
+      - name: terraform apply
+        run: |
+          terraform apply -auto-approve -input=false \
+            -var="alert_email=${{ vars.ALERT_EMAIL }}"
+
+  apply-prod:
+    name: apply (prod)
+    if: github.event_name == 'push'
+    needs: [apply-dev]
+    runs-on: ubuntu-latest
+    environment: prod
+    concurrency:
+      group: cloudforge-apply-prod
+      cancel-in-progress: false
+    permissions:
+      id-token: write
+      contents: read
+    defaults:
+      run:
+        working-directory: terraform/environments/prod
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ vars.AWS_APPLY_ROLE_ARN }}
+          role-session-name: gha-apply-prod
+          aws-region: ${{ env.AWS_REGION }}
+
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: ${{ env.TF_VERSION }}
+          terraform_wrapper: false
+
+      - name: terraform init
+        run: terraform init -input=false
+
+      - name: terraform apply
+        run: |
+          terraform apply -auto-approve -input=false \
+            -var="alert_email=${{ vars.ALERT_EMAIL }}"
