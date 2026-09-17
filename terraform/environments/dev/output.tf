@@ -33,3 +33,28 @@ output "slo_dashboard_name" {
 output "alerts_sns_topic_arn" {
   value = module.observability.sns_topic_arn
 }
+
+output "asg_name" {
+  value = module.compute.asg_name
+}
+
+output "launch_template_id" {
+  value = module.compute.launch_template_id
+}
+
+output "artifact_key" {
+  value = module.compute.artifact_key
+}
+
+output "artifacts_bucket_name" {
+  value = module.storage.artifacts_bucket_name
+}
+
+output "origin_secret_header_name" {
+  value = module.edge.origin_secret_header_name
+}
+
+output "origin_secret_header_value" {
+  value     = module.edge.origin_secret_header_value
+  sensitive = true
+}
