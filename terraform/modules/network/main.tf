@@ -155,6 +155,12 @@ resource "aws_instance" "nat" {
         [Service]
         Type=oneshot
         RemainAfterExit=yes
+        # Docker, if it ever ends up on this box, sets FORWARD's default
+        # policy to DROP and only opens it for its own bridge network -
+        # asserting ACCEPT here every boot means this instance's actual job
+        # (forwarding app-subnet traffic) survives regardless of what else
+        # runs on it.
+        ExecStart=/usr/sbin/iptables -P FORWARD ACCEPT
         ExecStart=/usr/sbin/iptables -t nat -A POSTROUTING -j MASQUERADE
         ExecStop=/usr/sbin/iptables -t nat -D POSTROUTING -j MASQUERADE
 
