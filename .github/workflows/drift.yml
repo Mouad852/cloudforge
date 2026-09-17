@@ -1,0 +1,98 @@
+name: drift
+
+on:
+  schedule:
+    # 06:00 UTC daily. workflow_dispatch below covers ad-hoc runs to test
+    # this workflow without waiting for the schedule.
+    - cron: "0 6 * * *"
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+env:
+  TF_VERSION: "1.11.4"
+  AWS_REGION: "eu-west-3"
+
+jobs:
+  drift-check:
+    name: drift check (${{ matrix.environment }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        environment: [dev, prod]
+    concurrency:
+      group: cloudforge-drift-${{ matrix.environment }}
+      cancel-in-progress: false
+    permissions:
+      id-token: write
+      contents: read
+      issues: write
+    defaults:
+      run:
+        working-directory: terraform/environments/${{ matrix.environment }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ vars.AWS_PLAN_ROLE_ARN }}
+          role-session-name: gha-drift-${{ matrix.environment }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: ${{ env.TF_VERSION }}
+          terraform_wrapper: false
+
+      - name: terraform init
+        run: terraform init -input=false
+
+      - name: terraform plan (detailed exit code)
+        id: plan
+        run: |
+          terraform plan -detailed-exitcode -lock=false -input=false -no-color \
+            -var="alert_email=${{ vars.ALERT_EMAIL }}" \
+            2>&1 | tee plan.txt
+          echo "exitcode=$?" >> "$GITHUB_OUTPUT"
+        continue-on-error: true
+
+      - name: open or update drift issue
+        if: steps.plan.outputs.exitcode == '2'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          TITLE="Infrastructure drift detected (${{ matrix.environment }})"
+          {
+            echo "Terraform detected infrastructure drift in **${{ matrix.environment }}**."
+            echo
+            echo "Workflow run: $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
+            echo
+            echo '```'
+            head -c 60000 plan.txt
+            echo
+            echo '```'
+          } > issue-body.md
+
+          EXISTING_ISSUE=$(gh issue list --repo "$GITHUB_REPOSITORY" --state open \
+            --search "\"$TITLE\" in:title" --json number --jq '.[0].number // empty')
+
+          if [ -n "$EXISTING_ISSUE" ]; then
+            gh issue comment "$EXISTING_ISSUE" --repo "$GITHUB_REPOSITORY" --body-file issue-body.md
+          else
+            gh issue create --repo "$GITHUB_REPOSITORY" --title "$TITLE" --body-file issue-body.md
+          fi
+
+      - name: publish drift alert to SNS
+        if: steps.plan.outputs.exitcode == '2'
+        run: |
+          TOPIC_ARN=$(terraform output -raw alerts_sns_topic_arn)
+          aws sns publish \
+            --topic-arn "$TOPIC_ARN" \
+            --subject "Drift detected: ${{ matrix.environment }}" \
+            --message "Terraform found infrastructure drift in ${{ matrix.environment }}. Issue: $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/issues"
+
+      - name: fail if plan errored
+        if: steps.plan.outputs.exitcode == '1'
+        run: exit 1
