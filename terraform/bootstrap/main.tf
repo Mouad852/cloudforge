@@ -113,5 +113,8 @@ resource "aws_s3_bucket_policy" "state" {
 module "cicd_oidc" {
   source = "../modules/cicd-oidc"
 
-  github_repository = "Mouad852/cloudforge"
+  # From `gh api repos/Mouad852/cloudforge/actions/oidc/customization/sub` -
+  # GitHub's immutable subject claims are on by default for this repo, so the
+  # token's actual "sub" carries owner/repo IDs, not just their names.
+  github_oidc_subject_prefix = "repo:Mouad852@185850806/cloudforge@1358410203"
 }

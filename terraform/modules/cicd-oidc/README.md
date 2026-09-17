@@ -37,7 +37,7 @@ No modules.
 | Name | Description | Type | Default | Required |
 | ---- | ----------- | ---- | ------- | :------: |
 | <a name="input_default_branch"></a> [default\_branch](#input\_default\_branch) | Branch allowed to assume the terraform-apply / app-deploy role - the plan role is open to any pull\_request against this repo | `string` | `"main"` | no |
-| <a name="input_github_repository"></a> [github\_repository](#input\_github\_repository) | GitHub repo this OIDC provider trusts, as "owner/repo" - only workflow runs from this exact repo can assume the roles below | `string` | n/a | yes |
+| <a name="input_github_oidc_subject_prefix"></a> [github\_oidc\_subject\_prefix](#input\_github\_oidc\_subject\_prefix) | The literal "repo:..." prefix GitHub's OIDC tokens carry for this repository. Since GitHub enabled immutable subject claims (`use_immutable_subject`), this is no longer just "repo:${github\_repository}" - it includes GitHub's numeric owner/repo IDs, e.g. "repo:owner@12345/name@67890". Get the exact value with `gh api repos/<owner>/<repo>/actions/oidc/customization/sub` (the `sub_claim_prefix` field) - it will not change unless the repo is renamed/transferred, in which case GitHub reissues a new prefix and this must be updated to match. | `string` | n/a | yes |
 
 ## Outputs
 
