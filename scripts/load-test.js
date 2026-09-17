@@ -2,8 +2,6 @@ import http from 'k6/http';
 import { check } from 'k6';
 
 const TARGET_URL = __ENV.TARGET_URL;
-const HEADER_NAME = __ENV.ORIGIN_SECRET_HEADER_NAME;
-const HEADER_VALUE = __ENV.ORIGIN_SECRET_HEADER_VALUE;
 
 export const options = {
   vus: 5,
@@ -17,9 +15,7 @@ export const options = {
 };
 
 export default function () {
-  const res = http.get(`${TARGET_URL}/readyz`, {
-    headers: { [HEADER_NAME]: HEADER_VALUE },
-  });
+  const res = http.get(`${TARGET_URL}/readyz`);
 
   check(res, { 'status is 200': (r) => r.status === 200 });
 }

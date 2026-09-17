@@ -14,9 +14,7 @@ ARTIFACTS_BUCKET=$(terraform -chdir="${TF_DIR}" output -raw artifacts_bucket_nam
 ARTIFACT_KEY=$(terraform -chdir="${TF_DIR}" output -raw artifact_key)
 LAUNCH_TEMPLATE_ID=$(terraform -chdir="${TF_DIR}" output -raw launch_template_id)
 ASG_NAME=$(terraform -chdir="${TF_DIR}" output -raw asg_name)
-ALB_DNS_NAME=$(terraform -chdir="${TF_DIR}" output -raw alb_dns_name)
-ORIGIN_HEADER_NAME=$(terraform -chdir="${TF_DIR}" output -raw origin_secret_header_name)
-ORIGIN_HEADER_VALUE=$(terraform -chdir="${TF_DIR}" output -raw origin_secret_header_value)
+CLOUDFRONT_DOMAIN_NAME=$(terraform -chdir="${TF_DIR}" output -raw cloudfront_domain_name)
 
 echo "==> Uploading binary to s3://${ARTIFACTS_BUCKET}/${ARTIFACT_KEY}"
 aws s3 cp "${APP_DIR}/bin/cloudstore-api" "s3://${ARTIFACTS_BUCKET}/${ARTIFACT_KEY}"
@@ -30,9 +28,7 @@ aws ec2 create-launch-template-version \
   --version-description "deploy-${VERSION_LABEL}" >/dev/null
 
 echo "==> Starting k6 smoke load in the background (${K6_DURATION}, target http://${ALB_DNS_NAME})"
-TARGET_URL="http://${ALB_DNS_NAME}" \
-ORIGIN_SECRET_HEADER_NAME="${ORIGIN_HEADER_NAME}" \
-ORIGIN_SECRET_HEADER_VALUE="${ORIGIN_HEADER_VALUE}" \
+TARGET_URL="https://${CLOUDFRONT_DOMAIN_NAME}" \
 K6_DURATION="${K6_DURATION}" \
   k6 run scripts/load-test.js &
 K6_PID=$!
