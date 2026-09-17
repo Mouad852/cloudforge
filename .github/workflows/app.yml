@@ -1,0 +1,73 @@
+name: app
+
+on:
+  pull_request:
+    paths:
+      - "app/**"
+  push:
+    branches: [main]
+    paths:
+      - "app/**"
+      - "scripts/deploy.sh"
+      - "scripts/load-test.js"
+      - ".github/workflows/app.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: test / vet / govulncheck
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: app
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: app/go.mod
+
+      - run: go test ./...
+      - run: go vet ./...
+      - run: go run golang.org/x/vuln/cmd/govulncheck@latest ./...
+
+  deploy-dev:
+    name: deploy (dev)
+    if: github.event_name == 'push'
+    needs: [test]
+    runs-on: ubuntu-latest
+    environment: dev
+    concurrency:
+      group: cloudforge-deploy-dev
+      cancel-in-progress: false
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: app/go.mod
+
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ vars.AWS_APPLY_ROLE_ARN }}
+          role-session-name: gha-deploy-dev
+          aws-region: eu-west-3
+
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "1.11.4"
+          terraform_wrapper: false
+
+      - name: terraform init
+        working-directory: terraform/environments/dev
+        run: terraform init -input=false
+
+      - uses: grafana/setup-k6-action@v1
+
+      - name: deploy + rolling refresh + k6 gate
+        run: bash scripts/deploy.sh dev
