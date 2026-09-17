@@ -1,0 +1,55 @@
+name: nightly-destroy
+
+on:
+  schedule:
+    # 23:00 UTC - backstop `terraform destroy` on dev for the night it's
+    # forgotten. Mirrors `make dev-down`: destroy triggers an automatic final
+    # RDS snapshot (ADR-015), so `make dev-up` can restore the data later -
+    # this never actually throws work away, just pauses the bill.
+    - cron: "0 23 * * *"
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+env:
+  TF_VERSION: "1.11.4"
+  AWS_REGION: "eu-west-3"
+
+jobs:
+  destroy-dev:
+    name: destroy (dev)
+    runs-on: ubuntu-latest
+    environment: dev
+    # Same group terraform.yml's apply-dev uses - a push-triggered apply and
+    # this scheduled destroy must never touch dev's state at the same time.
+    concurrency:
+      group: cloudforge-apply-dev
+      cancel-in-progress: false
+    permissions:
+      id-token: write
+      contents: read
+    defaults:
+      run:
+        working-directory: terraform/environments/dev
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ vars.AWS_APPLY_ROLE_ARN }}
+          role-session-name: gha-nightly-destroy-dev
+          aws-region: ${{ env.AWS_REGION }}
+
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: ${{ env.TF_VERSION }}
+          terraform_wrapper: false
+
+      - name: terraform init
+        run: terraform init -input=false
+
+      - name: terraform destroy
+        run: |
+          terraform destroy -auto-approve -input=false \
+            -var="alert_email=${{ vars.ALERT_EMAIL }}"
