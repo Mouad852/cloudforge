@@ -1,3 +1,6 @@
+data "aws_caller_identity" "current" {}
+data "aws_region" "current" {}
+
 # AWS validates the token against GitHub's published signing keys, not this
 # thumbprint - GitHub's OIDC cert chain has used a publicly-trusted CA since
 # 2023 and AWS stopped checking it. The provider resource still requires a
@@ -13,9 +16,13 @@ resource "aws_iam_openid_connect_provider" "github_actions" {
   thumbprint_list = [data.tls_certificate.github_actions.certificates[0].sha1_fingerprint]
 }
 
-# Read-only - assumed by any workflow run triggered by a pull_request against
-# this repo, so terraform.yml can post a `plan` as a PR comment without
-# granting write access to a branch nobody has reviewed yet.
+# Read-only - assumed by pull_request-triggered runs (terraform.yml posts a
+# `plan` as a PR comment without granting write access to an unreviewed
+# branch) and by drift.yml's schedule/workflow_dispatch-triggered runs. A
+# schedule-triggered workflow always executes against the default branch and
+# gets the same ref-based subject as a plain push to main with no
+# `environment:` set - GitHub doesn't issue a schedule-specific subject
+# shape - so that subject is listed here too, alongside :pull_request.
 resource "aws_iam_role" "terraform_plan" {
   name = "cloudforge-github-actions-terraform-plan"
 
@@ -30,7 +37,10 @@ resource "aws_iam_role" "terraform_plan" {
           "token.actions.githubusercontent.com:aud" = "sts.amazonaws.com"
         }
         StringLike = {
-          "token.actions.githubusercontent.com:sub" = "${var.github_oidc_subject_prefix}:pull_request"
+          "token.actions.githubusercontent.com:sub" = [
+            "${var.github_oidc_subject_prefix}:pull_request",
+            "${var.github_oidc_subject_prefix}:ref:refs/heads/${var.default_branch}",
+          ]
         }
       }
     }]
@@ -40,6 +50,28 @@ resource "aws_iam_role" "terraform_plan" {
 resource "aws_iam_role_policy_attachment" "terraform_plan" {
   role       = aws_iam_role.terraform_plan.name
   policy_arn = "arn:aws:iam::aws:policy/ReadOnlyAccess"
+}
+
+# ReadOnlyAccess deliberately excludes sns:Publish. drift.yml (assumes this
+# role) needs to push one alert per environment when `terraform plan
+# -detailed-exitcode` finds drift, so this grants exactly that one action,
+# scoped to only the two alerts topics the observability module creates -
+# never the apply role, never a wildcard resource.
+resource "aws_iam_role_policy" "terraform_plan_sns_publish" {
+  name = "sns-publish-alerts"
+  role = aws_iam_role.terraform_plan.id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Effect = "Allow"
+      Action = "sns:Publish"
+      Resource = [
+        "arn:aws:sns:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:dev-cloudforge-alerts",
+        "arn:aws:sns:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:prod-cloudforge-alerts",
+      ]
+    }]
+  })
 }
 
 # Read-write - assumed only by workflow runs on pushes to the default branch,
