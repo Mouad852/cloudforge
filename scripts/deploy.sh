@@ -26,6 +26,7 @@ echo "==> Creating launch template version (deploy-${VERSION_LABEL})"
 aws ec2 create-launch-template-version \
   --launch-template-id "${LAUNCH_TEMPLATE_ID}" \
   --source-version '$Latest' \
+  --launch-template-data '{}' \
   --version-description "deploy-${VERSION_LABEL}" >/dev/null
 
 echo "==> Starting k6 smoke load in the background (${K6_DURATION}, target http://${ALB_DNS_NAME})"
