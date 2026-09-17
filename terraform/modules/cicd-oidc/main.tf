@@ -57,7 +57,16 @@ resource "aws_iam_role" "terraform_apply" {
       Condition = {
         StringEquals = {
           "token.actions.githubusercontent.com:aud" = "sts.amazonaws.com"
-          "token.actions.githubusercontent.com:sub" = "${var.github_oidc_subject_prefix}:ref:refs/heads/${var.default_branch}"
+          # A job with no `environment:` gets a ref-based subject; a job that
+          # sets `environment: dev`/`environment: prod` (as apply-dev/
+          # apply-prod both do) gets an environment-based subject instead -
+          # GitHub issues one shape or the other, never both, so both must be
+          # listed here for the same role to cover every push-triggered job.
+          "token.actions.githubusercontent.com:sub" = [
+            "${var.github_oidc_subject_prefix}:ref:refs/heads/${var.default_branch}",
+            "${var.github_oidc_subject_prefix}:environment:dev",
+            "${var.github_oidc_subject_prefix}:environment:prod",
+          ]
         }
       }
     }]
