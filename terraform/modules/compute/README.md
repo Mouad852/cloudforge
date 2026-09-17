@@ -73,6 +73,8 @@ No modules.
 | <a name="output_app_log_group_arn"></a> [app\_log\_group\_arn](#output\_app\_log\_group\_arn) | ARN of the app log group |
 | <a name="output_app_log_group_name"></a> [app\_log\_group\_name](#output\_app\_log\_group\_name) | CloudWatch Logs group receiving structured app logs - source for M7 metric filters |
 | <a name="output_app_security_group_id"></a> [app\_security\_group\_id](#output\_app\_security\_group\_id) | App instances' security group ID - RDS/Redis security groups allow ingress from this only |
+| <a name="output_artifact_key"></a> [artifact\_key](#output\_artifact\_key) | S3 key deploy tooling uploads the new app binary to before triggering an instance refresh |
 | <a name="output_asg_name"></a> [asg\_name](#output\_asg\_name) | Auto Scaling Group name - CloudWatch alarm dimension (GroupInServiceInstances, ASGAverageCPUUtilization) |
 | <a name="output_green_asg_name"></a> [green\_asg\_name](#output\_green\_asg\_name) | Green Auto Scaling Group name - blue/green deploy tooling scales this during a cutover |
+| <a name="output_launch_template_id"></a> [launch\_template\_id](#output\_launch\_template\_id) | Launch template ID - deploy tooling creates a new version against this before an instance refresh |
 <!-- END_TF_DOCS -->

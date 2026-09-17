@@ -22,3 +22,13 @@ output "green_asg_name" {
   description = "Green Auto Scaling Group name - blue/green deploy tooling scales this during a cutover"
   value       = aws_autoscaling_group.app_green.name
 }
+
+output "launch_template_id" {
+  description = "Launch template ID - deploy tooling creates a new version against this before an instance refresh"
+  value       = aws_launch_template.app.id
+}
+
+output "artifact_key" {
+  description = "S3 key deploy tooling uploads the new app binary to before triggering an instance refresh"
+  value       = var.artifact_key
+}
