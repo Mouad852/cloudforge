@@ -108,8 +108,10 @@ resource "aws_iam_role_policy" "terraform_apply_iam_scoped" {
       Resource = [
         "arn:aws:iam::*:role/dev-*",
         "arn:aws:iam::*:role/prod-*",
+        "arn:aws:iam::*:role/test-*",
         "arn:aws:iam::*:instance-profile/dev-*",
         "arn:aws:iam::*:instance-profile/prod-*",
+        "arn:aws:iam::*:instance-profile/test-*",
       ]
     }]
   })
