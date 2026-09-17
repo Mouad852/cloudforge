@@ -102,7 +102,12 @@ repos:
           #   content the CDN serves, where auto-expiring old versions risks
           #   silently deleting something a customer still references. Worth
           #   the extra storage cost to not do that automatically.
-          - --args=--skip-check=CKV_AWS_18,CKV_AWS_144,CKV_AWS_145,CKV2_AWS_62,CKV_AWS_382,CKV_AWS_126,CKV2_AWS_41,CKV_AWS_158,CKV_AWS_338,CKV_AWS_150,CKV_AWS_2,CKV2_AWS_20,CKV_AWS_103,CKV2_AWS_28,CKV_AWS_21,CKV_AWS_378,CKV_AWS_305,CKV_AWS_310,CKV_AWS_374,CKV_AWS_174,CKV2_AWS_42,CKV2_AWS_47,CKV_AWS_86,CKV2_AWS_31,CKV_AWS_157,CKV_AWS_293,CKV_AWS_354,CKV_AWS_118,CKV_AWS_149,CKV_AWS_191,CKV2_AWS_50,CKV2_AWS_57,CKV_SECRET_6,CKV2_AWS_61
+          # CKV_AWS_394: network module's aws_availability_zones data source
+          #   intentionally queries all AZs and slices the first two - that's
+          #   what lets the module work in any region without hardcoding AZ
+          #   names; pinning specific zone IDs would trade away that
+          #   portability for no real security benefit here.
+          - --args=--skip-check=CKV_AWS_18,CKV_AWS_144,CKV_AWS_145,CKV2_AWS_62,CKV_AWS_382,CKV_AWS_126,CKV2_AWS_41,CKV_AWS_158,CKV_AWS_338,CKV_AWS_150,CKV_AWS_2,CKV2_AWS_20,CKV_AWS_103,CKV2_AWS_28,CKV_AWS_21,CKV_AWS_378,CKV_AWS_305,CKV_AWS_310,CKV_AWS_374,CKV_AWS_174,CKV2_AWS_42,CKV2_AWS_47,CKV_AWS_86,CKV2_AWS_31,CKV_AWS_157,CKV_AWS_293,CKV_AWS_354,CKV_AWS_118,CKV_AWS_149,CKV_AWS_191,CKV2_AWS_50,CKV2_AWS_57,CKV_SECRET_6,CKV2_AWS_61,CKV_AWS_394
       - id: terraform_docs
         args:
           - --hook-config=--path-to-file=README.md
