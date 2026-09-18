@@ -27,6 +27,11 @@ variable "instance_type" {
   description = "EC2 instance type (Graviton/arm64, ADR-003)"
   type        = string
   default     = "t4g.micro"
+
+  validation {
+    condition     = can(regex("^[a-z]+[0-9]+g[a-z]*\\.[a-z0-9]+$", var.instance_type))
+    error_message = "instance_type must be a Graviton (arm64) type such as t4g.small - the AMI is arm64-only, so an x86 type would only fail at instance launch (ADR-003)."
+  }
 }
 
 variable "artifacts_bucket_name" {
@@ -61,12 +66,22 @@ variable "asg_max_size" {
   description = "ASG maximum size"
   type        = number
   default     = 6
+
+  validation {
+    condition     = var.asg_max_size >= var.asg_min_size
+    error_message = "asg_max_size must be greater than or equal to asg_min_size."
+  }
 }
 
 variable "asg_desired_capacity" {
   description = "ASG desired capacity"
   type        = number
   default     = 2
+
+  validation {
+    condition     = var.asg_desired_capacity >= var.asg_min_size && var.asg_desired_capacity <= var.asg_max_size
+    error_message = "asg_desired_capacity must be between asg_min_size and asg_max_size."
+  }
 }
 
 variable "target_group_arns" {
@@ -120,12 +135,22 @@ variable "green_asg_max_size" {
   description = "Green ASG maximum size - matches blue's ceiling so it can take over blue's full traffic during a cutover"
   type        = number
   default     = 6
+
+  validation {
+    condition     = var.green_asg_max_size >= var.green_asg_min_size
+    error_message = "green_asg_max_size must be greater than or equal to green_asg_min_size."
+  }
 }
 
 variable "green_asg_desired_capacity" {
   description = "Green ASG desired capacity - 0 by default, scaled up only during a blue/green deploy"
   type        = number
   default     = 0
+
+  validation {
+    condition     = var.green_asg_desired_capacity >= var.green_asg_min_size && var.green_asg_desired_capacity <= var.green_asg_max_size
+    error_message = "green_asg_desired_capacity must be between green_asg_min_size and green_asg_max_size."
+  }
 }
 
 variable "green_target_group_arns" {
