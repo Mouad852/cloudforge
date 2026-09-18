@@ -43,7 +43,7 @@ No modules.
 | <a name="input_db_name"></a> [db\_name](#input\_db\_name) | Initial database name | `string` | `"cloudstore"` | no |
 | <a name="input_deletion_protection"></a> [deletion\_protection](#input\_deletion\_protection) | Deletion protection - on in prod, off in dev | `bool` | `false` | no |
 | <a name="input_engine_version"></a> [engine\_version](#input\_engine\_version) | PostgreSQL engine version | `string` | `"16.15"` | no |
-| <a name="input_environment"></a> [environment](#input\_environment) | Environment name (dev or prod), used in resource naming/tags | `string` | n/a | yes |
+| <a name="input_environment"></a> [environment](#input\_environment) | Environment name (dev, prod, or test), used in resource naming/tags | `string` | n/a | yes |
 | <a name="input_instance_class"></a> [instance\_class](#input\_instance\_class) | RDS instance class | `string` | `"db.t4g.micro"` | no |
 | <a name="input_master_username"></a> [master\_username](#input\_master\_username) | Master username - the password itself is AWS-managed (ADR-009), never set here | `string` | `"cloudforge_admin"` | no |
 | <a name="input_multi_az"></a> [multi\_az](#input\_multi\_az) | Multi-AZ deployment - on in prod, off in dev | `bool` | `false` | no |
