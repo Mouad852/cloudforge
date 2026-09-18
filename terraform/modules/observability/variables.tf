@@ -11,6 +11,11 @@ variable "environment" {
 variable "alert_email" {
   description = "Email address subscribed to the alerts SNS topic - receives every alarm and the composite service-degraded alarm"
   type        = string
+
+  validation {
+    condition     = can(regex("^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$", var.alert_email))
+    error_message = "alert_email must look like an email address (name@domain.tld). A typo here means the SNS subscription is never confirmed and no alarm ever reaches anyone."
+  }
 }
 
 # --- Identifiers alarms attach to, wired from other modules' outputs ---
@@ -81,6 +86,11 @@ variable "canary_schedule_expression" {
   description = "How often the Synthetics canary runs"
   type        = string
   default     = "rate(5 minutes)"
+
+  validation {
+    condition     = can(regex("^(rate|cron)\\(.+\\)$", var.canary_schedule_expression))
+    error_message = "canary_schedule_expression must be a rate(...) or cron(...) expression, for example \"rate(5 minutes)\"."
+  }
 }
 
 variable "canary_runtime_version" {
