@@ -26,6 +26,11 @@ provider "aws" {
 variable "environment" {
   description = "Environment name (dev, prod, or test)"
   type        = string
+
+  validation {
+    condition     = contains(["dev", "prod", "test"], var.environment)
+    error_message = "environment must be one of: dev, prod, test."
+  }
 }
 
 variable "instance_type" {
