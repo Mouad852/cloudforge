@@ -5,7 +5,7 @@ provider "aws" {
     tags = {
       Project     = "cloudforge"
       managedBy   = "terraform"
-      Environment = "dev"
+      Environment = var.environment
     }
   }
 }
@@ -18,13 +18,66 @@ provider "aws" {
     tags = {
       Project     = "cloudforge"
       managedBy   = "terraform"
-      Environment = "dev"
+      Environment = var.environment
     }
   }
 }
 
+variable "environment" {
+  description = "Environment name (dev, prod, or test)"
+  type        = string
+}
+
+variable "instance_type" {
+  description = "EC2 instance type for the app ASG"
+  type        = string
+  default     = "t4g.small"
+}
+
+variable "asg_min_size" {
+  description = "ASG minimum size"
+  type        = number
+  default     = 1
+}
+
+variable "asg_max_size" {
+  description = "ASG maximum size"
+  type        = number
+  default     = 2
+}
+
+variable "asg_desired_capacity" {
+  description = "ASG desired capacity"
+  type        = number
+  default     = 1
+}
+
+variable "db_multi_az" {
+  description = "RDS Multi-AZ deployment - on in prod, off in dev"
+  type        = bool
+  default     = false
+}
+
+variable "db_deletion_protection" {
+  description = "RDS deletion protection - on in prod, off in dev"
+  type        = bool
+  default     = false
+}
+
+variable "db_backup_retention_period" {
+  description = "RDS automated backup retention in days"
+  type        = number
+  default     = 1
+}
+
+variable "db_apply_immediately" {
+  description = "Apply RDS modifications immediately instead of waiting for the next maintenance window - on in dev for fast iteration, off in prod to avoid mid-day disruption"
+  type        = bool
+  default     = true
+}
+
 variable "snapshot_identifier" {
-  description = "Restore dev-cloudforge-db from this snapshot instead of creating an empty one - set by `make dev-up` after a `make dev-down` (ADR-015)"
+  description = "Restore this environment's DB from a snapshot instead of creating an empty one - set by `make <env>-up` after a `make <env>-down` (ADR-015)"
   type        = string
   default     = null
 }
@@ -37,13 +90,13 @@ variable "alert_email" {
 module "network" {
   source = "../../modules/network"
 
-  environment = "dev"
+  environment = var.environment
 }
 
 module "storage" {
   source = "../../modules/storage"
 
-  environment = "dev"
+  environment = var.environment
 }
 
 module "edge" {
@@ -54,7 +107,7 @@ module "edge" {
     aws.use1 = aws.use1
   }
 
-  environment                        = "dev"
+  environment                        = var.environment
   vpc_id                             = module.network.vpc_id
   vpc_cidr                           = module.network.vpc_cidr
   public_subnet_ids                  = [module.network.subnet_ids["public-a"], module.network.subnet_ids["public-b"]]
@@ -67,7 +120,7 @@ module "edge" {
 module "compute" {
   source = "../../modules/compute"
 
-  environment             = "dev"
+  environment             = var.environment
   vpc_id                  = module.network.vpc_id
   app_subnet_ids          = [module.network.subnet_ids["app-a"], module.network.subnet_ids["app-b"]]
   artifacts_bucket_arn    = module.storage.artifacts_bucket_arn
@@ -78,18 +131,18 @@ module "compute" {
   green_target_group_arns = [module.edge.green_target_group_arn]
   data_tier_cidr_blocks   = ["10.0.21.0/24", "10.0.22.0/24"]
   db_secret_arn           = module.database.master_user_secret_arn
-  # Deliberately t4g.small, not the module's t4g.micro default: eu-west-3a/3b
-  # had no t4g.micro capacity when this was built, and this size has since
-  # been proven end-to-end. Kept as the standing choice, not a pending revert.
-  instance_type         = "t4g.small"
-  redis_secret_arn      = module.cache.auth_secret_arn
-  redis_tls_server_name = module.cache.redis_primary_endpoint
+  instance_type           = var.instance_type
+  asg_min_size            = var.asg_min_size
+  asg_max_size            = var.asg_max_size
+  asg_desired_capacity    = var.asg_desired_capacity
+  redis_secret_arn        = module.cache.auth_secret_arn
+  redis_tls_server_name   = module.cache.redis_primary_endpoint
 }
 
 module "cache" {
   source = "../../modules/cache"
 
-  environment           = "dev"
+  environment           = var.environment
   vpc_id                = module.network.vpc_id
   data_subnet_ids       = [module.network.subnet_ids["data-a"], module.network.subnet_ids["data-b"]]
   app_security_group_id = module.compute.app_security_group_id
@@ -99,12 +152,16 @@ module "cache" {
 module "database" {
   source = "../../modules/database"
 
-  environment           = "dev"
-  vpc_id                = module.network.vpc_id
-  data_subnet_ids       = [module.network.subnet_ids["data-a"], module.network.subnet_ids["data-b"]]
-  app_security_group_id = module.compute.app_security_group_id
-  private_zone_id       = module.network.private_zone_id
-  snapshot_identifier   = var.snapshot_identifier
+  environment             = var.environment
+  vpc_id                  = module.network.vpc_id
+  data_subnet_ids         = [module.network.subnet_ids["data-a"], module.network.subnet_ids["data-b"]]
+  app_security_group_id   = module.compute.app_security_group_id
+  private_zone_id         = module.network.private_zone_id
+  snapshot_identifier     = var.snapshot_identifier
+  multi_az                = var.db_multi_az
+  deletion_protection     = var.db_deletion_protection
+  backup_retention_period = var.db_backup_retention_period
+  apply_immediately       = var.db_apply_immediately
 }
 
 module "observability" {
@@ -115,7 +172,7 @@ module "observability" {
     aws.use1 = aws.use1
   }
 
-  environment                = "dev"
+  environment                = var.environment
   alert_email                = var.alert_email
   alb_arn_suffix             = module.edge.alb_arn_suffix
   target_group_arn_suffix    = module.edge.blue_target_group_arn_suffix

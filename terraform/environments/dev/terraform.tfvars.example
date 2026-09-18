@@ -1,0 +1,13 @@
+environment = "dev"
+
+instance_type        = "t4g.small" # t4g.micro had no capacity in eu-west-3a/3b when this was tested; proven end-to-end since
+asg_min_size         = 1
+asg_max_size         = 2
+asg_desired_capacity = 1
+
+db_multi_az                = false
+db_deletion_protection     = false
+db_backup_retention_period = 1
+db_apply_immediately       = true
+
+alert_email = "you@example.com"
