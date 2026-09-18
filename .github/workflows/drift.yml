@@ -52,10 +52,13 @@ jobs:
       - name: terraform plan (detailed exit code)
         id: plan
         run: |
+          set +e
           terraform plan -detailed-exitcode -lock=false -input=false -no-color \
             -var="alert_email=${{ vars.ALERT_EMAIL }}" \
             2>&1 | tee plan.txt
-          echo "exitcode=$?" >> "$GITHUB_OUTPUT"
+          EXITCODE=${PIPESTATUS[0]}
+          set -e
+          echo "exitcode=$EXITCODE" >> "$GITHUB_OUTPUT"
         continue-on-error: true
 
       - name: open or update drift issue

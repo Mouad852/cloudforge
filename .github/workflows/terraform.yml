@@ -85,10 +85,13 @@ jobs:
       - name: terraform plan
         id: plan
         run: |
+          set +e
           terraform plan -lock=false -input=false -no-color \
             -var="alert_email=${{ vars.ALERT_EMAIL }}" \
             -out=tfplan 2>&1 | tee plan.txt
-          echo "exitcode=$?" >> "$GITHUB_OUTPUT"
+          EXITCODE=${PIPESTATUS[0]}
+          set -e
+          echo "exitcode=$EXITCODE" >> "$GITHUB_OUTPUT"
         continue-on-error: true
 
       - name: find previous comment
@@ -113,7 +116,7 @@ jobs:
             ```
 
       - name: fail if plan failed
-        if: steps.plan.outcome == 'failure'
+        if: steps.plan.outputs.exitcode == '1'
         run: exit 1
 
   infracost:
