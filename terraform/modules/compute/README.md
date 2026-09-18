@@ -53,7 +53,7 @@ No modules.
 | <a name="input_asg_min_size"></a> [asg\_min\_size](#input\_asg\_min\_size) | ASG minimum size | `number` | `2` | no |
 | <a name="input_data_tier_cidr_blocks"></a> [data\_tier\_cidr\_blocks](#input\_data\_tier\_cidr\_blocks) | Data-tier subnet CIDRs - the app SG's egress for RDS/Redis is scoped to these, not the whole VPC | `list(string)` | n/a | yes |
 | <a name="input_db_secret_arn"></a> [db\_secret\_arn](#input\_db\_secret\_arn) | Secrets Manager ARN for the RDS master password (ADR-009) - empty string means no database configured yet | `string` | `""` | no |
-| <a name="input_environment"></a> [environment](#input\_environment) | Environment name (dev or prod), used in resource naming/tags | `string` | n/a | yes |
+| <a name="input_environment"></a> [environment](#input\_environment) | Environment name (dev, prod, or test), used in resource naming/tags | `string` | n/a | yes |
 | <a name="input_green_asg_desired_capacity"></a> [green\_asg\_desired\_capacity](#input\_green\_asg\_desired\_capacity) | Green ASG desired capacity - 0 by default, scaled up only during a blue/green deploy | `number` | `0` | no |
 | <a name="input_green_asg_max_size"></a> [green\_asg\_max\_size](#input\_green\_asg\_max\_size) | Green ASG maximum size - matches blue's ceiling so it can take over blue's full traffic during a cutover | `number` | `6` | no |
 | <a name="input_green_asg_min_size"></a> [green\_asg\_min\_size](#input\_green\_asg\_min\_size) | Green ASG minimum size - 0 by default so the idle blue/green fleet costs nothing outside a deploy window | `number` | `0` | no |
