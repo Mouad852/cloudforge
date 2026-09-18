@@ -41,6 +41,11 @@ resource "random_password" "redis_auth" {
 resource "aws_secretsmanager_secret" "redis_auth" {
   name        = local.redis_secret_name
   description = "ElastiCache Redis AUTH token (M6)"
+  # dev is destroyed and recreated routinely (nightly-destroy.yml, make
+  # dev-down/dev-up) - AWS's default 30-day recovery window blocks every
+  # recreate with "already scheduled for deletion" (hit this for real).
+  # prod keeps the default recovery window as a safety net.
+  recovery_window_in_days = var.environment == "dev" ? 0 : 30
 }
 
 resource "aws_secretsmanager_secret_version" "redis_auth" {
