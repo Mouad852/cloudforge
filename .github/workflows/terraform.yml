@@ -196,6 +196,13 @@ jobs:
     name: test (network)
     if: github.event_name == 'push'
     runs-on: ubuntu-latest
+    # network.tftest.hcl's route-table assertion is command = apply - the
+    # only module test that launches a real EC2 instance. Without this,
+    # overlapping pushes race for the account's default per-family vCPU
+    # quota (hit this for real: VcpuLimitExceeded during a burst of pushes).
+    concurrency:
+      group: cloudforge-test-network
+      cancel-in-progress: false
     permissions:
       id-token: write
       contents: read
