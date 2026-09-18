@@ -90,6 +90,11 @@ variable "snapshot_identifier" {
 variable "alert_email" {
   description = "Email address subscribed to the M7 observability SNS alerts topic"
   type        = string
+
+  validation {
+    condition     = can(regex("^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$", var.alert_email))
+    error_message = "alert_email must look like an email address (name@domain.tld). A typo here means the SNS subscription is never confirmed and no alarm ever reaches anyone."
+  }
 }
 
 module "network" {
