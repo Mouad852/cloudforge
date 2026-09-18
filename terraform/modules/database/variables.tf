@@ -33,12 +33,22 @@ variable "instance_class" {
   description = "RDS instance class"
   type        = string
   default     = "db.t4g.micro"
+
+  validation {
+    condition     = startswith(var.instance_class, "db.")
+    error_message = "instance_class must be an RDS class starting with \"db.\" (for example db.t4g.micro), not an EC2 or ElastiCache type."
+  }
 }
 
 variable "allocated_storage" {
   description = "Allocated storage in GB"
   type        = number
   default     = 20
+
+  validation {
+    condition     = var.allocated_storage >= 20
+    error_message = "allocated_storage must be at least 20 GB, the minimum RDS accepts for PostgreSQL on gp2/gp3."
+  }
 }
 
 variable "db_name" {
@@ -69,6 +79,11 @@ variable "backup_retention_period" {
   description = "Automated backup retention in days"
   type        = number
   default     = 1
+
+  validation {
+    condition     = var.backup_retention_period >= 0 && var.backup_retention_period <= 35
+    error_message = "backup_retention_period must be between 0 and 35 days, RDS's hard limit for automated backups."
+  }
 }
 
 variable "private_zone_id" {
