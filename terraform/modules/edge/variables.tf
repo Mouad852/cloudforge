@@ -60,10 +60,25 @@ variable "blue_weight" {
   description = "Percentage weight (0-100) of listener traffic sent to the blue target group - Terraform-driven blue/green shifting, ADR-017"
   type        = number
   default     = 100
+
+  validation {
+    condition     = var.blue_weight >= 0 && var.blue_weight <= 100
+    error_message = "blue_weight must be between 0 and 100."
+  }
 }
 
 variable "green_weight" {
   description = "Percentage weight (0-100) of listener traffic sent to the green target group - Terraform-driven blue/green shifting, ADR-017"
   type        = number
   default     = 0
+
+  validation {
+    condition     = var.green_weight >= 0 && var.green_weight <= 100
+    error_message = "green_weight must be between 0 and 100."
+  }
+
+  validation {
+    condition     = var.blue_weight + var.green_weight == 100
+    error_message = "blue_weight and green_weight must sum to 100, otherwise the listener sends traffic to nowhere or to an unintended split."
+  }
 }
