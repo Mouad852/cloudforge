@@ -32,6 +32,11 @@ variable "node_type" {
   description = "ElastiCache node type"
   type        = string
   default     = "cache.t4g.micro"
+
+  validation {
+    condition     = startswith(var.node_type, "cache.")
+    error_message = "node_type must be an ElastiCache node type starting with \"cache.\" (for example cache.t4g.micro), not an EC2 or RDS type."
+  }
 }
 
 variable "engine_version" {
