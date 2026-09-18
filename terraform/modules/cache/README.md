@@ -40,7 +40,7 @@ No modules.
 | <a name="input_apply_immediately"></a> [apply\_immediately](#input\_apply\_immediately) | Apply modifications right away instead of waiting for the next maintenance window - on in dev for fast iteration | `bool` | `true` | no |
 | <a name="input_data_subnet_ids"></a> [data\_subnet\_ids](#input\_data\_subnet\_ids) | Data-tier subnet IDs (both AZs) for the ElastiCache subnet group | `list(string)` | n/a | yes |
 | <a name="input_engine_version"></a> [engine\_version](#input\_engine\_version) | Redis engine version | `string` | `"7.1"` | no |
-| <a name="input_environment"></a> [environment](#input\_environment) | Environment name (dev or prod), used in resource naming/tags | `string` | n/a | yes |
+| <a name="input_environment"></a> [environment](#input\_environment) | Environment name (dev, prod, or test), used in resource naming/tags | `string` | n/a | yes |
 | <a name="input_node_type"></a> [node\_type](#input\_node\_type) | ElastiCache node type | `string` | `"cache.t4g.micro"` | no |
 | <a name="input_private_zone_id"></a> [private\_zone\_id](#input\_private\_zone\_id) | Route 53 private hosted zone ID (ADR-013) - the DNS record lives here | `string` | n/a | yes |
 | <a name="input_vpc_id"></a> [vpc\_id](#input\_vpc\_id) | VPC ID the Redis security group lives in | `string` | n/a | yes |
