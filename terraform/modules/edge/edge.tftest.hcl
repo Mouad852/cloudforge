@@ -95,3 +95,65 @@ run "cloudfront_images_behavior" {
     error_message = "The images-s3 origin must use the OAC, not a public bucket"
   }
 }
+
+run "deregistration_delay_defaults_to_30_on_both_target_groups" {
+  command = plan
+
+  providers = {
+    aws      = aws
+    aws.use1 = aws.use1
+  }
+
+  assert {
+    condition     = tonumber(aws_lb_target_group.blue.deregistration_delay) == 30 && tonumber(aws_lb_target_group.green.deregistration_delay) == 30
+    error_message = "Default deregistration delay must stay 30s on both target groups, the value the live environments already run"
+  }
+}
+
+run "deregistration_delay_flows_through_to_both_target_groups" {
+  command = plan
+
+  providers = {
+    aws      = aws
+    aws.use1 = aws.use1
+  }
+
+  variables {
+    deregistration_delay_seconds = 120
+  }
+
+  assert {
+    condition     = tonumber(aws_lb_target_group.blue.deregistration_delay) == 120 && tonumber(aws_lb_target_group.green.deregistration_delay) == 120
+    error_message = "deregistration_delay_seconds must reach both the blue and green target groups"
+  }
+}
+
+run "deregistration_delay_over_the_alb_maximum_rejected" {
+  command = plan
+
+  providers = {
+    aws      = aws
+    aws.use1 = aws.use1
+  }
+
+  variables {
+    deregistration_delay_seconds = 3601
+  }
+
+  expect_failures = [var.deregistration_delay_seconds]
+}
+
+run "negative_deregistration_delay_rejected" {
+  command = plan
+
+  providers = {
+    aws      = aws
+    aws.use1 = aws.use1
+  }
+
+  variables {
+    deregistration_delay_seconds = -1
+  }
+
+  expect_failures = [var.deregistration_delay_seconds]
+}

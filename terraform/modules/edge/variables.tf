@@ -82,3 +82,14 @@ variable "green_weight" {
     error_message = "blue_weight and green_weight must sum to 100, otherwise the listener sends traffic to nowhere or to an unintended split."
   }
 }
+
+variable "deregistration_delay_seconds" {
+  description = "Seconds the ALB keeps sending an unregistering instance's in-flight requests to it before dropping it - applies to both the blue and green target groups"
+  type        = number
+  default     = 30
+
+  validation {
+    condition     = var.deregistration_delay_seconds >= 0 && var.deregistration_delay_seconds <= 3600
+    error_message = "deregistration_delay_seconds must be between 0 and 3600 seconds (the ALB maximum)."
+  }
+}

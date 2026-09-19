@@ -120,7 +120,7 @@ resource "aws_lb_target_group" "blue" {
   vpc_id      = var.vpc_id
   target_type = "instance"
 
-  deregistration_delay = 30
+  deregistration_delay = var.deregistration_delay_seconds
 
   health_check {
     path                = var.health_check_path
@@ -144,7 +144,7 @@ resource "aws_lb_target_group" "green" {
   vpc_id      = var.vpc_id
   target_type = "instance"
 
-  deregistration_delay = 30
+  deregistration_delay = var.deregistration_delay_seconds
 
   health_check {
     path                = var.health_check_path

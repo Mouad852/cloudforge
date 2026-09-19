@@ -52,6 +52,7 @@ No modules.
 | ---- | ----------- | ---- | ------- | :------: |
 | <a name="input_app_port"></a> [app\_port](#input\_app\_port) | Port the app instances listen on | `number` | `8080` | no |
 | <a name="input_blue_weight"></a> [blue\_weight](#input\_blue\_weight) | Percentage weight (0-100) of listener traffic sent to the blue target group - Terraform-driven blue/green shifting, ADR-017 | `number` | `100` | no |
+| <a name="input_deregistration_delay_seconds"></a> [deregistration\_delay\_seconds](#input\_deregistration\_delay\_seconds) | Seconds the ALB keeps sending an unregistering instance's in-flight requests to it before dropping it - applies to both the blue and green target groups | `number` | `30` | no |
 | <a name="input_environment"></a> [environment](#input\_environment) | Environment name (dev, prod, or test), used in resource naming/tags | `string` | n/a | yes |
 | <a name="input_green_weight"></a> [green\_weight](#input\_green\_weight) | Percentage weight (0-100) of listener traffic sent to the green target group - Terraform-driven blue/green shifting, ADR-017 | `number` | `0` | no |
 | <a name="input_health_check_path"></a> [health\_check\_path](#input\_health\_check\_path) | Shallow health check path the app exposes | `string` | `"/healthz"` | no |
