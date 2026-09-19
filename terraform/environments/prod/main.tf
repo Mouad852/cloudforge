@@ -212,6 +212,7 @@ module "compute" {
   asg_max_size            = var.asg_max_size
   asg_desired_capacity    = var.asg_desired_capacity
   log_retention_days      = var.log_retention_days
+  redis_addr              = "${module.cache.dns_name}:${module.cache.redis_port}"
   redis_secret_arn        = module.cache.auth_secret_arn
   redis_tls_server_name   = module.cache.redis_primary_endpoint
 
