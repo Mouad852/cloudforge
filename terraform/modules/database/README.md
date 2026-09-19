@@ -42,6 +42,7 @@ No modules.
 | <a name="input_data_subnet_ids"></a> [data\_subnet\_ids](#input\_data\_subnet\_ids) | Data-tier subnet IDs (both AZs) for the DB subnet group | `list(string)` | n/a | yes |
 | <a name="input_db_name"></a> [db\_name](#input\_db\_name) | Initial database name | `string` | `"cloudstore"` | no |
 | <a name="input_deletion_protection"></a> [deletion\_protection](#input\_deletion\_protection) | Deletion protection - on in prod, off in dev | `bool` | `false` | no |
+| <a name="input_dns_ttl_seconds"></a> [dns\_ttl\_seconds](#input\_dns\_ttl\_seconds) | TTL, in seconds, of the private DNS CNAME the app connects through - short enough that a replaced RDS instance is picked up quickly | `number` | `300` | no |
 | <a name="input_engine_version"></a> [engine\_version](#input\_engine\_version) | PostgreSQL engine version | `string` | `"16.15"` | no |
 | <a name="input_environment"></a> [environment](#input\_environment) | Environment name (dev, prod, or test), used in resource naming/tags | `string` | n/a | yes |
 | <a name="input_instance_class"></a> [instance\_class](#input\_instance\_class) | RDS instance class | `string` | `"db.t4g.micro"` | no |

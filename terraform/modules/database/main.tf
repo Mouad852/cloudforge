@@ -114,6 +114,6 @@ resource "aws_route53_record" "db" {
   zone_id = var.private_zone_id
   name    = "db.cloudforge.internal"
   type    = "CNAME"
-  ttl     = 300
+  ttl     = var.dns_ttl_seconds
   records = [aws_db_instance.main.address]
 }
