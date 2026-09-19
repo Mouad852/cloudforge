@@ -39,6 +39,17 @@ variable "instance_type" {
   default     = "t4g.small"
 }
 
+variable "app_port" {
+  description = "Port the app listens on - the ALB (edge) targets it and the app security group and service (compute) use it"
+  type        = number
+  default     = 8080
+
+  validation {
+    condition     = var.app_port >= 1 && var.app_port <= 65535
+    error_message = "app_port must be a valid TCP port between 1 and 65535."
+  }
+}
+
 variable "asg_min_size" {
   description = "ASG minimum size"
   type        = number
@@ -128,7 +139,7 @@ module "edge" {
   vpc_id                             = module.network.vpc_id
   vpc_cidr                           = module.network.vpc_cidr
   public_subnet_ids                  = [module.network.subnet_ids["public-a"], module.network.subnet_ids["public-b"]]
-  app_port                           = 8080
+  app_port                           = var.app_port
   images_bucket_id                   = module.storage.images_bucket_id
   images_bucket_arn                  = module.storage.images_bucket_arn
   images_bucket_regional_domain_name = module.storage.images_bucket_regional_domain_name
@@ -149,6 +160,7 @@ module "compute" {
   data_tier_cidr_blocks   = module.network.data_tier_cidr_blocks
   db_secret_arn           = module.database.master_user_secret_arn
   instance_type           = var.instance_type
+  app_port                = var.app_port
   asg_min_size            = var.asg_min_size
   asg_max_size            = var.asg_max_size
   asg_desired_capacity    = var.asg_desired_capacity
