@@ -73,3 +73,12 @@ run "asg_and_scaling_config" {
     error_message = "Lifecycle hook must fire on instance termination"
   }
 }
+
+run "user_data_uses_unix_line_endings" {
+  command = plan
+
+  assert {
+    condition     = !strcontains(base64decode(aws_launch_template.app.user_data), "\r")
+    error_message = "The rendered user_data contains CRLF line endings, so bash on the instance would fail at the shebang. Check .gitattributes covers *.tpl and re-checkout the template."
+  }
+}
