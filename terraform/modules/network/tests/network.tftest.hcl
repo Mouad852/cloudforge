@@ -104,6 +104,48 @@ run "vpc_cidr_that_is_not_a_cidr_rejected" {
   expect_failures = [var.vpc_cidr]
 }
 
+run "log_retention_defaults_to_14" {
+  command = plan
+
+  assert {
+    condition     = aws_cloudwatch_log_group.vpc_flow_logs.retention_in_days == 14
+    error_message = "Default log retention must stay 14 days, the value the live environments already run"
+  }
+}
+
+run "log_retention_flows_through" {
+  command = plan
+
+  variables {
+    log_retention_days = 30
+  }
+
+  assert {
+    condition     = aws_cloudwatch_log_group.vpc_flow_logs.retention_in_days == 30
+    error_message = "log_retention_days must reach the VPC flow log group"
+  }
+}
+
+run "log_retention_unsupported_value_rejected" {
+  command = plan
+
+  variables {
+    log_retention_days = 10
+  }
+
+  expect_failures = [var.log_retention_days]
+}
+
+run "log_retention_never_expire_rejected" {
+  command = plan
+
+  variables {
+    log_retention_days = 0
+  }
+
+  expect_failures = [var.log_retention_days]
+}
+
 run "private_route_table_never_reaches_igw" {
   command = apply
 

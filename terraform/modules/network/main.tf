@@ -250,7 +250,7 @@ resource "aws_vpc_endpoint" "s3" {
 
 resource "aws_cloudwatch_log_group" "vpc_flow_logs" {
   name              = "/aws/vpc/${var.environment}-cloudforge"
-  retention_in_days = 14
+  retention_in_days = var.log_retention_days
 }
 
 resource "aws_iam_role" "vpc_flow_logs" {
