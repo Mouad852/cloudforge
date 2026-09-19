@@ -33,6 +33,7 @@ No resources.
 | Name | Description | Type | Default | Required |
 | ---- | ----------- | ---- | ------- | :------: |
 | <a name="input_alert_email"></a> [alert\_email](#input\_alert\_email) | Email address subscribed to the M7 observability SNS alerts topic | `string` | n/a | yes |
+| <a name="input_app_port"></a> [app\_port](#input\_app\_port) | Port the app listens on - the ALB (edge) targets it and the app security group and service (compute) use it | `number` | `8080` | no |
 | <a name="input_asg_desired_capacity"></a> [asg\_desired\_capacity](#input\_asg\_desired\_capacity) | ASG desired capacity | `number` | `1` | no |
 | <a name="input_asg_max_size"></a> [asg\_max\_size](#input\_asg\_max\_size) | ASG maximum size | `number` | `2` | no |
 | <a name="input_asg_min_size"></a> [asg\_min\_size](#input\_asg\_min\_size) | ASG minimum size | `number` | `1` | no |
