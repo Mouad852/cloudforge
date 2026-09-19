@@ -50,3 +50,14 @@ variable "apply_immediately" {
   type        = bool
   default     = true
 }
+
+variable "dns_ttl_seconds" {
+  description = "TTL, in seconds, of the private DNS CNAME the app connects through - short enough that a replaced Redis endpoint is picked up quickly"
+  type        = number
+  default     = 300
+
+  validation {
+    condition     = var.dns_ttl_seconds >= 0 && var.dns_ttl_seconds <= 86400
+    error_message = "dns_ttl_seconds must be between 0 and 86400 (one day)."
+  }
+}

@@ -46,3 +46,45 @@ run "encryption_and_auth" {
     error_message = "Redis AUTH secret name must match modules/compute's IAM policy naming convention"
   }
 }
+
+run "dns_ttl_defaults_to_300" {
+  command = plan
+
+  assert {
+    condition     = aws_route53_record.cache.ttl == 300
+    error_message = "Default DNS TTL must stay 300s, the value the live environments already run"
+  }
+}
+
+run "dns_ttl_flows_through" {
+  command = plan
+
+  variables {
+    dns_ttl_seconds = 60
+  }
+
+  assert {
+    condition     = aws_route53_record.cache.ttl == 60
+    error_message = "dns_ttl_seconds must reach the cache DNS record"
+  }
+}
+
+run "dns_ttl_over_a_day_rejected" {
+  command = plan
+
+  variables {
+    dns_ttl_seconds = 86401
+  }
+
+  expect_failures = [var.dns_ttl_seconds]
+}
+
+run "negative_dns_ttl_rejected" {
+  command = plan
+
+  variables {
+    dns_ttl_seconds = -1
+  }
+
+  expect_failures = [var.dns_ttl_seconds]
+}
