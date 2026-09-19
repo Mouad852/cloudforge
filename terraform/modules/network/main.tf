@@ -177,6 +177,15 @@ resource "aws_instance" "nat" {
   tags = {
     Name = "${var.environment}-nat-instance"
   }
+
+  lifecycle {
+    # data.aws_ami.al2023 is most_recent, so every new AL2023 release would make
+    # Terraform replace this instance - all private-subnet egress drops while it
+    # is rebuilt - on whatever unrelated plan happens to run next. Ignoring the
+    # AMI makes a replacement something you choose, not something that happens
+    # to you: terraform apply -replace=module.network.aws_instance.nat
+    ignore_changes = [ami]
+  }
 }
 
 # The NAT instance is the single point of failure for all private-subnet egress,
