@@ -52,12 +52,13 @@ No modules.
 | ---- | ----------- | ---- | ------- | :------: |
 | <a name="input_environment"></a> [environment](#input\_environment) | Environment name (dev, prod, or test), used in resource naming/tags | `string` | n/a | yes |
 | <a name="input_nat_instance_type"></a> [nat\_instance\_type](#input\_nat\_instance\_type) | Instance type for the NAT instance | `string` | `"t3.micro"` | no |
-| <a name="input_vpc_cidr"></a> [vpc\_cidr](#input\_vpc\_cidr) | CIDR block for the VPC | `string` | `"10.0.0.0/16"` | no |
+| <a name="input_vpc_cidr"></a> [vpc\_cidr](#input\_vpc\_cidr) | CIDR block for the VPC - must be a /16, the module carves six /24 subnets out of it | `string` | `"10.0.0.0/16"` | no |
 
 ## Outputs
 
 | Name | Description |
 | ---- | ----------- |
+| <a name="output_data_tier_cidr_blocks"></a> [data\_tier\_cidr\_blocks](#output\_data\_tier\_cidr\_blocks) | CIDR blocks of the data-tier subnets - what the app security group's egress to RDS and Redis is scoped to |
 | <a name="output_nat_instance_public_ip"></a> [nat\_instance\_public\_ip](#output\_nat\_instance\_public\_ip) | Public (Elastic) IP of the NAT instance |
 | <a name="output_private_route_table_id"></a> [private\_route\_table\_id](#output\_private\_route\_table\_id) | The private route table ID |
 | <a name="output_private_zone_id"></a> [private\_zone\_id](#output\_private\_zone\_id) | Route 53 private hosted zone ID - M5/M6 add records here |

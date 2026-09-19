@@ -34,3 +34,8 @@ output "private_zone_id" {
   description = "Route 53 private hosted zone ID - M5/M6 add records here"
   value       = aws_route53_zone.private.zone_id
 }
+
+output "data_tier_cidr_blocks" {
+  description = "CIDR blocks of the data-tier subnets - what the app security group's egress to RDS and Redis is scoped to"
+  value       = [for k, v in local.subnets : v.cidr if v.tier == "data"]
+}
