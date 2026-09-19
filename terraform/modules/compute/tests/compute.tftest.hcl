@@ -82,3 +82,45 @@ run "user_data_uses_unix_line_endings" {
     error_message = "The rendered user_data contains CRLF line endings, so bash on the instance would fail at the shebang. Check .gitattributes covers *.tpl and re-checkout the template."
   }
 }
+
+run "log_retention_defaults_to_14" {
+  command = plan
+
+  assert {
+    condition     = aws_cloudwatch_log_group.app.retention_in_days == 14
+    error_message = "Default log retention must stay 14 days, the value the live environments already run"
+  }
+}
+
+run "log_retention_flows_through" {
+  command = plan
+
+  variables {
+    log_retention_days = 30
+  }
+
+  assert {
+    condition     = aws_cloudwatch_log_group.app.retention_in_days == 30
+    error_message = "log_retention_days must reach the app log group"
+  }
+}
+
+run "log_retention_unsupported_value_rejected" {
+  command = plan
+
+  variables {
+    log_retention_days = 10
+  }
+
+  expect_failures = [var.log_retention_days]
+}
+
+run "log_retention_never_expire_rejected" {
+  command = plan
+
+  variables {
+    log_retention_days = 0
+  }
+
+  expect_failures = [var.log_retention_days]
+}

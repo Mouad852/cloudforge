@@ -32,7 +32,7 @@ resource "aws_iam_instance_profile" "app" {
 
 resource "aws_cloudwatch_log_group" "app" {
   name              = local.log_group_name
-  retention_in_days = 14
+  retention_in_days = var.log_retention_days
 }
 
 resource "aws_iam_role_policy" "app" {
