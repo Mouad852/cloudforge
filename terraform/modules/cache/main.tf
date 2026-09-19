@@ -81,10 +81,21 @@ resource "aws_elasticache_replication_group" "main" {
   }
 }
 
+# Optional: a stable private name in front of the AWS-generated endpoint, so
+# app config never embeds the generated hostname (ADR-013).
 resource "aws_route53_record" "cache" {
+  count = var.dns_record_name == null ? 0 : 1
+
   zone_id = var.private_zone_id
-  name    = "cache.cloudforge.internal"
+  name    = var.dns_record_name
   type    = "CNAME"
   ttl     = var.dns_ttl_seconds
   records = [aws_elasticache_replication_group.main.primary_endpoint_address]
+}
+
+# The record used to be unconditional. Without this, adding count would make
+# Terraform destroy the live record and create a new one at cache[0].
+moved {
+  from = aws_route53_record.cache
+  to   = aws_route53_record.cache[0]
 }

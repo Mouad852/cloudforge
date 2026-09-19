@@ -35,8 +35,25 @@ variable "app_security_group_id" {
 }
 
 variable "private_zone_id" {
-  description = "Route 53 private hosted zone ID (ADR-013) - the DNS record lives here"
+  description = "Route 53 private hosted zone ID the DNS record lives in (ADR-013) - only needed when dns_record_name is set"
   type        = string
+  default     = null
+}
+
+variable "dns_record_name" {
+  description = "Fully qualified name of a private CNAME pointing at the Redis primary endpoint (for example cache.example.internal). Null, the default, creates no record."
+  type        = string
+  default     = null
+
+  validation {
+    condition     = var.dns_record_name == null || can(regex("^[a-z0-9]([a-z0-9-]*[a-z0-9])?(\\.[a-z0-9]([a-z0-9-]*[a-z0-9])?)+$", var.dns_record_name))
+    error_message = "dns_record_name must be a lowercase fully qualified name such as cache.example.internal."
+  }
+
+  validation {
+    condition     = var.dns_record_name == null || var.private_zone_id != null
+    error_message = "private_zone_id is required when dns_record_name is set - the record has to live in a hosted zone."
+  }
 }
 
 variable "node_type" {

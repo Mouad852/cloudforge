@@ -8,6 +8,7 @@ variables {
   data_subnet_ids       = ["subnet-ccccccccccccccccc", "subnet-ddddddddddddddddd"]
   app_security_group_id = "sg-0123456789abcdef0"
   private_zone_id       = "Z0123456789ABCDEFGHIJ"
+  dns_record_name       = "cache.cloudforge.internal"
 }
 
 run "encryption_and_auth" {
@@ -51,7 +52,7 @@ run "dns_ttl_defaults_to_300" {
   command = plan
 
   assert {
-    condition     = aws_route53_record.cache.ttl == 300
+    condition     = aws_route53_record.cache[0].ttl == 300
     error_message = "Default DNS TTL must stay 300s, the value the live environments already run"
   }
 }
@@ -64,7 +65,7 @@ run "dns_ttl_flows_through" {
   }
 
   assert {
-    condition     = aws_route53_record.cache.ttl == 60
+    condition     = aws_route53_record.cache[0].ttl == 60
     error_message = "dns_ttl_seconds must reach the cache DNS record"
   }
 }
@@ -171,4 +172,72 @@ run "name_prefix_too_long_for_a_replication_group_id_rejected" {
   }
 
   expect_failures = [var.name_prefix]
+}
+
+run "dns_record_is_named_by_the_variable" {
+  command = plan
+
+  variables {
+    dns_record_name = "cache.example.internal"
+  }
+
+  assert {
+    condition     = aws_route53_record.cache[0].name == "cache.example.internal" && aws_route53_record.cache[0].type == "CNAME"
+    error_message = "The CNAME must be named by dns_record_name"
+  }
+
+  assert {
+    condition     = output.dns_name == "cache.example.internal"
+    error_message = "The dns_name output must return the record name"
+  }
+}
+
+run "no_dns_record_when_no_name_is_given" {
+  command = plan
+
+  variables {
+    dns_record_name = null
+    private_zone_id = null
+  }
+
+  assert {
+    condition     = length(aws_route53_record.cache) == 0
+    error_message = "With no dns_record_name the module must not create a DNS record"
+  }
+
+  assert {
+    condition     = output.dns_name == null
+    error_message = "dns_name must be null when there is no record"
+  }
+}
+
+run "dns_record_name_without_a_zone_rejected" {
+  command = plan
+
+  variables {
+    dns_record_name = "cache.example.internal"
+    private_zone_id = null
+  }
+
+  expect_failures = [var.dns_record_name]
+}
+
+run "dns_record_name_that_is_not_a_fqdn_rejected" {
+  command = plan
+
+  variables {
+    dns_record_name = "cache"
+  }
+
+  expect_failures = [var.dns_record_name]
+}
+
+run "uppercase_dns_record_name_rejected" {
+  command = plan
+
+  variables {
+    dns_record_name = "Cache.Example.Internal"
+  }
+
+  expect_failures = [var.dns_record_name]
 }

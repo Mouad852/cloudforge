@@ -22,3 +22,8 @@ output "replication_group_id" {
   description = "ElastiCache replication group ID - CloudWatch alarm dimension (CacheClusterId)"
   value       = aws_elasticache_replication_group.main.id
 }
+
+output "dns_name" {
+  description = "The private DNS name pointing at the Redis primary endpoint, or null when no record was requested"
+  value       = one(aws_route53_record.cache[*].name)
+}

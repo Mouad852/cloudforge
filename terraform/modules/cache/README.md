@@ -39,12 +39,13 @@ No modules.
 | <a name="input_app_security_group_id"></a> [app\_security\_group\_id](#input\_app\_security\_group\_id) | App instances' security group ID - the only allowed ingress source | `string` | n/a | yes |
 | <a name="input_apply_immediately"></a> [apply\_immediately](#input\_apply\_immediately) | Apply modifications right away instead of waiting for the next maintenance window - on in dev for fast iteration | `bool` | `true` | no |
 | <a name="input_data_subnet_ids"></a> [data\_subnet\_ids](#input\_data\_subnet\_ids) | Data-tier subnet IDs (both AZs) for the ElastiCache subnet group | `list(string)` | n/a | yes |
+| <a name="input_dns_record_name"></a> [dns\_record\_name](#input\_dns\_record\_name) | Fully qualified name of a private CNAME pointing at the Redis primary endpoint (for example cache.example.internal). Null, the default, creates no record. | `string` | `null` | no |
 | <a name="input_dns_ttl_seconds"></a> [dns\_ttl\_seconds](#input\_dns\_ttl\_seconds) | TTL, in seconds, of the private DNS CNAME the app connects through - short enough that a replaced Redis endpoint is picked up quickly | `number` | `300` | no |
 | <a name="input_engine_version"></a> [engine\_version](#input\_engine\_version) | Redis engine version | `string` | `"7.1"` | no |
 | <a name="input_environment"></a> [environment](#input\_environment) | Environment name (dev, prod, or test), used in resource naming/tags | `string` | n/a | yes |
 | <a name="input_name_prefix"></a> [name\_prefix](#input\_name\_prefix) | Prefix for every resource name and the Secrets Manager path (<prefix>/<environment>/redis-auth). modules/compute's IAM policy expects the default, so only change it when not using that module. | `string` | `"cloudforge"` | no |
 | <a name="input_node_type"></a> [node\_type](#input\_node\_type) | ElastiCache node type | `string` | `"cache.t4g.micro"` | no |
-| <a name="input_private_zone_id"></a> [private\_zone\_id](#input\_private\_zone\_id) | Route 53 private hosted zone ID (ADR-013) - the DNS record lives here | `string` | n/a | yes |
+| <a name="input_private_zone_id"></a> [private\_zone\_id](#input\_private\_zone\_id) | Route 53 private hosted zone ID the DNS record lives in (ADR-013) - only needed when dns\_record\_name is set | `string` | `null` | no |
 | <a name="input_vpc_id"></a> [vpc\_id](#input\_vpc\_id) | VPC ID the Redis security group lives in | `string` | n/a | yes |
 
 ## Outputs
@@ -52,6 +53,7 @@ No modules.
 | Name | Description |
 | ---- | ----------- |
 | <a name="output_auth_secret_arn"></a> [auth\_secret\_arn](#output\_auth\_secret\_arn) | Secrets Manager ARN holding the Redis AUTH token |
+| <a name="output_dns_name"></a> [dns\_name](#output\_dns\_name) | The private DNS name pointing at the Redis primary endpoint, or null when no record was requested |
 | <a name="output_redis_port"></a> [redis\_port](#output\_redis\_port) | Redis port |
 | <a name="output_redis_primary_endpoint"></a> [redis\_primary\_endpoint](#output\_redis\_primary\_endpoint) | ElastiCache Redis primary endpoint address, no port |
 | <a name="output_replication_group_id"></a> [replication\_group\_id](#output\_replication\_group\_id) | ElastiCache replication group ID - CloudWatch alarm dimension (CacheClusterId) |

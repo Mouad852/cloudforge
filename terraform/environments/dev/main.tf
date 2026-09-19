@@ -228,6 +228,7 @@ module "cache" {
   data_subnet_ids       = [module.network.subnet_ids["data-a"], module.network.subnet_ids["data-b"]]
   app_security_group_id = module.compute.app_security_group_id
   private_zone_id       = module.network.private_zone_id
+  dns_record_name       = "cache.cloudforge.internal"
 }
 
 module "database" {
