@@ -1,18 +1,18 @@
 locals {
-  redis_secret_name = "cloudforge/${var.environment}/redis-auth"
+  redis_secret_name = "${var.name_prefix}/${var.environment}/redis-auth"
 }
 
 resource "aws_elasticache_subnet_group" "main" {
-  name       = "${var.environment}-cloudforge-redis"
+  name       = "${var.environment}-${var.name_prefix}-redis"
   subnet_ids = var.data_subnet_ids
 
   tags = {
-    Name = "${var.environment}-cloudforge-redis-subnet-group"
+    Name = "${var.environment}-${var.name_prefix}-redis-subnet-group"
   }
 }
 
 resource "aws_security_group" "redis" {
-  name_prefix = "${var.environment}-cloudforge-redis-"
+  name_prefix = "${var.environment}-${var.name_prefix}-redis-"
   description = "ElastiCache Redis - inbound only from the app security group (M6)"
   vpc_id      = var.vpc_id
 
@@ -25,7 +25,7 @@ resource "aws_security_group" "redis" {
   }
 
   tags = {
-    Name = "${var.environment}-cloudforge-redis-sg"
+    Name = "${var.environment}-${var.name_prefix}-redis-sg"
   }
 
   lifecycle {
@@ -56,7 +56,7 @@ resource "aws_secretsmanager_secret_version" "redis_auth" {
 }
 
 resource "aws_elasticache_replication_group" "main" {
-  replication_group_id = "${var.environment}-cloudforge-redis"
+  replication_group_id = "${var.environment}-${var.name_prefix}-redis"
   description          = "CloudForge cache-aside Redis (M6)"
 
   engine         = "redis"
@@ -77,7 +77,7 @@ resource "aws_elasticache_replication_group" "main" {
   apply_immediately = var.apply_immediately
 
   tags = {
-    Name = "${var.environment}-cloudforge-redis"
+    Name = "${var.environment}-${var.name_prefix}-redis"
   }
 }
 

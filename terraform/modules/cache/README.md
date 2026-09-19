@@ -42,6 +42,7 @@ No modules.
 | <a name="input_dns_ttl_seconds"></a> [dns\_ttl\_seconds](#input\_dns\_ttl\_seconds) | TTL, in seconds, of the private DNS CNAME the app connects through - short enough that a replaced Redis endpoint is picked up quickly | `number` | `300` | no |
 | <a name="input_engine_version"></a> [engine\_version](#input\_engine\_version) | Redis engine version | `string` | `"7.1"` | no |
 | <a name="input_environment"></a> [environment](#input\_environment) | Environment name (dev, prod, or test), used in resource naming/tags | `string` | n/a | yes |
+| <a name="input_name_prefix"></a> [name\_prefix](#input\_name\_prefix) | Prefix for every resource name and the Secrets Manager path (<prefix>/<environment>/redis-auth). modules/compute's IAM policy expects the default, so only change it when not using that module. | `string` | `"cloudforge"` | no |
 | <a name="input_node_type"></a> [node\_type](#input\_node\_type) | ElastiCache node type | `string` | `"cache.t4g.micro"` | no |
 | <a name="input_private_zone_id"></a> [private\_zone\_id](#input\_private\_zone\_id) | Route 53 private hosted zone ID (ADR-013) - the DNS record lives here | `string` | n/a | yes |
 | <a name="input_vpc_id"></a> [vpc\_id](#input\_vpc\_id) | VPC ID the Redis security group lives in | `string` | n/a | yes |

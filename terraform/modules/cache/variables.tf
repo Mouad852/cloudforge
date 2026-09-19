@@ -8,6 +8,17 @@ variable "environment" {
   }
 }
 
+variable "name_prefix" {
+  description = "Prefix for every resource name and the Secrets Manager path (<prefix>/<environment>/redis-auth). modules/compute's IAM policy expects the default, so only change it when not using that module."
+  type        = string
+  default     = "cloudforge"
+
+  validation {
+    condition     = can(regex("^[a-z][a-z0-9]*(-[a-z0-9]+)*$", var.name_prefix)) && length(var.name_prefix) <= 28
+    error_message = "name_prefix must be lowercase letters, digits and single hyphens, start with a letter, not end with a hyphen, and be at most 28 characters - it becomes part of the ElastiCache replication group ID, which allows no other characters and at most 40."
+  }
+}
+
 variable "vpc_id" {
   description = "VPC ID the Redis security group lives in"
   type        = string

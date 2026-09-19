@@ -88,3 +88,87 @@ run "negative_dns_ttl_rejected" {
 
   expect_failures = [var.dns_ttl_seconds]
 }
+
+# The default prefix is what dev and prod already run. Renaming any of these
+# would replace the live Redis, its subnet group and its security group.
+run "default_names_match_the_live_environments" {
+  command = plan
+
+  assert {
+    condition     = aws_elasticache_replication_group.main.replication_group_id == "test-cloudforge-redis"
+    error_message = "Default replication group ID must stay <env>-cloudforge-redis"
+  }
+
+  assert {
+    condition     = aws_elasticache_subnet_group.main.name == "test-cloudforge-redis"
+    error_message = "Default subnet group name must stay <env>-cloudforge-redis"
+  }
+
+  assert {
+    condition     = aws_security_group.redis.name_prefix == "test-cloudforge-redis-"
+    error_message = "Default security group name prefix must stay <env>-cloudforge-redis-"
+  }
+}
+
+run "name_prefix_flows_through_every_name" {
+  command = plan
+
+  variables {
+    name_prefix = "acme"
+  }
+
+  assert {
+    condition     = aws_elasticache_replication_group.main.replication_group_id == "test-acme-redis"
+    error_message = "name_prefix must reach the replication group ID"
+  }
+
+  assert {
+    condition     = aws_elasticache_subnet_group.main.name == "test-acme-redis" && aws_security_group.redis.name_prefix == "test-acme-redis-"
+    error_message = "name_prefix must reach the subnet group and security group names"
+  }
+
+  assert {
+    condition     = aws_secretsmanager_secret.redis_auth.name == "acme/test/redis-auth"
+    error_message = "name_prefix must reach the Secrets Manager path"
+  }
+}
+
+run "uppercase_name_prefix_rejected" {
+  command = plan
+
+  variables {
+    name_prefix = "Acme"
+  }
+
+  expect_failures = [var.name_prefix]
+}
+
+run "name_prefix_ending_in_a_hyphen_rejected" {
+  command = plan
+
+  variables {
+    name_prefix = "acme-"
+  }
+
+  expect_failures = [var.name_prefix]
+}
+
+run "name_prefix_with_a_double_hyphen_rejected" {
+  command = plan
+
+  variables {
+    name_prefix = "acme--corp"
+  }
+
+  expect_failures = [var.name_prefix]
+}
+
+run "name_prefix_too_long_for_a_replication_group_id_rejected" {
+  command = plan
+
+  variables {
+    name_prefix = "abcdefghijklmnopqrstuvwxyzabc"
+  }
+
+  expect_failures = [var.name_prefix]
+}
