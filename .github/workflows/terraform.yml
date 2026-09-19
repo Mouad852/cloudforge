@@ -168,7 +168,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        module: [cache, compute, edge, observability, storage]
+        module: [cache, cicd-oidc, compute, database, edge, observability, storage]
     permissions:
       id-token: write
       contents: read
