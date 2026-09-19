@@ -68,6 +68,51 @@ variable "asg_desired_capacity" {
   default     = 1
 }
 
+variable "green_asg_min_size" {
+  description = "Green ASG minimum size - 0 by default so the idle blue/green fleet costs nothing outside a deploy window (ADR-017)"
+  type        = number
+  default     = 0
+}
+
+variable "green_asg_max_size" {
+  description = "Green ASG maximum size - matches blue's ceiling so green can take over blue's full traffic during a cutover"
+  type        = number
+  default     = 6
+}
+
+variable "green_asg_desired_capacity" {
+  description = "Green ASG desired capacity - 0 outside a deploy window, scaled up before shifting traffic to green"
+  type        = number
+  default     = 0
+}
+
+variable "blue_weight" {
+  description = "Percentage (0-100) of ALB traffic sent to the blue fleet - shifted with green_weight during a blue/green deploy (ADR-017)"
+  type        = number
+  default     = 100
+
+  validation {
+    condition     = var.blue_weight >= 0 && var.blue_weight <= 100
+    error_message = "blue_weight must be between 0 and 100."
+  }
+}
+
+variable "green_weight" {
+  description = "Percentage (0-100) of ALB traffic sent to the green fleet - shifted with blue_weight during a blue/green deploy (ADR-017)"
+  type        = number
+  default     = 0
+
+  validation {
+    condition     = var.green_weight >= 0 && var.green_weight <= 100
+    error_message = "green_weight must be between 0 and 100."
+  }
+
+  validation {
+    condition     = var.blue_weight + var.green_weight == 100
+    error_message = "blue_weight and green_weight must sum to 100, otherwise the listener sends traffic to nowhere or to an unintended split."
+  }
+}
+
 variable "db_multi_az" {
   description = "RDS Multi-AZ deployment - on in prod, off in dev"
   type        = bool
@@ -140,6 +185,8 @@ module "edge" {
   vpc_cidr                           = module.network.vpc_cidr
   public_subnet_ids                  = [module.network.subnet_ids["public-a"], module.network.subnet_ids["public-b"]]
   app_port                           = var.app_port
+  blue_weight                        = var.blue_weight
+  green_weight                       = var.green_weight
   images_bucket_id                   = module.storage.images_bucket_id
   images_bucket_arn                  = module.storage.images_bucket_arn
   images_bucket_regional_domain_name = module.storage.images_bucket_regional_domain_name
@@ -167,6 +214,10 @@ module "compute" {
   log_retention_days      = var.log_retention_days
   redis_secret_arn        = module.cache.auth_secret_arn
   redis_tls_server_name   = module.cache.redis_primary_endpoint
+
+  green_asg_min_size         = var.green_asg_min_size
+  green_asg_max_size         = var.green_asg_max_size
+  green_asg_desired_capacity = var.green_asg_desired_capacity
 }
 
 module "cache" {

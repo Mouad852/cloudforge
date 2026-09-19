@@ -37,11 +37,16 @@ No resources.
 | <a name="input_asg_desired_capacity"></a> [asg\_desired\_capacity](#input\_asg\_desired\_capacity) | ASG desired capacity | `number` | `1` | no |
 | <a name="input_asg_max_size"></a> [asg\_max\_size](#input\_asg\_max\_size) | ASG maximum size | `number` | `2` | no |
 | <a name="input_asg_min_size"></a> [asg\_min\_size](#input\_asg\_min\_size) | ASG minimum size | `number` | `1` | no |
+| <a name="input_blue_weight"></a> [blue\_weight](#input\_blue\_weight) | Percentage (0-100) of ALB traffic sent to the blue fleet - shifted with green\_weight during a blue/green deploy (ADR-017) | `number` | `100` | no |
 | <a name="input_db_apply_immediately"></a> [db\_apply\_immediately](#input\_db\_apply\_immediately) | Apply RDS modifications immediately instead of waiting for the next maintenance window - on in dev for fast iteration, off in prod to avoid mid-day disruption | `bool` | `true` | no |
 | <a name="input_db_backup_retention_period"></a> [db\_backup\_retention\_period](#input\_db\_backup\_retention\_period) | RDS automated backup retention in days | `number` | `1` | no |
 | <a name="input_db_deletion_protection"></a> [db\_deletion\_protection](#input\_db\_deletion\_protection) | RDS deletion protection - on in prod, off in dev | `bool` | `false` | no |
 | <a name="input_db_multi_az"></a> [db\_multi\_az](#input\_db\_multi\_az) | RDS Multi-AZ deployment - on in prod, off in dev | `bool` | `false` | no |
 | <a name="input_environment"></a> [environment](#input\_environment) | Environment name (dev, prod, or test) | `string` | n/a | yes |
+| <a name="input_green_asg_desired_capacity"></a> [green\_asg\_desired\_capacity](#input\_green\_asg\_desired\_capacity) | Green ASG desired capacity - 0 outside a deploy window, scaled up before shifting traffic to green | `number` | `0` | no |
+| <a name="input_green_asg_max_size"></a> [green\_asg\_max\_size](#input\_green\_asg\_max\_size) | Green ASG maximum size - matches blue's ceiling so green can take over blue's full traffic during a cutover | `number` | `6` | no |
+| <a name="input_green_asg_min_size"></a> [green\_asg\_min\_size](#input\_green\_asg\_min\_size) | Green ASG minimum size - 0 by default so the idle blue/green fleet costs nothing outside a deploy window (ADR-017) | `number` | `0` | no |
+| <a name="input_green_weight"></a> [green\_weight](#input\_green\_weight) | Percentage (0-100) of ALB traffic sent to the green fleet - shifted with blue\_weight during a blue/green deploy (ADR-017) | `number` | `0` | no |
 | <a name="input_instance_type"></a> [instance\_type](#input\_instance\_type) | EC2 instance type for the app ASG | `string` | `"t4g.small"` | no |
 | <a name="input_log_retention_days"></a> [log\_retention\_days](#input\_log\_retention\_days) | CloudWatch Logs retention, in days, for the app and VPC flow log groups | `number` | `14` | no |
 | <a name="input_snapshot_identifier"></a> [snapshot\_identifier](#input\_snapshot\_identifier) | Restore this environment's DB from a snapshot instead of creating an empty one - set by `make <env>-up` after a `make <env>-down` (ADR-015) | `string` | `null` | no |
