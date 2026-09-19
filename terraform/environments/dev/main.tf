@@ -81,6 +81,12 @@ variable "db_apply_immediately" {
   default     = true
 }
 
+variable "log_retention_days" {
+  description = "CloudWatch Logs retention, in days, for the app and VPC flow log groups"
+  type        = number
+  default     = 14
+}
+
 variable "snapshot_identifier" {
   description = "Restore this environment's DB from a snapshot instead of creating an empty one - set by `make <env>-up` after a `make <env>-down` (ADR-015)"
   type        = string
@@ -100,7 +106,8 @@ variable "alert_email" {
 module "network" {
   source = "../../modules/network"
 
-  environment = var.environment
+  environment        = var.environment
+  log_retention_days = var.log_retention_days
 }
 
 module "storage" {
@@ -145,6 +152,7 @@ module "compute" {
   asg_min_size            = var.asg_min_size
   asg_max_size            = var.asg_max_size
   asg_desired_capacity    = var.asg_desired_capacity
+  log_retention_days      = var.log_retention_days
   redis_secret_arn        = module.cache.auth_secret_arn
   redis_tls_server_name   = module.cache.redis_primary_endpoint
 }
