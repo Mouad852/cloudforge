@@ -189,7 +189,7 @@ resource "aws_launch_template" "app" {
 
     ebs {
       encrypted   = true
-      volume_size = 30
+      volume_size = var.root_volume_size_gb
     }
   }
 
@@ -232,7 +232,7 @@ resource "aws_autoscaling_group" "app" {
   desired_capacity    = var.asg_desired_capacity
 
   health_check_type         = "ELB" # M4 attaches the target group; until then this behaves like EC2 checks
-  health_check_grace_period = 300
+  health_check_grace_period = var.health_check_grace_period
   target_group_arns         = var.target_group_arns
 
   instance_refresh {
@@ -288,7 +288,7 @@ resource "aws_autoscaling_group" "app_green" {
   desired_capacity    = var.green_asg_desired_capacity
 
   health_check_type         = "ELB"
-  health_check_grace_period = 300
+  health_check_grace_period = var.health_check_grace_period
   target_group_arns         = var.green_target_group_arns
 
   tag {
@@ -319,6 +319,6 @@ resource "aws_autoscaling_policy" "cpu_target_tracking" {
       predefined_metric_type = "ASGAverageCPUUtilization"
     }
 
-    target_value = 60.0
+    target_value = var.cpu_target_percent
   }
 }

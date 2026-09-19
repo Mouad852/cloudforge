@@ -169,3 +169,36 @@ variable "log_retention_days" {
     error_message = "log_retention_days must be a retention period CloudWatch Logs supports (1, 3, 5, 7, 14, 30, 60, 90, 120, 150, 180, 365, 400, 545, 731, 1096, 1827, 2192, 2557, 2922, 3288 or 3653). 0 (never expire) is deliberately not allowed because the bill would grow forever."
   }
 }
+
+variable "root_volume_size_gb" {
+  description = "Size in GiB of each app instance's encrypted root volume"
+  type        = number
+  default     = 30
+
+  validation {
+    condition     = var.root_volume_size_gb >= 8 && var.root_volume_size_gb <= 16384
+    error_message = "root_volume_size_gb must be between 8 and 16384 GiB - the AL2023 root snapshot is 8 GiB, so a smaller volume cannot be created, and 16384 GiB is the gp3 maximum."
+  }
+}
+
+variable "health_check_grace_period" {
+  description = "Seconds the blue and green ASGs wait after an instance launches before ELB health checks can replace it - must cover the bootstrap script (S3 download, secrets, app start)"
+  type        = number
+  default     = 300
+
+  validation {
+    condition     = var.health_check_grace_period >= 0 && var.health_check_grace_period <= 3600
+    error_message = "health_check_grace_period must be between 0 and 3600 seconds. An hour is already far longer than any bootstrap should take, so a larger value is almost certainly a typo."
+  }
+}
+
+variable "cpu_target_percent" {
+  description = "Average CPU utilisation (%) the blue ASG's target-tracking policy scales towards"
+  type        = number
+  default     = 60
+
+  validation {
+    condition     = var.cpu_target_percent > 0 && var.cpu_target_percent <= 100
+    error_message = "cpu_target_percent must be greater than 0 and at most 100."
+  }
+}

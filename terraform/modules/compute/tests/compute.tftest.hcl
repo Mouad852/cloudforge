@@ -124,3 +124,99 @@ run "log_retention_never_expire_rejected" {
 
   expect_failures = [var.log_retention_days]
 }
+
+# The defaults are what dev and prod already run. Changing one would roll the
+# launch template or the scaling policy on live environments.
+run "tunable_defaults_match_the_live_values" {
+  command = plan
+
+  assert {
+    condition     = aws_launch_template.app.block_device_mappings[0].ebs[0].volume_size == 30
+    error_message = "Default root volume must stay 30 GiB, the value the live environments already run"
+  }
+
+  assert {
+    condition     = aws_autoscaling_group.app.health_check_grace_period == 300 && aws_autoscaling_group.app_green.health_check_grace_period == 300
+    error_message = "Default grace period must stay 300s on both the blue and green ASGs"
+  }
+
+  assert {
+    condition     = aws_autoscaling_policy.cpu_target_tracking.target_tracking_configuration[0].target_value == 60
+    error_message = "Default CPU target must stay 60%"
+  }
+}
+
+run "tunables_flow_through" {
+  command = plan
+
+  variables {
+    root_volume_size_gb       = 50
+    health_check_grace_period = 120
+    cpu_target_percent        = 45
+  }
+
+  assert {
+    condition     = aws_launch_template.app.block_device_mappings[0].ebs[0].volume_size == 50
+    error_message = "root_volume_size_gb must reach the launch template"
+  }
+
+  assert {
+    condition     = aws_autoscaling_group.app.health_check_grace_period == 120 && aws_autoscaling_group.app_green.health_check_grace_period == 120
+    error_message = "health_check_grace_period must reach both the blue and green ASGs"
+  }
+
+  assert {
+    condition     = aws_autoscaling_policy.cpu_target_tracking.target_tracking_configuration[0].target_value == 45
+    error_message = "cpu_target_percent must reach the target-tracking policy"
+  }
+}
+
+run "root_volume_smaller_than_the_ami_snapshot_rejected" {
+  command = plan
+
+  variables {
+    root_volume_size_gb = 4
+  }
+
+  expect_failures = [var.root_volume_size_gb]
+}
+
+run "negative_grace_period_rejected" {
+  command = plan
+
+  variables {
+    health_check_grace_period = -1
+  }
+
+  expect_failures = [var.health_check_grace_period]
+}
+
+run "grace_period_over_an_hour_rejected" {
+  command = plan
+
+  variables {
+    health_check_grace_period = 7200
+  }
+
+  expect_failures = [var.health_check_grace_period]
+}
+
+run "cpu_target_of_zero_rejected" {
+  command = plan
+
+  variables {
+    cpu_target_percent = 0
+  }
+
+  expect_failures = [var.cpu_target_percent]
+}
+
+run "cpu_target_above_100_rejected" {
+  command = plan
+
+  variables {
+    cpu_target_percent = 101
+  }
+
+  expect_failures = [var.cpu_target_percent]
+}
