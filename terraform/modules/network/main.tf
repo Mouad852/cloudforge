@@ -5,13 +5,15 @@ data "aws_availability_zones" "available" {
 locals {
   azs = slice(data.aws_availability_zones.available.names, 0, 2)
 
+  # /24s carved out of a /16. The netnum is the third octet, so the default
+  # 10.0.0.0/16 keeps the original 10.0.1.0/24, 10.0.11.0/24, ... layout.
   subnets = {
-    public-a = { cidr = "10.0.1.0/24", az = local.azs[0], tier = "public" }
-    public-b = { cidr = "10.0.2.0/24", az = local.azs[1], tier = "public" }
-    app-a    = { cidr = "10.0.11.0/24", az = local.azs[0], tier = "app" }
-    app-b    = { cidr = "10.0.12.0/24", az = local.azs[1], tier = "app" }
-    data-a   = { cidr = "10.0.21.0/24", az = local.azs[0], tier = "data" }
-    data-b   = { cidr = "10.0.22.0/24", az = local.azs[1], tier = "data" }
+    public-a = { cidr = cidrsubnet(var.vpc_cidr, 8, 1), az = local.azs[0], tier = "public" }
+    public-b = { cidr = cidrsubnet(var.vpc_cidr, 8, 2), az = local.azs[1], tier = "public" }
+    app-a    = { cidr = cidrsubnet(var.vpc_cidr, 8, 11), az = local.azs[0], tier = "app" }
+    app-b    = { cidr = cidrsubnet(var.vpc_cidr, 8, 12), az = local.azs[1], tier = "app" }
+    data-a   = { cidr = cidrsubnet(var.vpc_cidr, 8, 21), az = local.azs[0], tier = "data" }
+    data-b   = { cidr = cidrsubnet(var.vpc_cidr, 8, 22), az = local.azs[1], tier = "data" }
   }
 }
 
