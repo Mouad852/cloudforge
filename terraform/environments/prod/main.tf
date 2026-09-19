@@ -139,7 +139,7 @@ module "compute" {
   alb_security_group_id   = module.edge.alb_security_group_id
   target_group_arns       = [module.edge.blue_target_group_arn]
   green_target_group_arns = [module.edge.green_target_group_arn]
-  data_tier_cidr_blocks   = ["10.0.21.0/24", "10.0.22.0/24"]
+  data_tier_cidr_blocks   = module.network.data_tier_cidr_blocks
   db_secret_arn           = module.database.master_user_secret_arn
   instance_type           = var.instance_type
   asg_min_size            = var.asg_min_size
