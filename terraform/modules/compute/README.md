@@ -60,6 +60,7 @@ No modules.
 | <a name="input_green_target_group_arns"></a> [green\_target\_group\_arns](#input\_green\_target\_group\_arns) | ALB green target group ARNs to attach the green ASG to | `list(string)` | `[]` | no |
 | <a name="input_images_bucket_name"></a> [images\_bucket\_name](#input\_images\_bucket\_name) | Name of the M6 images bucket. Not created yet - the IAM role is pre-scoped to this name so M6 needs no policy changes, only rewiring this variable to the real bucket once it exists. | `string` | n/a | yes |
 | <a name="input_instance_type"></a> [instance\_type](#input\_instance\_type) | EC2 instance type (Graviton/arm64, ADR-003) | `string` | `"t4g.micro"` | no |
+| <a name="input_log_retention_days"></a> [log\_retention\_days](#input\_log\_retention\_days) | CloudWatch Logs retention, in days, for the app log group | `number` | `14` | no |
 | <a name="input_redis_addr"></a> [redis\_addr](#input\_redis\_addr) | Redis host:port app instances connect to (M6) | `string` | `"cache.cloudforge.internal:6379"` | no |
 | <a name="input_redis_secret_arn"></a> [redis\_secret\_arn](#input\_redis\_secret\_arn) | Secrets Manager ARN for the Redis AUTH token (M6) - empty string means no cache configured yet | `string` | `""` | no |
 | <a name="input_redis_tls_server_name"></a> [redis\_tls\_server\_name](#input\_redis\_tls\_server\_name) | Real ElastiCache hostname for TLS certificate verification (M6) - differs from redis\_addr, which is our own Route 53 CNAME (ADR-013); empty string means no cache configured yet | `string` | `""` | no |
