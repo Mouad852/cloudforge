@@ -91,7 +91,7 @@ repos:
           #   ElastiCache has no built-in rotation; a custom rotation Lambda
           #   is real added complexity out of scope for M6's dev cache.
           # CKV_SECRET_6: checkov's own "high entropy string" heuristic keeps
-          #   flagging modules/cache/cache.tftest.hcl's fake AUTH token fixture
+          #   flagging modules/cache/tests/cache.tftest.hcl's fake AUTH token fixture
           #   regardless of its actual content - it appears to key off the
           #   surrounding "auth_token ==" pattern more than real entropy.
           #   gitleaks (below, a dedicated secret scanner) remains active and
