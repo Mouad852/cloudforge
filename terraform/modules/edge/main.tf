@@ -125,11 +125,11 @@ resource "aws_lb_target_group" "blue" {
   health_check {
     path                = var.health_check_path
     protocol            = "HTTP"
-    matcher             = "200"
-    interval            = 10
-    healthy_threshold   = 2
-    unhealthy_threshold = 2
-    timeout             = 5
+    matcher             = var.health_check_matcher
+    interval            = var.health_check_interval_seconds
+    healthy_threshold   = var.health_check_healthy_threshold
+    unhealthy_threshold = var.health_check_unhealthy_threshold
+    timeout             = var.health_check_timeout_seconds
   }
 
   tags = {
@@ -149,11 +149,11 @@ resource "aws_lb_target_group" "green" {
   health_check {
     path                = var.health_check_path
     protocol            = "HTTP"
-    matcher             = "200"
-    interval            = 10
-    healthy_threshold   = 2
-    unhealthy_threshold = 2
-    timeout             = 5
+    matcher             = var.health_check_matcher
+    interval            = var.health_check_interval_seconds
+    healthy_threshold   = var.health_check_healthy_threshold
+    unhealthy_threshold = var.health_check_unhealthy_threshold
+    timeout             = var.health_check_timeout_seconds
   }
 
   tags = {

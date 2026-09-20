@@ -157,3 +157,140 @@ run "negative_deregistration_delay_rejected" {
 
   expect_failures = [var.deregistration_delay_seconds]
 }
+
+run "health_check_defaults_match_the_live_environments" {
+  command = plan
+
+  providers = {
+    aws      = aws
+    aws.use1 = aws.use1
+  }
+
+  assert {
+    condition = alltrue([
+      for tg in [aws_lb_target_group.blue, aws_lb_target_group.green] :
+      tg.health_check[0].matcher == "200" && tg.health_check[0].interval == 10 && tg.health_check[0].timeout == 5 && tg.health_check[0].healthy_threshold == 2 && tg.health_check[0].unhealthy_threshold == 2
+    ])
+    error_message = "Default health check must stay 200 / 10s interval / 5s timeout / 2 healthy / 2 unhealthy on both target groups, the values the live environments already run"
+  }
+}
+
+run "health_check_settings_flow_through_to_both_target_groups" {
+  command = plan
+
+  providers = {
+    aws      = aws
+    aws.use1 = aws.use1
+  }
+
+  variables {
+    health_check_interval_seconds    = 30
+    health_check_timeout_seconds     = 10
+    health_check_healthy_threshold   = 3
+    health_check_unhealthy_threshold = 4
+    health_check_matcher             = "200-299"
+  }
+
+  assert {
+    condition = alltrue([
+      for tg in [aws_lb_target_group.blue, aws_lb_target_group.green] :
+      tg.health_check[0].matcher == "200-299" && tg.health_check[0].interval == 30 && tg.health_check[0].timeout == 10 && tg.health_check[0].healthy_threshold == 3 && tg.health_check[0].unhealthy_threshold == 4
+    ])
+    error_message = "The health check variables must reach both the blue and green target groups"
+  }
+}
+
+run "health_check_interval_below_the_alb_minimum_rejected" {
+  command = plan
+
+  providers = {
+    aws      = aws
+    aws.use1 = aws.use1
+  }
+
+  variables {
+    health_check_interval_seconds = 4
+  }
+
+  expect_failures = [var.health_check_interval_seconds]
+}
+
+run "health_check_interval_above_the_alb_maximum_rejected" {
+  command = plan
+
+  providers = {
+    aws      = aws
+    aws.use1 = aws.use1
+  }
+
+  variables {
+    health_check_interval_seconds = 301
+  }
+
+  expect_failures = [var.health_check_interval_seconds]
+}
+
+run "health_check_timeout_equal_to_the_interval_rejected" {
+  command = plan
+
+  providers = {
+    aws      = aws
+    aws.use1 = aws.use1
+  }
+
+  variables {
+    health_check_interval_seconds = 10
+    health_check_timeout_seconds  = 10
+  }
+
+  expect_failures = [var.health_check_timeout_seconds]
+}
+
+run "health_check_timeout_below_the_alb_minimum_rejected" {
+  command = plan
+
+  providers = {
+    aws      = aws
+    aws.use1 = aws.use1
+  }
+
+  variables {
+    health_check_timeout_seconds = 1
+  }
+
+  expect_failures = [var.health_check_timeout_seconds]
+}
+
+run "health_check_thresholds_outside_2_to_10_rejected" {
+  command = plan
+
+  providers = {
+    aws      = aws
+    aws.use1 = aws.use1
+  }
+
+  variables {
+    health_check_healthy_threshold   = 1
+    health_check_unhealthy_threshold = 11
+  }
+
+  expect_failures = [
+    var.health_check_healthy_threshold,
+    var.health_check_unhealthy_threshold,
+  ]
+}
+
+run "health_check_matcher_that_is_not_status_codes_rejected" {
+  command = plan
+
+  providers = {
+    aws      = aws
+    aws.use1 = aws.use1
+  }
+
+  variables {
+    health_check_matcher = "ok"
+  }
+
+  expect_failures = [var.health_check_matcher]
+}

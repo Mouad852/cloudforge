@@ -93,3 +93,63 @@ variable "deregistration_delay_seconds" {
     error_message = "deregistration_delay_seconds must be between 0 and 3600 seconds (the ALB maximum)."
   }
 }
+
+variable "health_check_interval_seconds" {
+  description = "Seconds between health checks of each target - applies to both the blue and green target groups"
+  type        = number
+  default     = 10
+
+  validation {
+    condition     = var.health_check_interval_seconds >= 5 && var.health_check_interval_seconds <= 300
+    error_message = "health_check_interval_seconds must be between 5 and 300 seconds (the ALB limits)."
+  }
+}
+
+variable "health_check_timeout_seconds" {
+  description = "Seconds to wait for a health check response before counting it as failed - applies to both target groups"
+  type        = number
+  default     = 5
+
+  validation {
+    condition     = var.health_check_timeout_seconds >= 2 && var.health_check_timeout_seconds <= 120
+    error_message = "health_check_timeout_seconds must be between 2 and 120 seconds (the ALB limits)."
+  }
+
+  validation {
+    condition     = var.health_check_timeout_seconds < var.health_check_interval_seconds
+    error_message = "health_check_timeout_seconds must be smaller than health_check_interval_seconds, otherwise the ALB rejects the target group."
+  }
+}
+
+variable "health_check_healthy_threshold" {
+  description = "Consecutive passing health checks before a target is marked healthy - applies to both target groups"
+  type        = number
+  default     = 2
+
+  validation {
+    condition     = var.health_check_healthy_threshold >= 2 && var.health_check_healthy_threshold <= 10
+    error_message = "health_check_healthy_threshold must be between 2 and 10 (the ALB limits)."
+  }
+}
+
+variable "health_check_unhealthy_threshold" {
+  description = "Consecutive failing health checks before a target is marked unhealthy - applies to both target groups"
+  type        = number
+  default     = 2
+
+  validation {
+    condition     = var.health_check_unhealthy_threshold >= 2 && var.health_check_unhealthy_threshold <= 10
+    error_message = "health_check_unhealthy_threshold must be between 2 and 10 (the ALB limits)."
+  }
+}
+
+variable "health_check_matcher" {
+  description = "HTTP status codes that count as a passing health check: a code (200), a list (200,204) or a range (200-299) - applies to both target groups"
+  type        = string
+  default     = "200"
+
+  validation {
+    condition     = can(regex("^[0-9]{3}(-[0-9]{3})?(,[0-9]{3}(-[0-9]{3})?)*$", var.health_check_matcher))
+    error_message = "health_check_matcher must be HTTP status codes like \"200\", \"200,204\" or \"200-299\"."
+  }
+}
