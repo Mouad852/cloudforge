@@ -143,6 +143,18 @@ variable "log_retention_days" {
   default     = 14
 }
 
+variable "alb_deletion_protection" {
+  description = "ALB deletion protection - on in prod, off in dev"
+  type        = bool
+  default     = false
+}
+
+variable "alb_log_retention_days" {
+  description = "Days ALB access logs are kept in S3 before they expire"
+  type        = number
+  default     = 90
+}
+
 variable "snapshot_identifier" {
   description = "Restore this environment's DB from a snapshot instead of creating an empty one - set by `make <env>-up` after a `make <env>-down` (ADR-015)"
   type        = string
@@ -190,6 +202,8 @@ module "edge" {
   images_bucket_id                   = module.storage.images_bucket_id
   images_bucket_arn                  = module.storage.images_bucket_arn
   images_bucket_regional_domain_name = module.storage.images_bucket_regional_domain_name
+  deletion_protection                = var.alb_deletion_protection
+  alb_log_retention_days             = var.alb_log_retention_days
 }
 
 module "compute" {

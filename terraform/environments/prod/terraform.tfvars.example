@@ -10,6 +10,8 @@ db_deletion_protection     = true
 db_backup_retention_period = 7
 db_apply_immediately       = false
 
+alb_deletion_protection = true
+
 log_retention_days = 30
 
 alert_email = "you@example.com"

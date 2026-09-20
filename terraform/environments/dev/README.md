@@ -32,6 +32,8 @@ No resources.
 
 | Name | Description | Type | Default | Required |
 | ---- | ----------- | ---- | ------- | :------: |
+| <a name="input_alb_deletion_protection"></a> [alb\_deletion\_protection](#input\_alb\_deletion\_protection) | ALB deletion protection - on in prod, off in dev | `bool` | `false` | no |
+| <a name="input_alb_log_retention_days"></a> [alb\_log\_retention\_days](#input\_alb\_log\_retention\_days) | Days ALB access logs are kept in S3 before they expire | `number` | `90` | no |
 | <a name="input_alert_email"></a> [alert\_email](#input\_alert\_email) | Email address subscribed to the M7 observability SNS alerts topic | `string` | n/a | yes |
 | <a name="input_app_port"></a> [app\_port](#input\_app\_port) | Port the app listens on - the ALB (edge) targets it and the app security group and service (compute) use it | `number` | `8080` | no |
 | <a name="input_asg_desired_capacity"></a> [asg\_desired\_capacity](#input\_asg\_desired\_capacity) | ASG desired capacity | `number` | `1` | no |
