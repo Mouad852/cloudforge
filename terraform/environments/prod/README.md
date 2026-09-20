@@ -40,9 +40,12 @@ No resources.
 | <a name="input_asg_max_size"></a> [asg\_max\_size](#input\_asg\_max\_size) | ASG maximum size | `number` | `2` | no |
 | <a name="input_asg_min_size"></a> [asg\_min\_size](#input\_asg\_min\_size) | ASG minimum size | `number` | `1` | no |
 | <a name="input_blue_weight"></a> [blue\_weight](#input\_blue\_weight) | Percentage (0-100) of ALB traffic sent to the blue fleet - shifted with green\_weight during a blue/green deploy (ADR-017) | `number` | `100` | no |
+| <a name="input_cache_node_type"></a> [cache\_node\_type](#input\_cache\_node\_type) | ElastiCache node type - sized per environment through tfvars | `string` | `"cache.t4g.micro"` | no |
+| <a name="input_db_allocated_storage"></a> [db\_allocated\_storage](#input\_db\_allocated\_storage) | RDS allocated storage in GB - sized per environment through tfvars | `number` | `20` | no |
 | <a name="input_db_apply_immediately"></a> [db\_apply\_immediately](#input\_db\_apply\_immediately) | Apply RDS modifications immediately instead of waiting for the next maintenance window - on in dev for fast iteration, off in prod to avoid mid-day disruption | `bool` | `true` | no |
 | <a name="input_db_backup_retention_period"></a> [db\_backup\_retention\_period](#input\_db\_backup\_retention\_period) | RDS automated backup retention in days | `number` | `1` | no |
 | <a name="input_db_deletion_protection"></a> [db\_deletion\_protection](#input\_db\_deletion\_protection) | RDS deletion protection - on in prod, off in dev | `bool` | `false` | no |
+| <a name="input_db_instance_class"></a> [db\_instance\_class](#input\_db\_instance\_class) | RDS instance class - sized per environment through tfvars | `string` | `"db.t4g.micro"` | no |
 | <a name="input_db_multi_az"></a> [db\_multi\_az](#input\_db\_multi\_az) | RDS Multi-AZ deployment - on in prod, off in dev | `bool` | `false` | no |
 | <a name="input_environment"></a> [environment](#input\_environment) | Environment name (dev, prod, or test) | `string` | n/a | yes |
 | <a name="input_green_asg_desired_capacity"></a> [green\_asg\_desired\_capacity](#input\_green\_asg\_desired\_capacity) | Green ASG desired capacity - 0 outside a deploy window, scaled up before shifting traffic to green | `number` | `0` | no |

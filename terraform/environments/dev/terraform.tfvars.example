@@ -10,6 +10,10 @@ db_deletion_protection     = false
 db_backup_retention_period = 1
 db_apply_immediately       = true
 
+db_instance_class    = "db.t4g.micro"
+db_allocated_storage = 20
+cache_node_type      = "cache.t4g.micro"
+
 log_retention_days = 7
 
 alert_email = "you@example.com"

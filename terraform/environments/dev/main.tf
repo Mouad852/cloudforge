@@ -137,6 +137,24 @@ variable "db_apply_immediately" {
   default     = true
 }
 
+variable "db_instance_class" {
+  description = "RDS instance class - sized per environment through tfvars"
+  type        = string
+  default     = "db.t4g.micro"
+}
+
+variable "db_allocated_storage" {
+  description = "RDS allocated storage in GB - sized per environment through tfvars"
+  type        = number
+  default     = 20
+}
+
+variable "cache_node_type" {
+  description = "ElastiCache node type - sized per environment through tfvars"
+  type        = string
+  default     = "cache.t4g.micro"
+}
+
 variable "log_retention_days" {
   description = "CloudWatch Logs retention, in days, for the app and VPC flow log groups"
   type        = number
@@ -244,6 +262,7 @@ module "cache" {
   app_security_group_id = module.compute.app_security_group_id
   private_zone_id       = module.network.private_zone_id
   dns_record_name       = "cache.cloudforge.internal"
+  node_type             = var.cache_node_type
 }
 
 module "database" {
@@ -259,6 +278,8 @@ module "database" {
   deletion_protection     = var.db_deletion_protection
   backup_retention_period = var.db_backup_retention_period
   apply_immediately       = var.db_apply_immediately
+  instance_class          = var.db_instance_class
+  allocated_storage       = var.db_allocated_storage
 }
 
 module "observability" {
