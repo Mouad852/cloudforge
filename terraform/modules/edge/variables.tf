@@ -153,3 +153,20 @@ variable "health_check_matcher" {
     error_message = "health_check_matcher must be HTTP status codes like \"200\", \"200,204\" or \"200-299\"."
   }
 }
+
+variable "deletion_protection" {
+  description = "ALB deletion protection - on in prod, off in dev. While it is on, neither the console nor terraform destroy can delete the ALB"
+  type        = bool
+  default     = false
+}
+
+variable "alb_log_retention_days" {
+  description = "Days ALB access logs are kept in the S3 logs bucket before they expire"
+  type        = number
+  default     = 90
+
+  validation {
+    condition     = var.alb_log_retention_days >= 1 && var.alb_log_retention_days <= 3650
+    error_message = "alb_log_retention_days must be between 1 and 3650 days. 0 (never expire) is deliberately not allowed because the bill would grow forever."
+  }
+}

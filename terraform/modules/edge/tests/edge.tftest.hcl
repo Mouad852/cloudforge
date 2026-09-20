@@ -294,3 +294,97 @@ run "health_check_matcher_that_is_not_status_codes_rejected" {
 
   expect_failures = [var.health_check_matcher]
 }
+
+run "alb_deletion_protection_defaults_to_off" {
+  command = plan
+
+  providers = {
+    aws      = aws
+    aws.use1 = aws.use1
+  }
+
+  assert {
+    condition     = aws_lb.app.enable_deletion_protection == false
+    error_message = "Deletion protection must default to off, the value dev already runs"
+  }
+}
+
+run "alb_deletion_protection_flows_through" {
+  command = plan
+
+  providers = {
+    aws      = aws
+    aws.use1 = aws.use1
+  }
+
+  variables {
+    deletion_protection = true
+  }
+
+  assert {
+    condition     = aws_lb.app.enable_deletion_protection == true
+    error_message = "deletion_protection must reach the ALB"
+  }
+}
+
+run "alb_log_retention_defaults_to_90_days" {
+  command = plan
+
+  providers = {
+    aws      = aws
+    aws.use1 = aws.use1
+  }
+
+  assert {
+    condition     = one(aws_s3_bucket_lifecycle_configuration.alb_logs.rule).expiration[0].days == 90
+    error_message = "Default ALB log retention must stay 90 days, the value the live environments already run"
+  }
+}
+
+run "alb_log_retention_flows_through" {
+  command = plan
+
+  providers = {
+    aws      = aws
+    aws.use1 = aws.use1
+  }
+
+  variables {
+    alb_log_retention_days = 14
+  }
+
+  assert {
+    condition     = one(aws_s3_bucket_lifecycle_configuration.alb_logs.rule).expiration[0].days == 14
+    error_message = "alb_log_retention_days must reach the log bucket's expiration rule"
+  }
+}
+
+run "alb_log_retention_of_zero_rejected" {
+  command = plan
+
+  providers = {
+    aws      = aws
+    aws.use1 = aws.use1
+  }
+
+  variables {
+    alb_log_retention_days = 0
+  }
+
+  expect_failures = [var.alb_log_retention_days]
+}
+
+run "alb_log_retention_over_ten_years_rejected" {
+  command = plan
+
+  providers = {
+    aws      = aws
+    aws.use1 = aws.use1
+  }
+
+  variables {
+    alb_log_retention_days = 3651
+  }
+
+  expect_failures = [var.alb_log_retention_days]
+}
