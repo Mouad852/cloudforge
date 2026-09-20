@@ -170,3 +170,25 @@ variable "alb_log_retention_days" {
     error_message = "alb_log_retention_days must be between 1 and 3650 days. 0 (never expire) is deliberately not allowed because the bill would grow forever."
   }
 }
+
+variable "waf_rate_limit" {
+  description = "Requests per 5 minutes a single IP may send through CloudFront before the WAF blocks it"
+  type        = number
+  default     = 2000
+
+  validation {
+    condition     = var.waf_rate_limit >= 10 && var.waf_rate_limit <= 2000000000
+    error_message = "waf_rate_limit must be between 10 and 2000000000 requests per 5 minutes (the WAF rate-based rule limits)."
+  }
+}
+
+variable "price_class" {
+  description = "CloudFront price class: PriceClass_100 (North America and Europe only, cheapest), PriceClass_200 (adds Asia, Africa and the Middle East) or PriceClass_All"
+  type        = string
+  default     = "PriceClass_100"
+
+  validation {
+    condition     = contains(["PriceClass_100", "PriceClass_200", "PriceClass_All"], var.price_class)
+    error_message = "price_class must be one of: PriceClass_100, PriceClass_200, PriceClass_All."
+  }
+}

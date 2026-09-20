@@ -309,8 +309,9 @@ resource "aws_wafv2_web_acl" "cloudfront" {
     }
   }
 
-  # 2000 req/5min per IP - generous enough not to trip during normal demo
-  # traffic or a load test, low enough to catch an obvious script kiddie.
+  # Requests per IP per 5 minutes (var.waf_rate_limit). The 2000 default is
+  # generous enough not to trip during normal demo traffic or a load test,
+  # low enough to catch an obvious script kiddie.
   rule {
     name     = "RateLimitPerIP"
     priority = 3
@@ -321,7 +322,7 @@ resource "aws_wafv2_web_acl" "cloudfront" {
 
     statement {
       rate_based_statement {
-        limit              = 2000
+        limit              = var.waf_rate_limit
         aggregate_key_type = "IP"
       }
     }
@@ -384,7 +385,7 @@ resource "aws_cloudfront_distribution" "app" {
   enabled         = true
   is_ipv6_enabled = true
   comment         = "${var.environment}-cloudforge"
-  price_class     = "PriceClass_100"
+  price_class     = var.price_class
   web_acl_id      = aws_wafv2_web_acl.cloudfront.arn
 
   origin {

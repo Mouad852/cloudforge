@@ -67,9 +67,11 @@ No modules.
 | <a name="input_images_bucket_id"></a> [images\_bucket\_id](#input\_images\_bucket\_id) | S3 images bucket name (modules/storage) - the OAC bucket policy target, M6 | `string` | n/a | yes |
 | <a name="input_images_bucket_regional_domain_name"></a> [images\_bucket\_regional\_domain\_name](#input\_images\_bucket\_regional\_domain\_name) | S3 images bucket regional domain name (modules/storage) - CloudFront's /images/* origin, M6 | `string` | n/a | yes |
 | <a name="input_origin_secret_header_name"></a> [origin\_secret\_header\_name](#input\_origin\_secret\_header\_name) | Header name CloudFront injects and the ALB listener checks for - the real authorization boundary, ADR-014 | `string` | `"X-Origin-Verify"` | no |
+| <a name="input_price_class"></a> [price\_class](#input\_price\_class) | CloudFront price class: PriceClass\_100 (North America and Europe only, cheapest), PriceClass\_200 (adds Asia, Africa and the Middle East) or PriceClass\_All | `string` | `"PriceClass_100"` | no |
 | <a name="input_public_subnet_ids"></a> [public\_subnet\_ids](#input\_public\_subnet\_ids) | Public-tier subnet IDs (both AZs) the ALB is deployed into | `list(string)` | n/a | yes |
 | <a name="input_vpc_cidr"></a> [vpc\_cidr](#input\_vpc\_cidr) | VPC CIDR block - scopes the ALB's egress to app instances instead of 0.0.0.0/0 | `string` | n/a | yes |
 | <a name="input_vpc_id"></a> [vpc\_id](#input\_vpc\_id) | VPC ID the ALB and its target groups live in | `string` | n/a | yes |
+| <a name="input_waf_rate_limit"></a> [waf\_rate\_limit](#input\_waf\_rate\_limit) | Requests per 5 minutes a single IP may send through CloudFront before the WAF blocks it | `number` | `2000` | no |
 
 ## Outputs
 

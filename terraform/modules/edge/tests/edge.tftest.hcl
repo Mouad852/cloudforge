@@ -388,3 +388,112 @@ run "alb_log_retention_over_ten_years_rejected" {
 
   expect_failures = [var.alb_log_retention_days]
 }
+
+run "waf_rate_limit_defaults_to_2000" {
+  command = plan
+
+  providers = {
+    aws      = aws
+    aws.use1 = aws.use1
+  }
+
+  assert {
+    condition     = one([for r in aws_wafv2_web_acl.cloudfront.rule : r if r.name == "RateLimitPerIP"]).statement[0].rate_based_statement[0].limit == 2000
+    error_message = "Default WAF rate limit must stay 2000 requests per 5 minutes, the value the live environments already run"
+  }
+}
+
+run "waf_rate_limit_flows_through" {
+  command = plan
+
+  providers = {
+    aws      = aws
+    aws.use1 = aws.use1
+  }
+
+  variables {
+    waf_rate_limit = 500
+  }
+
+  assert {
+    condition     = one([for r in aws_wafv2_web_acl.cloudfront.rule : r if r.name == "RateLimitPerIP"]).statement[0].rate_based_statement[0].limit == 500
+    error_message = "waf_rate_limit must reach the rate-based rule"
+  }
+}
+
+run "waf_rate_limit_below_the_waf_minimum_rejected" {
+  command = plan
+
+  providers = {
+    aws      = aws
+    aws.use1 = aws.use1
+  }
+
+  variables {
+    waf_rate_limit = 9
+  }
+
+  expect_failures = [var.waf_rate_limit]
+}
+
+run "waf_rate_limit_above_the_waf_maximum_rejected" {
+  command = plan
+
+  providers = {
+    aws      = aws
+    aws.use1 = aws.use1
+  }
+
+  variables {
+    waf_rate_limit = 2000000001
+  }
+
+  expect_failures = [var.waf_rate_limit]
+}
+
+run "price_class_defaults_to_100" {
+  command = plan
+
+  providers = {
+    aws      = aws
+    aws.use1 = aws.use1
+  }
+
+  assert {
+    condition     = aws_cloudfront_distribution.app.price_class == "PriceClass_100"
+    error_message = "Default price class must stay PriceClass_100, the value the live environments already run"
+  }
+}
+
+run "price_class_flows_through" {
+  command = plan
+
+  providers = {
+    aws      = aws
+    aws.use1 = aws.use1
+  }
+
+  variables {
+    price_class = "PriceClass_All"
+  }
+
+  assert {
+    condition     = aws_cloudfront_distribution.app.price_class == "PriceClass_All"
+    error_message = "price_class must reach the distribution"
+  }
+}
+
+run "unknown_price_class_rejected" {
+  command = plan
+
+  providers = {
+    aws      = aws
+    aws.use1 = aws.use1
+  }
+
+  variables {
+    price_class = "PriceClass_Everything"
+  }
+
+  expect_failures = [var.price_class]
+}
