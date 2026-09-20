@@ -40,6 +40,8 @@ No modules.
 
 | Name | Description | Type | Default | Required |
 | ---- | ----------- | ---- | ------- | :------: |
+| <a name="input_abort_incomplete_multipart_days"></a> [abort\_incomplete\_multipart\_days](#input\_abort\_incomplete\_multipart\_days) | Days after which an unfinished multipart upload to the artifacts bucket is aborted, so abandoned parts stop costing storage | `number` | `7` | no |
+| <a name="input_artifact_version_retention_days"></a> [artifact\_version\_retention\_days](#input\_artifact\_version\_retention\_days) | Days a superseded (noncurrent) version of a deploy artifact is kept before it expires - the artifacts bucket is versioned, so old binaries pile up otherwise | `number` | `90` | no |
 | <a name="input_environment"></a> [environment](#input\_environment) | Environment name (dev, prod, or test), used in resource naming/tags | `string` | n/a | yes |
 
 ## Outputs

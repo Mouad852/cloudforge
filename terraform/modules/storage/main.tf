@@ -34,11 +34,11 @@ resource "aws_s3_bucket_lifecycle_configuration" "artifacts" {
     filter {}
 
     noncurrent_version_expiration {
-      noncurrent_days = 90
+      noncurrent_days = var.artifact_version_retention_days
     }
 
     abort_incomplete_multipart_upload {
-      days_after_initiation = 7
+      days_after_initiation = var.abort_incomplete_multipart_days
     }
   }
 
