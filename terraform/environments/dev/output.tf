@@ -10,10 +10,6 @@ output "alb_dns_name" {
   value = module.edge.alb_dns_name
 }
 
-output "cloudfront_domain_name" {
-  value = module.edge.cloudfront_domain_name
-}
-
 output "images_bucket_name" {
   value = module.storage.images_bucket_id
 }
@@ -48,13 +44,4 @@ output "artifact_key" {
 
 output "artifacts_bucket_name" {
   value = module.storage.artifacts_bucket_name
-}
-
-output "origin_secret_header_name" {
-  value = module.edge.origin_secret_header_name
-}
-
-output "origin_secret_header_value" {
-  value     = module.edge.origin_secret_header_value
-  sensitive = true
 }

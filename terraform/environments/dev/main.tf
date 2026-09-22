@@ -205,23 +205,15 @@ module "storage" {
 module "edge" {
   source = "../../modules/edge"
 
-  providers = {
-    aws      = aws
-    aws.use1 = aws.use1
-  }
-
-  environment                        = var.environment
-  vpc_id                             = module.network.vpc_id
-  vpc_cidr                           = module.network.vpc_cidr
-  public_subnet_ids                  = [module.network.subnet_ids["public-a"], module.network.subnet_ids["public-b"]]
-  app_port                           = var.app_port
-  blue_weight                        = var.blue_weight
-  green_weight                       = var.green_weight
-  images_bucket_id                   = module.storage.images_bucket_id
-  images_bucket_arn                  = module.storage.images_bucket_arn
-  images_bucket_regional_domain_name = module.storage.images_bucket_regional_domain_name
-  deletion_protection                = var.alb_deletion_protection
-  alb_log_retention_days             = var.alb_log_retention_days
+  environment            = var.environment
+  vpc_id                 = module.network.vpc_id
+  vpc_cidr               = module.network.vpc_cidr
+  public_subnet_ids      = [module.network.subnet_ids["public-a"], module.network.subnet_ids["public-b"]]
+  app_port               = var.app_port
+  blue_weight            = var.blue_weight
+  green_weight           = var.green_weight
+  deletion_protection    = var.alb_deletion_protection
+  alb_log_retention_days = var.alb_log_retention_days
 }
 
 module "compute" {
@@ -300,5 +292,5 @@ module "observability" {
   redis_replication_group_id = module.cache.replication_group_id
   artifacts_bucket_name      = module.storage.artifacts_bucket_name
   artifacts_bucket_arn       = module.storage.artifacts_bucket_arn
-  cloudfront_domain_name     = module.edge.cloudfront_domain_name
+  alb_dns_name               = module.edge.alb_dns_name
 }
