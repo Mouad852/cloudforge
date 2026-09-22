@@ -1,5 +1,5 @@
 output "alb_dns_name" {
-  description = "Public DNS name of the ALB - should fail when curled directly (M4 DoD)"
+  description = "Public DNS name of the ALB - the public entry point (ADR-025: this ALB is the edge, no CloudFront in front of it)"
   value       = aws_lb.app.dns_name
 }
 
@@ -30,20 +30,6 @@ output "alb_security_group_id" {
   value = aws_security_group.alb.id
 }
 
-output "origin_secret_header_name" {
-  value = var.origin_secret_header_name
-}
-
-output "origin_secret_header_value" {
-  value     = random_password.origin_secret.result
-  sensitive = true
-}
-
-output "cloudfront_domain_name" {
-  description = "Public HTTPS entry point (M4 DoD: this works, the ALB DNS name directly does not)"
-  value       = aws_cloudfront_distribution.app.domain_name
-}
-
 output "waf_web_acl_arn" {
-  value = aws_wafv2_web_acl.cloudfront.arn
+  value = aws_wafv2_web_acl.alb.arn
 }

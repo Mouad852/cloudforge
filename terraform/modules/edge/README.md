@@ -14,7 +14,6 @@
 | Name | Version |
 | ---- | ------- |
 | <a name="provider_aws"></a> [aws](#provider\_aws) | 6.63.0 |
-| <a name="provider_aws.use1"></a> [aws.use1](#provider\_aws.use1) | 6.63.0 |
 | <a name="provider_random"></a> [random](#provider\_random) | 3.9.0 |
 
 ## Modules
@@ -25,25 +24,19 @@ No modules.
 
 | Name | Type |
 | ---- | ---- |
-| [aws_cloudfront_distribution.app](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/cloudfront_distribution) | resource |
-| [aws_cloudfront_origin_access_control.images](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/cloudfront_origin_access_control) | resource |
-| [aws_cloudfront_response_headers_policy.security_headers](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/cloudfront_response_headers_policy) | resource |
 | [aws_lb.app](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/lb) | resource |
 | [aws_lb_listener.http](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/lb_listener) | resource |
-| [aws_lb_listener_rule.from_cloudfront](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/lb_listener_rule) | resource |
 | [aws_lb_target_group.blue](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/lb_target_group) | resource |
 | [aws_lb_target_group.green](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/lb_target_group) | resource |
 | [aws_s3_bucket.alb_logs](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/s3_bucket) | resource |
 | [aws_s3_bucket_lifecycle_configuration.alb_logs](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/s3_bucket_lifecycle_configuration) | resource |
 | [aws_s3_bucket_policy.alb_logs](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/s3_bucket_policy) | resource |
-| [aws_s3_bucket_policy.images](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/s3_bucket_policy) | resource |
 | [aws_s3_bucket_public_access_block.alb_logs](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/s3_bucket_public_access_block) | resource |
 | [aws_s3_bucket_server_side_encryption_configuration.alb_logs](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/s3_bucket_server_side_encryption_configuration) | resource |
 | [aws_security_group.alb](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/security_group) | resource |
-| [aws_wafv2_web_acl.cloudfront](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/wafv2_web_acl) | resource |
+| [aws_wafv2_web_acl.alb](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/wafv2_web_acl) | resource |
+| [aws_wafv2_web_acl_association.alb](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/wafv2_web_acl_association) | resource |
 | [random_id.alb_logs_bucket_suffix](https://registry.terraform.io/providers/hashicorp/random/latest/docs/resources/id) | resource |
-| [random_password.origin_secret](https://registry.terraform.io/providers/hashicorp/random/latest/docs/resources/password) | resource |
-| [aws_ec2_managed_prefix_list.cloudfront](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/ec2_managed_prefix_list) | data source |
 | [aws_elb_service_account.main](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/elb_service_account) | data source |
 
 ## Inputs
@@ -63,15 +56,10 @@ No modules.
 | <a name="input_health_check_path"></a> [health\_check\_path](#input\_health\_check\_path) | Shallow health check path the app exposes | `string` | `"/healthz"` | no |
 | <a name="input_health_check_timeout_seconds"></a> [health\_check\_timeout\_seconds](#input\_health\_check\_timeout\_seconds) | Seconds to wait for a health check response before counting it as failed - applies to both target groups | `number` | `5` | no |
 | <a name="input_health_check_unhealthy_threshold"></a> [health\_check\_unhealthy\_threshold](#input\_health\_check\_unhealthy\_threshold) | Consecutive failing health checks before a target is marked unhealthy - applies to both target groups | `number` | `2` | no |
-| <a name="input_images_bucket_arn"></a> [images\_bucket\_arn](#input\_images\_bucket\_arn) | S3 images bucket ARN (modules/storage) - used in the OAC bucket policy, M6 | `string` | n/a | yes |
-| <a name="input_images_bucket_id"></a> [images\_bucket\_id](#input\_images\_bucket\_id) | S3 images bucket name (modules/storage) - the OAC bucket policy target, M6 | `string` | n/a | yes |
-| <a name="input_images_bucket_regional_domain_name"></a> [images\_bucket\_regional\_domain\_name](#input\_images\_bucket\_regional\_domain\_name) | S3 images bucket regional domain name (modules/storage) - CloudFront's /images/* origin, M6 | `string` | n/a | yes |
-| <a name="input_origin_secret_header_name"></a> [origin\_secret\_header\_name](#input\_origin\_secret\_header\_name) | Header name CloudFront injects and the ALB listener checks for - the real authorization boundary, ADR-014 | `string` | `"X-Origin-Verify"` | no |
-| <a name="input_price_class"></a> [price\_class](#input\_price\_class) | CloudFront price class: PriceClass\_100 (North America and Europe only, cheapest), PriceClass\_200 (adds Asia, Africa and the Middle East) or PriceClass\_All | `string` | `"PriceClass_100"` | no |
 | <a name="input_public_subnet_ids"></a> [public\_subnet\_ids](#input\_public\_subnet\_ids) | Public-tier subnet IDs (both AZs) the ALB is deployed into | `list(string)` | n/a | yes |
 | <a name="input_vpc_cidr"></a> [vpc\_cidr](#input\_vpc\_cidr) | VPC CIDR block - scopes the ALB's egress to app instances instead of 0.0.0.0/0 | `string` | n/a | yes |
 | <a name="input_vpc_id"></a> [vpc\_id](#input\_vpc\_id) | VPC ID the ALB and its target groups live in | `string` | n/a | yes |
-| <a name="input_waf_rate_limit"></a> [waf\_rate\_limit](#input\_waf\_rate\_limit) | Requests per 5 minutes a single IP may send through CloudFront before the WAF blocks it | `number` | `2000` | no |
+| <a name="input_waf_rate_limit"></a> [waf\_rate\_limit](#input\_waf\_rate\_limit) | Requests per 5 minutes a single IP may send through the WAF web ACL on this ALB before it is blocked | `number` | `2000` | no |
 
 ## Outputs
 
@@ -79,13 +67,10 @@ No modules.
 | ---- | ----------- |
 | <a name="output_alb_arn"></a> [alb\_arn](#output\_alb\_arn) | n/a |
 | <a name="output_alb_arn_suffix"></a> [alb\_arn\_suffix](#output\_alb\_arn\_suffix) | Shortened ALB identifier CloudWatch metrics key on (not the full ARN - AWS/ApplicationELB dimension quirk) |
-| <a name="output_alb_dns_name"></a> [alb\_dns\_name](#output\_alb\_dns\_name) | Public DNS name of the ALB - should fail when curled directly (M4 DoD) |
+| <a name="output_alb_dns_name"></a> [alb\_dns\_name](#output\_alb\_dns\_name) | Public DNS name of the ALB - the public entry point (ADR-025: this ALB is the edge, no CloudFront in front of it) |
 | <a name="output_alb_security_group_id"></a> [alb\_security\_group\_id](#output\_alb\_security\_group\_id) | n/a |
 | <a name="output_blue_target_group_arn"></a> [blue\_target\_group\_arn](#output\_blue\_target\_group\_arn) | n/a |
 | <a name="output_blue_target_group_arn_suffix"></a> [blue\_target\_group\_arn\_suffix](#output\_blue\_target\_group\_arn\_suffix) | Shortened target-group identifier for the CloudWatch TargetGroup dimension |
-| <a name="output_cloudfront_domain_name"></a> [cloudfront\_domain\_name](#output\_cloudfront\_domain\_name) | Public HTTPS entry point (M4 DoD: this works, the ALB DNS name directly does not) |
 | <a name="output_green_target_group_arn"></a> [green\_target\_group\_arn](#output\_green\_target\_group\_arn) | Unused until M8's blue/green cutover |
-| <a name="output_origin_secret_header_name"></a> [origin\_secret\_header\_name](#output\_origin\_secret\_header\_name) | n/a |
-| <a name="output_origin_secret_header_value"></a> [origin\_secret\_header\_value](#output\_origin\_secret\_header\_value) | n/a |
 | <a name="output_waf_web_acl_arn"></a> [waf\_web\_acl\_arn](#output\_waf\_web\_acl\_arn) | n/a |
 <!-- END_TF_DOCS -->

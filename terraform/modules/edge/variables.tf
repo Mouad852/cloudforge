@@ -35,27 +35,6 @@ variable "health_check_path" {
   default     = "/healthz"
 }
 
-variable "origin_secret_header_name" {
-  description = "Header name CloudFront injects and the ALB listener checks for - the real authorization boundary, ADR-014"
-  type        = string
-  default     = "X-Origin-Verify"
-}
-
-variable "images_bucket_id" {
-  description = "S3 images bucket name (modules/storage) - the OAC bucket policy target, M6"
-  type        = string
-}
-
-variable "images_bucket_arn" {
-  description = "S3 images bucket ARN (modules/storage) - used in the OAC bucket policy, M6"
-  type        = string
-}
-
-variable "images_bucket_regional_domain_name" {
-  description = "S3 images bucket regional domain name (modules/storage) - CloudFront's /images/* origin, M6"
-  type        = string
-}
-
 variable "blue_weight" {
   description = "Percentage weight (0-100) of listener traffic sent to the blue target group - Terraform-driven blue/green shifting, ADR-017"
   type        = number
@@ -172,23 +151,12 @@ variable "alb_log_retention_days" {
 }
 
 variable "waf_rate_limit" {
-  description = "Requests per 5 minutes a single IP may send through CloudFront before the WAF blocks it"
+  description = "Requests per 5 minutes a single IP may send through the WAF web ACL on this ALB before it is blocked"
   type        = number
   default     = 2000
 
   validation {
     condition     = var.waf_rate_limit >= 10 && var.waf_rate_limit <= 2000000000
     error_message = "waf_rate_limit must be between 10 and 2000000000 requests per 5 minutes (the WAF rate-based rule limits)."
-  }
-}
-
-variable "price_class" {
-  description = "CloudFront price class: PriceClass_100 (North America and Europe only, cheapest), PriceClass_200 (adds Asia, Africa and the Middle East) or PriceClass_All"
-  type        = string
-  default     = "PriceClass_100"
-
-  validation {
-    condition     = contains(["PriceClass_100", "PriceClass_200", "PriceClass_All"], var.price_class)
-    error_message = "price_class must be one of: PriceClass_100, PriceClass_200, PriceClass_All."
   }
 }
