@@ -28,6 +28,7 @@ No modules.
 | [aws_s3_bucket.images](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/s3_bucket) | resource |
 | [aws_s3_bucket_lifecycle_configuration.artifacts](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/s3_bucket_lifecycle_configuration) | resource |
 | [aws_s3_bucket_policy.artifacts](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/s3_bucket_policy) | resource |
+| [aws_s3_bucket_policy.images](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/s3_bucket_policy) | resource |
 | [aws_s3_bucket_public_access_block.artifacts](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/s3_bucket_public_access_block) | resource |
 | [aws_s3_bucket_public_access_block.images](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/s3_bucket_public_access_block) | resource |
 | [aws_s3_bucket_server_side_encryption_configuration.artifacts](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/s3_bucket_server_side_encryption_configuration) | resource |
@@ -52,5 +53,4 @@ No modules.
 | <a name="output_artifacts_bucket_name"></a> [artifacts\_bucket\_name](#output\_artifacts\_bucket\_name) | Name of the deploy-artifacts bucket |
 | <a name="output_images_bucket_arn"></a> [images\_bucket\_arn](#output\_images\_bucket\_arn) | ARN of the CDN images bucket (M6) |
 | <a name="output_images_bucket_id"></a> [images\_bucket\_id](#output\_images\_bucket\_id) | Name/ID of the CDN images bucket (M6) |
-| <a name="output_images_bucket_regional_domain_name"></a> [images\_bucket\_regional\_domain\_name](#output\_images\_bucket\_regional\_domain\_name) | Regional domain name of the images bucket - CloudFront's OAC origin (M6) |
 <!-- END_TF_DOCS -->

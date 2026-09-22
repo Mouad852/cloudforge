@@ -17,8 +17,3 @@ output "images_bucket_arn" {
   description = "ARN of the CDN images bucket (M6)"
   value       = aws_s3_bucket.images.arn
 }
-
-output "images_bucket_regional_domain_name" {
-  description = "Regional domain name of the images bucket - CloudFront's OAC origin (M6)"
-  value       = aws_s3_bucket.images.bucket_regional_domain_name
-}

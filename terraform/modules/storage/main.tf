@@ -86,13 +86,6 @@ resource "aws_s3_bucket_policy" "artifacts" {
   })
 }
 
-# No aws_s3_bucket_policy resource here for images, unlike artifacts above -
-# the policy needs the CloudFront distribution's ARN (for the OAC condition),
-# and that distribution is built in modules/edge, not here. Rather than have
-# two separate aws_s3_bucket_policy resources fight over the same bucket
-# (S3 buckets have exactly one policy document), modules/edge owns the whole
-# policy for this bucket - both the CloudFront-allow statement AND the
-# TLS-deny statement duplicated from above. See modules/edge/main.tf.
 resource "aws_s3_bucket" "images" {
   bucket        = "cloudforge-images-${var.environment}-${random_id.bucket_suffix.hex}"
   force_destroy = var.environment == "dev"
@@ -123,4 +116,30 @@ resource "aws_s3_bucket_public_access_block" "images" {
   block_public_policy     = true
   ignore_public_acls      = true
   restrict_public_buckets = true
+}
+
+# ADR-025: this used to live in modules/edge, which needed the CloudFront
+# distribution's ARN for an OAC-allow statement. With no CloudFront, the app
+# is the only reader/writer (via its own IAM role, granted since M3) - this
+# bucket needs nothing beyond the same TLS-only deny every other bucket in
+# this project already has.
+resource "aws_s3_bucket_policy" "images" {
+  bucket = aws_s3_bucket.images.id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Sid       = "DenyInsecureTransport"
+      Effect    = "Deny"
+      Principal = "*"
+      Action    = "s3:*"
+      Resource = [
+        aws_s3_bucket.images.arn,
+        "${aws_s3_bucket.images.arn}/*",
+      ]
+      Condition = {
+        Bool = { "aws:SecureTransport" = "false" }
+      }
+    }]
+  })
 }
