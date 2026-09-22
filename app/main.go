@@ -59,10 +59,11 @@ func main() {
 	mux.HandleFunc("GET /api/products/{id}", s.handleGetProduct)
 	mux.HandleFunc("DELETE /api/products/{id}", s.handleDeleteProduct)
 	mux.HandleFunc("POST /api/products/{id}/image", s.handleUploadImage)
+	mux.HandleFunc("GET /api/products/{id}/image", s.handleGetImage)
 
 	httpServer := &http.Server{
 		Addr:    ":" + cfg.Port,
-		Handler: withRequestLogging(log, mux),
+		Handler: withRequestLogging(log, withSecurityHeaders(mux)),
 	}
 
 	go func() {

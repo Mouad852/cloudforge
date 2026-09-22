@@ -142,6 +142,42 @@ func (s *server) handleUploadImage(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, map[string]string{"image_key": key})
 }
 
+// handleGetImage streams a product's image back from S3. Replaces the
+// CloudFront /images/* behavior with OAC (M6), which no longer exists
+// (ADR-025) - the app is now the only thing that ever reads this bucket.
+func (s *server) handleGetImage(w http.ResponseWriter, r *http.Request) {
+	id := r.PathValue("id")
+
+	product, err := s.store.Get(r.Context(), id)
+	if errors.Is(err, ErrNotFound) {
+		writeError(w, http.StatusNotFound, err)
+		return
+	} else if err != nil {
+		writeError(w, http.StatusInternalServerError, err)
+		return
+	}
+	if product.ImageKey == nil {
+		writeError(w, http.StatusNotFound, errors.New("product has no image"))
+		return
+	}
+
+	body, contentType, err := s.objects.get(r.Context(), *product.ImageKey)
+	if errors.Is(err, ErrNotFound) {
+		writeError(w, http.StatusNotFound, err)
+		return
+	} else if err != nil {
+		writeError(w, http.StatusInternalServerError, err)
+		return
+	}
+	defer body.Close()
+
+	if contentType == "" {
+		contentType = "application/octet-stream"
+	}
+	w.Header().Set("Content-Type", contentType)
+	io.Copy(w, body)
+}
+
 func writeJSON(w http.ResponseWriter, status int, v any) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
