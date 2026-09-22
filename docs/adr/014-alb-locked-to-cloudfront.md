@@ -1,6 +1,12 @@
 # ADR-014: ALB locked to CloudFront — prefix list plus a secret origin header
 
-**Status:** accepted   **Date:** 2026-09-11   **Milestone:** M4
+**Status:** superseded by [ADR-025](025-cloudfront-denied-edge-redesign.md)   **Date:** 2026-09-11   **Milestone:** M4
+
+> **2026-09-22:** AWS Support permanently denied CloudFront access for this account (ADR-025).
+> With no CloudFront distribution, there is nothing left to lock the ALB behind - it is the public
+> edge itself now, protected by a WAF web ACL associated directly with it instead of this
+> prefix-list-plus-secret-header scheme. Kept as a record of the design as built and verified
+> through M4-M9, before the denial.
 
 ## Context
 

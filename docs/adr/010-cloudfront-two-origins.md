@@ -1,6 +1,10 @@
 # ADR-010: One CloudFront distribution, two origins (ALB now, S3 in M6)
 
-**Status:** accepted   **Date:** 2026-09-11   **Milestone:** M4
+**Status:** superseded by [ADR-025](025-cloudfront-denied-edge-redesign.md)   **Date:** 2026-09-11   **Milestone:** M4
+
+> **2026-09-22:** AWS Support permanently denied CloudFront access for this account (ADR-025).
+> This distribution never gets its second origin; the images path moves through the app instead.
+> Kept as a record of the design as built and verified through M4-M9, before the denial.
 
 ## Context
 

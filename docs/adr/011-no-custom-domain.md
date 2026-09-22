@@ -1,6 +1,11 @@
 # ADR-011: No custom domain — the free `*.cloudfront.net` certificate
 
-**Status:** accepted   **Date:** 2026-09-11   **Milestone:** M4
+**Status:** superseded by [ADR-025](025-cloudfront-denied-edge-redesign.md)   **Date:** 2026-09-11   **Milestone:** M4
+
+> **2026-09-22:** AWS Support permanently denied CloudFront access for this account (ADR-025).
+> The decision not to buy a domain still stands, but the reasoning here (a free certificate from
+> CloudFront) and the result (HTTPS everywhere) no longer apply - the ALB is HTTP-only now, a real
+> trade-off ADR-025 accepts explicitly rather than the free win this ADR originally described.
 
 ## Context
 
