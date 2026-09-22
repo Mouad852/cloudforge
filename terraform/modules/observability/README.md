@@ -60,6 +60,7 @@ No modules.
 | Name | Description | Type | Default | Required |
 | ---- | ----------- | ---- | ------- | :------: |
 | <a name="input_alb_arn_suffix"></a> [alb\_arn\_suffix](#input\_alb\_arn\_suffix) | ALB arn\_suffix (module.edge.alb\_arn\_suffix) - CloudWatch AWS/ApplicationELB LoadBalancer dimension | `string` | n/a | yes |
+| <a name="input_alb_dns_name"></a> [alb\_dns\_name](#input\_alb\_dns\_name) | ALB public DNS name (module.edge.alb\_dns\_name) - the canary hits this directly now that the ALB is the public edge itself (ADR-025 supersedes ADR-014's CloudFront-only lockdown) | `string` | n/a | yes |
 | <a name="input_alert_email"></a> [alert\_email](#input\_alert\_email) | Email address subscribed to the alerts SNS topic - receives every alarm and the composite service-degraded alarm | `string` | n/a | yes |
 | <a name="input_app_log_group_name"></a> [app\_log\_group\_name](#input\_app\_log\_group\_name) | CloudWatch Logs group receiving structured app logs (module.compute.app\_log\_group\_name) - metric filter source | `string` | n/a | yes |
 | <a name="input_artifacts_bucket_arn"></a> [artifacts\_bucket\_arn](#input\_artifacts\_bucket\_arn) | ARN of the same bucket, for the canary execution role's IAM policy | `string` | n/a | yes |
@@ -68,7 +69,6 @@ No modules.
 | <a name="input_billing_budget_usd"></a> [billing\_budget\_usd](#input\_billing\_budget\_usd) | AWS/Billing EstimatedCharges alarm threshold - matches the $20 AWS Budget from PLAN.md §4 | `number` | `20` | no |
 | <a name="input_canary_runtime_version"></a> [canary\_runtime\_version](#input\_canary\_runtime\_version) | Synthetics canary Node.js/Puppeteer runtime version | `string` | `"syn-nodejs-puppeteer-9.1"` | no |
 | <a name="input_canary_schedule_expression"></a> [canary\_schedule\_expression](#input\_canary\_schedule\_expression) | How often the Synthetics canary runs | `string` | `"rate(5 minutes)"` | no |
-| <a name="input_cloudfront_domain_name"></a> [cloudfront\_domain\_name](#input\_cloudfront\_domain\_name) | CloudFront distribution domain (module.edge.cloudfront\_domain\_name) - the canary hits this, never the ALB directly (ADR-014: the ALB 403s anything that doesn't arrive via CloudFront with the secret origin header) | `string` | n/a | yes |
 | <a name="input_db_instance_id"></a> [db\_instance\_id](#input\_db\_instance\_id) | RDS DBInstanceIdentifier (module.database.instance\_id) | `string` | n/a | yes |
 | <a name="input_environment"></a> [environment](#input\_environment) | Environment name (dev, prod, or test), used in resource naming/tags | `string` | n/a | yes |
 | <a name="input_rds_max_connections_threshold"></a> [rds\_max\_connections\_threshold](#input\_rds\_max\_connections\_threshold) | Absolute DatabaseConnections count alarm threshold. Derived from db.t4g.micro's default max\_connections (~112, from RDS's memory-based formula) - 80% of that is ~90 | `number` | `90` | no |

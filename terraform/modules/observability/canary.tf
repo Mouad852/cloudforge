@@ -5,10 +5,10 @@
 resource "local_file" "canary_script" {
   filename = "${path.module}/build/nodejs/node_modules/apiCanary.js"
   content = templatefile("${path.module}/templates/canary.js.tpl", {
-    # Hits CloudFront, never the ALB directly - ADR-014 makes the ALB reject anything that
-    # doesn't arrive through CloudFront with the secret origin header, so a canary pointed
-    # at the ALB DNS name would just measure its own 403s.
-    target_url = "https://${var.cloudfront_domain_name}/api/products"
+    # Hits the ALB directly over HTTP - there is no CloudFront in front of it any more
+    # (ADR-025), so the previous "hit CloudFront, never the ALB" reasoning (ADR-014)
+    # no longer applies. The ALB has no HTTPS listener (ADR-025's accepted trade-off).
+    target_url = "http://${var.alb_dns_name}/api/products"
   })
 }
 

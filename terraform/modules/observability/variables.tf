@@ -60,8 +60,8 @@ variable "artifacts_bucket_arn" {
   type        = string
 }
 
-variable "cloudfront_domain_name" {
-  description = "CloudFront distribution domain (module.edge.cloudfront_domain_name) - the canary hits this, never the ALB directly (ADR-014: the ALB 403s anything that doesn't arrive via CloudFront with the secret origin header)"
+variable "alb_dns_name" {
+  description = "ALB public DNS name (module.edge.alb_dns_name) - the canary hits this directly now that the ALB is the public edge itself (ADR-025 supersedes ADR-014's CloudFront-only lockdown)"
   type        = string
 }
 

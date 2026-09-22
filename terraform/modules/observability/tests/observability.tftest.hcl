@@ -18,7 +18,7 @@ variables {
   redis_replication_group_id = "test-cloudforge-redis"
   artifacts_bucket_name      = "test-cloudforge-artifacts"
   artifacts_bucket_arn       = "arn:aws:s3:::test-cloudforge-artifacts"
-  cloudfront_domain_name     = "d111111abcdef8.cloudfront.net"
+  alb_dns_name               = "test-cloudforge-alb-1234567890.eu-west-3.elb.amazonaws.com"
 }
 
 run "alarm_thresholds_match_plan" {
@@ -59,12 +59,12 @@ run "composite_alarm_watches_the_right_two_alarms" {
   }
 }
 
-run "canary_targets_cloudfront_not_alb" {
+run "canary_targets_the_alb_directly" {
   command = plan
 
   assert {
-    condition     = local_file.canary_script.content == templatefile("${path.module}/templates/canary.js.tpl", { target_url = "https://${var.cloudfront_domain_name}/api/products" })
-    error_message = "Canary must target the CloudFront domain, not the ALB directly - ADR-014 makes the ALB 403 anything else"
+    condition     = local_file.canary_script.content == templatefile("${path.module}/templates/canary.js.tpl", { target_url = "http://${var.alb_dns_name}/api/products" })
+    error_message = "ADR-025: the canary must target the ALB directly over HTTP - there is no CloudFront to hit instead, and the ALB has no HTTPS listener"
   }
 
   assert {
