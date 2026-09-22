@@ -1,59 +1,67 @@
-# Traffic Flow — CDN → WAF → ALB lockdown (as built, M4)
+# Traffic Flow — WAF associated directly with the ALB (redesigned, ADR-025)
 
-As-built for `dev`. The interesting part isn't the happy path — it's what happens to a request that skips CloudFront entirely, and why WAF sees a request before the origin ever does.
+**Status: redesigned in code, not yet applied to `dev` or `prod`.** This replaces the M4 CloudFront
+lockdown diagram after AWS Support permanently denied CloudFront access (ADR-025). Once applied,
+the "To verify" section below needs to be run for real and this note removed.
+
+The interesting part is what changed, not just what the new picture looks like: there used to be
+two layers between the internet and the ALB (a security-group prefix list, then a secret header
+only CloudFront could inject) because the security group alone could only prove a request came
+from *some* CloudFront distribution's shared edge network, not this one specifically. With no
+CloudFront, that whole problem disappears along with its solution — the ALB is simply the public
+edge now, the way any internet-facing ALB with no CDN in front of it works, and the WAF is
+associated with it directly.
 
 ```mermaid
 flowchart TB
-    Viewer(("Legitimate viewer"))
-    Direct(("Anyone with the ALB's<br/>public DNS name"))
+    Viewer(("Legitimate client"))
     Malicious(("Malicious request<br/>e.g. SQLi in a query param"))
 
-    CF["CloudFront distribution<br/>*.cloudfront.net · HTTPS (default cert, ADR-011)"]
-    WAF{{"AWS WAF<br/>CommonRuleSet · KnownBadInputs ·<br/>IP Reputation · rate limit 2000/5min/IP"}}
-    WAFBlock[["403 — blocked at the edge<br/>never reaches the origin"]]
+    SG{"ALB security group<br/>ingress: 0.0.0.0/0 on port 80 (ADR-025 —<br/>deliberate: this is now the public edge)"}
+    WAF{{"AWS WAF, REGIONAL scope<br/>associated directly with the ALB<br/>CommonRuleSet · KnownBadInputs ·<br/>IP Reputation · rate limit 2000/5min/IP"}}
+    WAFBlock[["Blocked by the WAF<br/>never reaches the listener"]]
 
-    Header["CloudFront injects secret header<br/>X-Origin-Verify: &lt;random_password&gt;"]
+    Listener{"ALB listener :80<br/>default action: weighted forward (ADR-017)"}
 
-    SG{"ALB security group<br/>ingress: CloudFront prefix list only"}
-    SGBlock[["Connection times out<br/>SG-level — never reaches the listener"]]
-
-    Listener{"ALB listener :80<br/>default action"}
-    Rule{"Listener rule, priority 1<br/>condition: header == secret"}
-    Forbidden[["403 Forbidden<br/>fixed-response"]]
-
-    TG["Target group: blue<br/>(green idle, reserved for M8)"]
+    TG["Target groups: blue + green<br/>weighted 100/0 by default"]
     ASG_A["EC2 · ASG · AZ-A"]
     ASG_B["EC2 · ASG · AZ-B"]
 
-    Viewer --> CF
-    Malicious --> CF
-    CF --> WAF
+    Viewer --> SG
+    Malicious --> SG
+    SG -->|"port 80, any source -<br/>nothing left to narrow this to"| WAF
     WAF -->|blocked| WAFBlock
-    WAF -->|allowed| Header
-    Header --> SG
-
-    Direct -->|"curl straight to the ALB DNS name"| SG
-
-    SG -->|"source IP not in CloudFront's<br/>origin-facing range"| SGBlock
-    SG -->|"source IP in range"| Listener
-
-    Listener -->|"no matching rule"| Forbidden
-    Listener --> Rule
-    Rule -->|"header present and correct"| TG
-    Rule -->|"header missing or wrong"| Forbidden
-
+    WAF -->|allowed| Listener
+    Listener --> TG
     TG --> ASG_A
     TG --> ASG_B
 ```
 
-## Why two lockdown layers, not one
+## Why one layer is now correct, where two were needed before
 
-The security group rule (`com.amazonaws.global.cloudfront.origin-facing` prefix list) only proves a request came from *some* CloudFront distribution's edge network — that IP range is shared by every CloudFront customer on AWS, including someone else's distribution pointed at this ALB's DNS name as a custom origin. The secret header is what proves the request came through *this* distribution specifically. Full reasoning in ADR-014.
+The old two-layer design (`docs/adr/014-alb-locked-to-cloudfront.md`, superseded) existed because
+a security-group rule scoped to CloudFront's origin-facing prefix list only proves a request came
+from CloudFront's shared edge network — a range every CloudFront customer on AWS uses, including
+someone else's distribution pointed at this ALB's DNS name as a custom origin. The secret header
+was the actual authorization boundary, proving the request came through *this* distribution.
 
-## Verified against the real `dev` infrastructure
+None of that reasoning applies once the ALB has no CloudFront in front of it to narrow the field
+to in the first place. It receives the whole internet on port 80 by design (ADR-025), and the WAF
+web ACL — the same four rules the old CloudFront-scoped one had, just `REGIONAL` scope now,
+associated with `aws_wafv2_web_acl_association` — is what actually filters traffic before it
+reaches the listener.
 
-- `curl http://<alb-dns-name>/...` (the `Direct` path above) — connection times out at the security-group layer, confirming `SGBlock` is real and not just a diagram.
-- `aws elbv2 describe-target-health` — both `blue` target group instances (one per AZ) report `healthy`.
-- The `Rule` node's condition is `aws_lb_listener_rule.from_cloudfront`, priority 1, matching `var.origin_secret_header_name` against `random_password.origin_secret.result` — see `terraform/modules/edge/main.tf`.
+## To verify, once this is applied
 
-See ADR-006 (why the health check behind `TG` is shallow), ADR-010 (this distribution gains a second origin in M6 — not shown here since it doesn't exist yet), ADR-011 (why HTTPS here is the free default certificate), ADR-013 (private DNS, orthogonal to this flow), and ADR-014 (the two-layer lockdown itself) for the decisions behind what's shown here.
+- `curl http://<alb-dns-name>/...` should now succeed (a **200**, not a timeout) — the opposite of
+  what the M4 diagram's verification checked, because the ALB's DNS name is the real public
+  address now, not something meant to fail.
+- A request carrying an obvious SQL-injection payload in a query parameter should get blocked by
+  the WAF before it reaches the app — same managed rule groups as before, different attach point.
+- `aws elbv2 describe-target-health` — both `blue` target group instances (one per AZ) report
+  `healthy`.
+- `aws wafv2 get-web-acl-for-resource --resource-arn <alb-arn>` confirms the web ACL association.
+
+See ADR-025 (`docs/adr/025-cloudfront-denied-edge-redesign.md`) for the full context and decision,
+ADR-006 (why the health check behind the target groups is shallow), and ADR-017 (the weighted
+blue/green forward this listener's default action now carries directly).
