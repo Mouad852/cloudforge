@@ -52,4 +52,5 @@ jobs:
       - name: terraform destroy
         run: |
           terraform destroy -auto-approve -input=false \
+            -var="environment=dev" \
             -var="alert_email=${{ vars.ALERT_EMAIL }}"
