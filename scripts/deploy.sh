@@ -36,7 +36,7 @@ K6_PID=$!
 echo "==> Starting instance refresh on ${ASG_NAME}"
 REFRESH_ID=$(aws autoscaling start-instance-refresh \
   --auto-scaling-group-name "${ASG_NAME}" \
-  --preferences '{"MinHealthyPercentage":100,"InstanceWarmup":180}' \
+  --preferences '{"MinHealthyPercentage":100,"MaxHealthyPercentage":200,"InstanceWarmup":180}' \
   --query 'InstanceRefreshId' --output text)
 
 echo "==> Polling instance refresh ${REFRESH_ID}"
