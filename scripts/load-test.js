@@ -1,5 +1,5 @@
 import http from 'k6/http';
-import { check } from 'k6';
+import { check, sleep } from 'k6';
 
 const TARGET_URL = __ENV.TARGET_URL;
 
@@ -18,4 +18,10 @@ export default function () {
   const res = http.get(`${TARGET_URL}/readyz`);
 
   check(res, { 'status is 200': (r) => r.status === 200 });
+
+  // About 1 request/s per VU: 5 VUs send ~1,500 requests per 5 minutes, under
+  // the WAF's 2,000-per-5-minutes-per-IP rate limit (ADR-025). With no pause,
+  // 5 VUs send ~34/s from one runner IP, and the WAF blocks the deploy gate
+  // itself within about a minute.
+  sleep(1);
 }
