@@ -1,6 +1,11 @@
 data "aws_caller_identity" "current" {}
 data "aws_region" "current" {}
 
+# default_tags only reach resources Terraform creates itself. Instances the ASG
+# launches (and their volumes) only get the tags in tag_specifications below,
+# so the provider's default_tags are copied in explicitly.
+data "aws_default_tags" "current" {}
+
 locals {
   # Ours to choose - M6 creates the actual secret under this name.
   redis_secret_name_prefix = "cloudforge/${var.environment}/redis-auth"
@@ -209,9 +214,17 @@ resource "aws_launch_template" "app" {
   tag_specifications {
     resource_type = "instance"
 
-    tags = {
+    tags = merge(data.aws_default_tags.current.tags, {
       Name = "${var.environment}-cloudforge-app"
-    }
+    })
+  }
+
+  tag_specifications {
+    resource_type = "volume"
+
+    tags = merge(data.aws_default_tags.current.tags, {
+      Name = "${var.environment}-cloudforge-app"
+    })
   }
 
   lifecycle {

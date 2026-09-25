@@ -1,6 +1,20 @@
 provider "aws" {
   region = "eu-west-3"
 }
+
+# Stands in for the environments' provider, whose default_tags every launched
+# instance and volume must inherit.
+provider "aws" {
+  alias  = "tagged"
+  region = "eu-west-3"
+
+  default_tags {
+    tags = {
+      Project = "cloudforge"
+      Owner   = "test"
+    }
+  }
+}
 variables {
   environment           = "test"
   vpc_id                = "vpc-0123456789abcdef0"
@@ -224,4 +238,25 @@ run "cpu_target_above_100_rejected" {
   }
 
   expect_failures = [var.cpu_target_percent]
+}
+
+run "launched_instances_and_volumes_carry_the_default_tags" {
+  command = plan
+
+  providers = {
+    aws = aws.tagged
+  }
+
+  assert {
+    condition     = toset([for ts in aws_launch_template.app.tag_specifications : ts.resource_type]) == toset(["instance", "volume"])
+    error_message = "The launch template must tag both the instances and the volumes the ASG launches"
+  }
+
+  assert {
+    condition = alltrue([
+      for ts in aws_launch_template.app.tag_specifications :
+      lookup(ts.tags, "Project", "") == "cloudforge" && lookup(ts.tags, "Owner", "") == "test" && lookup(ts.tags, "Name", "") == "test-cloudforge-app"
+    ])
+    error_message = "Launched instances and volumes must carry the provider's default_tags plus their Name - default_tags alone never reach them"
+  }
 }
