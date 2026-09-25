@@ -108,6 +108,14 @@ resource "aws_db_instance" "main" {
   tags = {
     Name = "${var.environment}-cloudforge-db"
   }
+
+  # snapshot_identifier only matters when the instance is created. Changing it
+  # afterwards forces a replacement, which would swap a running database for a
+  # new one restored from that snapshot. Ignoring it means a restore only ever
+  # happens on a fresh create (dev-up, ADR-015), never on a routine apply.
+  lifecycle {
+    ignore_changes = [snapshot_identifier]
+  }
 }
 
 resource "aws_route53_record" "db" {
