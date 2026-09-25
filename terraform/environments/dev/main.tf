@@ -4,8 +4,9 @@ provider "aws" {
   default_tags {
     tags = {
       Project     = "cloudforge"
-      managedBy   = "terraform"
+      ManagedBy   = "terraform"
       Environment = var.environment
+      Owner       = "Mouad852"
     }
   }
 }
@@ -17,8 +18,9 @@ provider "aws" {
   default_tags {
     tags = {
       Project     = "cloudforge"
-      managedBy   = "terraform"
+      ManagedBy   = "terraform"
       Environment = var.environment
+      Owner       = "Mouad852"
     }
   }
 }
