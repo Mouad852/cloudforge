@@ -54,6 +54,7 @@ jobs:
         run: |
           set +e
           terraform plan -detailed-exitcode -lock=false -input=false -no-color \
+            -var="environment=${{ matrix.environment }}" \
             -var="alert_email=${{ vars.ALERT_EMAIL }}" \
             2>&1 | tee plan.txt
           EXITCODE=${PIPESTATUS[0]}
