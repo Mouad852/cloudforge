@@ -1,21 +1,29 @@
 # Renders the canary script with the real target URL baked in, then zips it into the
 # nodejs/node_modules/<file>.js layout the Synthetics puppeteer runtime accepts. Both are
-# build artifacts (generated at plan/apply time under build/ and build.zip) - gitignored,
-# not committed; the source of truth is templates/canary.js.tpl.
-resource "local_file" "canary_script" {
-  filename = "${path.module}/build/nodejs/node_modules/apiCanary.js"
-  content = templatefile("${path.module}/templates/canary.js.tpl", {
+# build artifacts (generated at plan/apply time under build/ and build-<hash>.zip) -
+# gitignored, not committed; the source of truth is templates/canary.js.tpl.
+locals {
+  canary_script = templatefile("${path.module}/templates/canary.js.tpl", {
     # Hits the ALB directly over HTTP - there is no CloudFront in front of it any more
     # (ADR-025), so the previous "hit CloudFront, never the ALB" reasoning (ADR-014)
     # no longer applies. The ALB has no HTTPS listener (ADR-025's accepted trade-off).
     target_url = "http://${var.alb_dns_name}/api/products"
   })
+
+  # The provider only uploads new code when the zip_file path changes, and AWS rejects a
+  # runtime change without code - so the path has to change with the script or runtime.
+  canary_zip_id = substr(sha256("${var.canary_runtime_version}\n${local.canary_script}"), 0, 16)
+}
+
+resource "local_file" "canary_script" {
+  filename = "${path.module}/build/nodejs/node_modules/apiCanary.js"
+  content  = local.canary_script
 }
 
 data "archive_file" "canary" {
   type        = "zip"
   source_dir  = "${path.module}/build"
-  output_path = "${path.module}/build.zip"
+  output_path = "${path.module}/build-${local.canary_zip_id}.zip"
   depends_on  = [local_file.canary_script]
 }
 
