@@ -33,3 +33,10 @@ Tested end-to-end, not just planned: inserted a marker row (`round_trip_marker`,
 - **Two S3 buckets (`artifacts`, `alb-logs`) don't allow `terraform destroy` to fully complete.** Both are versioned and contain real objects; without `force_destroy = true`, AWS refuses `DeleteBucket` with `BucketNotEmpty`. This didn't affect the database/snapshot mechanism itself — the RDS instance still deleted and snapshotted correctly — but it meant `dev-down` never cleanly finished on its own, twice, and had to be re-run before the environment was actually fully torn down. **Not yet fixed** — worth adding `force_destroy = true` to these dev-only buckets so `dev-down` completes in one pass.
 - **A stuck Terraform state lock** after the first `dev-down`, caused by a transient local DNS/network blip while Terraform was mid-poll (confirmed via `nslookup` and AWS's own side showing the delete had actually already succeeded) — resolved with `terraform force-unlock` once confirmed no other process could be holding it.
 - **The recreated app instances came up with no working SSM agent at all** — a third instance of the exact AL2023 "minimal AMI variant" bug ADR-008 already documents twice for the NAT instance, this time hitting `compute`'s own AMI filter instead. See ADR-005 for that specific fix.
+
+> **2026-09-25:** CI now does what `make dev-up` does. `apply (dev)` passes the newest
+> `dev-cloudforge-db` manual snapshot on every apply, and `snapshot_identifier` is in
+> `ignore_changes`, so a snapshot is only ever used when the instance is being created. Without
+> that, any apply with a newer snapshot ID would have replaced the running database. See ADR-026.
+> The bucket issue above was fixed on 2026-09-13 (`a32b754`): the dev `artifacts` and ALB-logs
+> buckets set `force_destroy`, as the `images` bucket has since it was added the same day.
