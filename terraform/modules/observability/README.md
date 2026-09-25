@@ -8,7 +8,6 @@
 | <a name="requirement_terraform"></a> [terraform](#requirement\_terraform) | >= 1.11 |
 | <a name="requirement_archive"></a> [archive](#requirement\_archive) | ~> 2.0 |
 | <a name="requirement_aws"></a> [aws](#requirement\_aws) | ~> 5.0 |
-| <a name="requirement_local"></a> [local](#requirement\_local) | ~> 2.0 |
 
 ## Providers
 
@@ -17,7 +16,6 @@
 | <a name="provider_archive"></a> [archive](#provider\_archive) | 2.8.1 |
 | <a name="provider_aws"></a> [aws](#provider\_aws) | 5.100.0 |
 | <a name="provider_aws.use1"></a> [aws.use1](#provider\_aws.use1) | 5.100.0 |
-| <a name="provider_local"></a> [local](#provider\_local) | 2.9.1 |
 
 ## Modules
 
@@ -50,7 +48,6 @@ No modules.
 | [aws_sns_topic_subscription.alerts_email](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/sns_topic_subscription) | resource |
 | [aws_sns_topic_subscription.billing_alerts_email](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/sns_topic_subscription) | resource |
 | [aws_synthetics_canary.api](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/synthetics_canary) | resource |
-| [local_file.canary_script](https://registry.terraform.io/providers/hashicorp/local/latest/docs/resources/file) | resource |
 | [archive_file.canary](https://registry.terraform.io/providers/hashicorp/archive/latest/docs/data-sources/file) | data source |
 | [aws_caller_identity.current](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/caller_identity) | data source |
 | [aws_region.current](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/region) | data source |

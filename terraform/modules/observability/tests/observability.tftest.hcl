@@ -63,7 +63,7 @@ run "canary_targets_the_alb_directly" {
   command = plan
 
   assert {
-    condition     = local_file.canary_script.content == templatefile("${path.module}/templates/canary.js.tpl", { target_url = "http://${var.alb_dns_name}/api/products" })
+    condition     = one(data.archive_file.canary.source).content == templatefile("${path.module}/templates/canary.js.tpl", { target_url = "http://${var.alb_dns_name}/api/products" })
     error_message = "ADR-025: the canary must target the ALB directly over HTTP - there is no CloudFront to hit instead, and the ALB has no HTTPS listener"
   }
 
