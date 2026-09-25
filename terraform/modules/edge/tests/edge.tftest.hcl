@@ -61,6 +61,21 @@ run "waf_associated_directly_with_the_alb" {
     error_message = "The SQLi rule group must block (override_action none), not just count"
   }
 
+  assert {
+    condition     = one(one([for r in aws_wafv2_web_acl.alb.rule : r if r.name == "AWSManagedRulesCommonRuleSet"]).statement[0].managed_rule_group_statement[0].rule_action_override).name == "SizeRestrictions_BODY"
+    error_message = "CommonRuleSet's 8 KB body limit must be overridden to count - blocking it outright rejects every real image upload"
+  }
+
+  assert {
+    condition     = one([for r in aws_wafv2_web_acl.alb.rule : r if r.name == "OversizedBodyExceptImageUpload"]).statement[0].and_statement[0].statement[0].label_match_statement[0].key == "awswaf:managed:aws:core-rule-set:SizeRestrictions_Body"
+    error_message = "The 8 KB body limit must still be enforced by label everywhere except the image upload"
+  }
+
+  assert {
+    condition     = one([for r in aws_wafv2_web_acl.alb.rule : r if r.name == "OversizedBodyExceptImageUpload"]).priority > one([for r in aws_wafv2_web_acl.alb.rule : r if r.name == "AWSManagedRulesCommonRuleSet"]).priority
+    error_message = "The label rule must run after CommonRuleSet, or the label it matches does not exist yet"
+  }
+
   # Both ARNs in the association are computed values, unknown at plan time
   # (same limitation noted above) - that this module has exactly one
   # aws_wafv2_web_acl_association, pointed at its own web ACL, is verified

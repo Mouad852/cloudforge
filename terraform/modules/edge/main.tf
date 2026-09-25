@@ -229,12 +229,68 @@ resource "aws_wafv2_web_acl" "alb" {
       managed_rule_group_statement {
         name        = "AWSManagedRulesCommonRuleSet"
         vendor_name = "AWS"
+
+        # Count, not block: the rule below re-applies this 8 KB body limit
+        # everywhere except the image upload, which the app caps at 5 MiB.
+        rule_action_override {
+          name = "SizeRestrictions_BODY"
+
+          action_to_use {
+            count {}
+          }
+        }
       }
     }
 
     visibility_config {
       cloudwatch_metrics_enabled = true
       metric_name                = "${var.environment}-common-rule-set"
+      sampled_requests_enabled   = true
+    }
+  }
+
+  # Must run after CommonRuleSet (priority 0), which adds the label it matches.
+  rule {
+    name     = "OversizedBodyExceptImageUpload"
+    priority = 5
+
+    action {
+      block {}
+    }
+
+    statement {
+      and_statement {
+        statement {
+          label_match_statement {
+            scope = "LABEL"
+            key   = "awswaf:managed:aws:core-rule-set:SizeRestrictions_Body"
+          }
+        }
+
+        statement {
+          not_statement {
+            statement {
+              regex_match_statement {
+                regex_string = "^/api/products/[^/]+/image$"
+
+                field_to_match {
+                  uri_path {}
+                }
+
+                text_transformation {
+                  priority = 0
+                  type     = "NONE"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+
+    visibility_config {
+      cloudwatch_metrics_enabled = true
+      metric_name                = "${var.environment}-oversized-body"
       sampled_requests_enabled   = true
     }
   }
