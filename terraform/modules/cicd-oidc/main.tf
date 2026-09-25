@@ -144,6 +144,7 @@ resource "aws_iam_role_policy" "terraform_apply_iam_scoped" {
         "iam:DeleteInstanceProfile",
         "iam:GetInstanceProfile",
         "iam:TagInstanceProfile",
+        "iam:UntagInstanceProfile",
         "iam:AddRoleToInstanceProfile",
         "iam:RemoveRoleFromInstanceProfile",
       ]
