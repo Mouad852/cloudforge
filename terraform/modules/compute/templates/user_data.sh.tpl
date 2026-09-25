@@ -13,7 +13,21 @@ systemctl enable --now amazon-ssm-agent
 
 dnf install -y amazon-cloudwatch-agent
 
-aws s3 cp "s3://${artifacts_bucket}/${artifact_key}" /opt/cloudforge/cloudstore-api
+# On a from-scratch build (the nightly destroy, a DR rebuild) the apply that
+# creates this instance also creates the empty artifacts bucket, and the
+# binary is uploaded right after it (scripts/ensure-artifact.sh). Wait for it
+# rather than fail: user data never re-runs, so an instance whose first
+# download failed would stay broken until the ASG replaced it.
+for attempt in $(seq 1 90); do
+  if aws s3 cp "s3://${artifacts_bucket}/${artifact_key}" /opt/cloudforge/cloudstore-api; then
+    break
+  fi
+  if [ "$attempt" -eq 90 ]; then
+    echo "artifact never appeared after 15 minutes" >&2
+    exit 1
+  fi
+  sleep 10
+done
 chmod +x /opt/cloudforge/cloudstore-api
 
 cat > /etc/systemd/system/cloudforge-api.service <<'UNIT'
