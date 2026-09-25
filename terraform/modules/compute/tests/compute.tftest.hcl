@@ -62,6 +62,11 @@ run "asg_and_scaling_config" {
   }
 
   assert {
+    condition     = aws_autoscaling_group.app.instance_refresh[0].preferences[0].max_healthy_percentage == 200
+    error_message = "Instance refresh must launch the replacement before terminating the old instance (max_healthy_percentage 200) - got ${aws_autoscaling_group.app.instance_refresh[0].preferences[0].max_healthy_percentage}"
+  }
+
+  assert {
     condition     = tonumber(aws_autoscaling_group.app.instance_refresh[0].preferences[0].instance_warmup) == 180
     error_message = "Instance refresh warmup must be 180s - got ${aws_autoscaling_group.app.instance_refresh[0].preferences[0].instance_warmup}"
   }
