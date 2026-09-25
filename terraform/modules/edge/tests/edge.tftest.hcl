@@ -51,6 +51,16 @@ run "waf_associated_directly_with_the_alb" {
     error_message = "ADR-025: the web ACL must be REGIONAL scope, associated directly with the ALB - there is no CloudFront distribution to attach a CLOUDFRONT-scope ACL to"
   }
 
+  assert {
+    condition     = one([for r in aws_wafv2_web_acl.alb.rule : r if r.name == "AWSManagedRulesSQLiRuleSet"]).statement[0].managed_rule_group_statement[0].name == "AWSManagedRulesSQLiRuleSet"
+    error_message = "The web ACL must include AWS's SQL-injection rule group - CommonRuleSet has no SQLi rules of its own"
+  }
+
+  assert {
+    condition     = length(one([for r in aws_wafv2_web_acl.alb.rule : r if r.name == "AWSManagedRulesSQLiRuleSet"]).override_action[0].none) == 1
+    error_message = "The SQLi rule group must block (override_action none), not just count"
+  }
+
   # Both ARNs in the association are computed values, unknown at plan time
   # (same limitation noted above) - that this module has exactly one
   # aws_wafv2_web_acl_association, pointed at its own web ACL, is verified
