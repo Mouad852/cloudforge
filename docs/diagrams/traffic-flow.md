@@ -2,8 +2,7 @@
 
 **Status: applied to `dev` and `prod`, verified 2026-09-24/25** (results at the bottom). This
 replaces the M4 CloudFront lockdown diagram after AWS Support permanently denied CloudFront access
-(ADR-025). The SQL-injection rule group in the WAF box was added to the code on 2026-09-25, after
-that testing found the WAF had none, and is not yet applied.
+(ADR-025).
 
 The interesting part is what changed, not just what the new picture looks like: there used to be
 two layers between the internet and the ALB (a security-group prefix list, then a secret header
@@ -19,7 +18,7 @@ flowchart TB
     Malicious(("Malicious request<br/>e.g. SQLi in a query param"))
 
     SG{"ALB security group<br/>ingress: 0.0.0.0/0 on port 80 (ADR-025 —<br/>deliberate: this is now the public edge)"}
-    WAF{{"AWS WAF, REGIONAL scope<br/>associated directly with the ALB<br/>CommonRuleSet · KnownBadInputs ·<br/>IP Reputation · rate limit 2000/5min/IP ·<br/>SQLiRuleSet"}}
+    WAF{{"AWS WAF, REGIONAL scope<br/>associated directly with the ALB<br/>CommonRuleSet · KnownBadInputs ·<br/>IP Reputation · rate limit 2000/5min/IP ·<br/>SQLiRuleSet · 8 KB body limit<br/>(except the image upload)"}}
     WAFBlock[["Blocked by the WAF<br/>never reaches the listener"]]
 
     Listener{"ALB listener :80<br/>default action: weighted forward (ADR-017)"}
@@ -50,8 +49,15 @@ None of that reasoning applies once the ALB has no CloudFront in front of it to 
 to in the first place. It receives the whole internet on port 80 by design (ADR-025), and the WAF
 web ACL is what actually filters traffic before it reaches the listener. It carries the same four
 rules the old CloudFront-scoped one had, now at `REGIONAL` scope and attached with
-`aws_wafv2_web_acl_association`, plus `AWSManagedRulesSQLiRuleSet`. That fifth rule was added on
-2026-09-25, because none of the original four matches SQL injection.
+`aws_wafv2_web_acl_association`. Testing on 2026-09-25 led to two changes:
+
+- **`AWSManagedRulesSQLiRuleSet` added**, because none of the original four matches SQL injection.
+- **`CommonRuleSet`'s 8 KB body limit (`SizeRestrictions_BODY`) set to count instead of block.**
+  It rejected every image upload over 8 KB, and the app accepts up to 5 MiB. The limit is not
+  gone: when that rule matches, it attaches a label to the request, and our own rule
+  `OversizedBodyExceptImageUpload` blocks any request with that label unless its path is
+  `/api/products/{id}/image`. So every other route keeps the 8 KB cap. That matters most for
+  `POST /api/products`, whose handler reads JSON with no size limit of its own.
 
 ## Verified 2026-09-24/25, on `dev` and `prod`
 
@@ -61,10 +67,18 @@ rules the old CloudFront-scoped one had, now at `REGIONAL` scope and attached wi
 - `aws cloudfront list-distributions` is empty: nothing CloudFront-related is left.
 - The WAF's sampled requests show real traffic being filtered: ordinary requests allowed, and
   scanner traffic from unrelated IPs blocked by `CommonRuleSet`'s `UserAgent_BadBots_HEADER` rule.
-- **SQL injection was not blocked.** A request with `' OR '1'='1` in the query string, sent from
-  AWS CloudShell, passed the WAF and got `200` from the app. That finding is why
-  `AWSManagedRulesSQLiRuleSet` exists. Still to verify once it is applied: the same request gets
-  `403`, and the sampled requests name that rule group.
+- **SQL injection**: before the fix, a request with `' OR '1'='1` in the query string, sent from
+  AWS CloudShell, passed the WAF and got `200` from the app. After it, the same request gets
+  `403` on both environments; on `dev`, the sampled requests name the blocking rule as
+  `AWSManagedRulesSQLiRuleSet#SQLi_QUERYARGUMENTS`.
+- **Body size**: before the fix, a 20 KB image upload got `403` from `SizeRestrictions_BODY`.
+  After it, on `prod`, the upload returns `200` and reads back as the same 20,000 bytes. A 20 KB
+  JSON body to `POST /api/products` gets `403` on both environments; on `dev`, the sampled
+  requests show `OversizedBodyExceptImageUpload` blocking it.
+- An automated scanner probing for leftover files (`/.env.bak`, `/terraform.tfstate.backup`,
+  `/aws_keys.yml.bak` and similar) was blocked by `CommonRuleSet`'s
+  `RestrictedExtensions_URIPATH` rule throughout. The app serves no files, so it would have found
+  nothing anyway.
 
 **Test SQL injection from CloudShell, not from your own machine.** From the operator's network,
 every request containing an SQL-injection pattern got a TCP connection reset, and the WAF's

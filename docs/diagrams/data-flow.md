@@ -85,10 +85,16 @@ Each step below was run through the public ALB, on both environments:
   with the app's security headers (`nosniff`, `X-Frame-Options: DENY`, `Referrer-Policy`).
 - The test product was deleted afterwards.
 
-Found and fixed while verifying: the write path failed at first with S3 `PermanentRedirect`. The
-compute module passed the images bucket name to the IAM policy but never to the app, so the app fell
-back to its hardcoded default (`cloudforge-images-dev`, without the per-environment suffix), which
-is not this project's bucket. `user_data.sh.tpl` now sets `S3_BUCKET`.
+Found and fixed while verifying, both in the write path:
+
+- **S3 `PermanentRedirect` on every upload.** The compute module passed the images bucket name to
+  the IAM policy but never to the app, so the app fell back to its hardcoded default
+  (`cloudforge-images-dev`, without the per-environment suffix), which is not this project's
+  bucket. `user_data.sh.tpl` now sets `S3_BUCKET`.
+- **The WAF rejected every upload over 8 KB.** The first tests used a 58-byte file, which hid it.
+  `CommonRuleSet`'s `SizeRestrictions_BODY` now only counts, and a label rule keeps the 8 KB limit
+  on every route except the upload (see `traffic-flow.md`). Re-tested on `prod` with a 20 KB file:
+  `200`, and it reads back as the same 20,000 bytes.
 
 Not yet tested: that a direct S3 object URL for the same key is denied. By design it should be,
 since the bucket has no public grant of any kind and only the app's IAM role can read it.

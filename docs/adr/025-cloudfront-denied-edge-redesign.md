@@ -116,3 +116,7 @@ Redesign the edge without CloudFront. The ALB becomes the public edge itself:
 > (`AWSManagedRulesCommonRuleSet` has no SQL-injection rules), and a request with
 > `' OR '1'='1` in the query string reached the app with a `200`. `AWSManagedRulesSQLiRuleSet`
 > was added as a fifth rule. See T2 in `docs/security/threat-model.md`.
+>
+> Moving the WAF in front of the ALB also put the image upload behind `CommonRuleSet`'s 8 KB body
+> limit, which blocked every real image. That rule now only counts, and a label rule keeps the
+> limit on every route except the upload (T8). Both changes were re-tested on `prod` the same day.
