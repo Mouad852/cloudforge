@@ -6,7 +6,8 @@ DB_INSTANCE := dev-cloudforge-db
 # Applies the full dev environment. If a manual snapshot exists from a
 # previous dev-down (the database module always takes a final snapshot on
 # destroy - ADR-015), restores the database from the most recent one
-# instead of creating an empty database.
+# instead of creating an empty database. Then uploads the app binary if the
+# freshly created artifacts bucket has none - the instances wait for it.
 dev-up:
 	@SNAP=$$(aws rds describe-db-snapshots \
 		--db-instance-identifier $(DB_INSTANCE) \
@@ -20,6 +21,7 @@ dev-up:
 		echo "No prior snapshot found - creating a fresh database"; \
 		cd $(TF_DIR) && terraform apply; \
 	fi
+	bash scripts/ensure-artifact.sh dev
 
 # Destroys the dev environment. skip_final_snapshot = false on the database
 # means a final snapshot is always taken first - dev-up finds and restores
