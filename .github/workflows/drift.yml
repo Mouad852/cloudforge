@@ -41,16 +41,38 @@ jobs:
           role-session-name: gha-drift-${{ matrix.environment }}
           aws-region: ${{ env.AWS_REGION }}
 
+      # nightly-destroy.yml tears dev down at 23:00 UTC, so at 06:00 dev is usually
+      # gone and a plan would report every resource as missing - an issue and an
+      # email every morning for an environment that is down on purpose. Only dev
+      # is skipped this way: prod missing is exactly what this check must report.
+      - name: skip dev while it is torn down
+        id: up
+        run: |
+          if [ "${{ matrix.environment }}" = "dev" ]; then
+            VPC=$(aws ec2 describe-vpcs \
+              --filters "Name=tag:Name,Values=dev-cloudforge-vpc" \
+              --query "Vpcs[0].VpcId" --output text)
+            if [ "$VPC" = "None" ]; then
+              echo "dev is torn down (nightly-destroy) - nothing to compare"
+              echo "up=false" >> "$GITHUB_OUTPUT"
+              exit 0
+            fi
+          fi
+          echo "up=true" >> "$GITHUB_OUTPUT"
+
       - uses: hashicorp/setup-terraform@v3
+        if: steps.up.outputs.up == 'true'
         with:
           terraform_version: ${{ env.TF_VERSION }}
           terraform_wrapper: false
 
       - name: terraform init
+        if: steps.up.outputs.up == 'true'
         run: terraform init -input=false
 
       - name: terraform plan (detailed exit code)
         id: plan
+        if: steps.up.outputs.up == 'true'
         run: |
           set +e
           terraform plan -detailed-exitcode -lock=false -input=false -no-color \
