@@ -19,6 +19,9 @@ repos:
         files: ^terraform/
         args:
           - --hook-config=--skip-framework=terraform_plan
+          # CloudForge's own rules (CKV_CF_*) in policy/custom_checks - the same
+          # directory CI passes to the checkov action.
+          - --args=--external-checks-dir=__GIT_WORKING_DIR__/policy/custom_checks
           # Inline #checkov:skip= comments don't work in this checkov install
           # (verified: even a minimal isolated resource with a skip comment
           # still reports FAILED, Skipped checks: 0) - using --skip-check

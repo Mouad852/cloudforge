@@ -6,6 +6,7 @@ provider "aws" {
       Project     = "cloudforge"
       ManagedBy   = "terraform"
       Environment = "bootstrap"
+      Owner       = "Mouad852"
     }
   }
 }
