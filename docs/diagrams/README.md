@@ -6,9 +6,9 @@ Versioned as Mermaid (renders natively on GitHub, diffs like text) so they live 
 |---|---|---|---|
 | High-level architecture | `architecture-high-level.md` | Planning | ✅ drafted from PLAN.md §5 |
 | Network / VPC | `network-vpc.md` | M1 | ✅ as-built (generated image, not Mermaid — see file) |
-| Traffic flow (WAF → ALB → ASG) | `traffic-flow.md` | M4, redesigned M10 | ⚠️ redesigned (ADR-025), not yet applied |
+| Traffic flow (WAF → ALB → ASG) | `traffic-flow.md` | M4, redesigned M10 | ✅ as-built (ADR-025), verified 2026-09-25; SQLi rule group not yet applied |
 | Security flow (WAF, security groups, IAM boundaries) | `security-flow.md` | M10 | not yet |
-| Data flow (cache-aside, S3 image path) | `data-flow.md` | M6, redesigned M10 | ⚠️ redesigned (ADR-025), not yet applied |
+| Data flow (cache-aside, S3 image path) | `data-flow.md` | M6, redesigned M10 | ✅ as-built (ADR-025), verified 2026-09-25 |
 | DR / recovery flow | `dr-recovery-flow.md` | M11 | not yet |
 
 Update the relevant diagram in the same commit as the implementation it describes. A diagram that lags the actual code is worse than no diagram — it actively misleads a reader.

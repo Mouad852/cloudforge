@@ -1,10 +1,9 @@
 # Data Flow — cache-aside reads and the S3 image path (redesigned, ADR-025)
 
-**Status: redesigned in code, not yet applied to `dev` or `prod`.** M6's diagram showed images
-served straight out of S3 through CloudFront's Origin Access Control. AWS Support permanently
-denied CloudFront access (ADR-025), so image reads now go through the app instead — the same
-route the read and write paths already used for everything else. Once applied, the "To verify"
-section below needs to be run for real and this note removed.
+**Status: applied to `dev` and `prod`, verified 2026-09-24/25** (results at the bottom). M6's
+diagram showed images served straight out of S3 through CloudFront's Origin Access Control. AWS
+Support permanently denied CloudFront access (ADR-025), so image reads now go through the app
+instead — the same route the read and write paths already used for everything else.
 
 ```mermaid
 flowchart TB
@@ -75,19 +74,28 @@ The cache-aside pattern is unchanged and still deliberately fail-open: a Redis e
 treated as a miss, not an error. Losing the cache should degrade the app to "every request hits
 Postgres directly," not take the app down.
 
-## To verify, once this is applied
+## Verified 2026-09-24/25, on `dev` and `prod`
 
-- `terraform/modules/edge/main.tf` — one `aws_wafv2_web_acl` (`REGIONAL` scope) associated with
-  `aws_lb.app` via `aws_wafv2_web_acl_association`; the listener's `default_action` forwards
-  directly, weighted across the blue and green target groups.
-- `app/objects.go` — `get()` calls `s3.GetObject` and returns the body plus the stored content
-  type; `app/handlers.go` — `handleGetImage` looks up the product's `image_key`, then streams it.
-- `curl http://<alb-dns-name>/api/products/<id>/image` → `200` with the right `Content-Type`, for
-  a product that has an image.
-- A direct S3 object URL for the same key → denied — the bucket has no public grant of any kind
-  now, not even a CloudFront-scoped one; only the app's own IAM role can read it.
-- `app/cache.go` — `productTTL = 60 * time.Second`; `get()` logs a warning and returns `(_, false)`
-  on any Redis error rather than propagating it, confirming the fail-open behavior shown above.
+Each step below was run through the public ALB, on both environments:
+
+- `POST /api/products` → `201` with the new product and its `id`.
+- `GET /api/products/<id>/image` before any upload → `404 {"error":"product has no image"}`.
+- `POST /api/products/<id>/image` → `{"image_key":"products/<id>"}`.
+- `GET /api/products/<id>/image` → `200`, `Content-Type: image/png`, and the exact bytes uploaded,
+  with the app's security headers (`nosniff`, `X-Frame-Options: DENY`, `Referrer-Policy`).
+- The test product was deleted afterwards.
+
+Found and fixed while verifying: the write path failed at first with S3 `PermanentRedirect`. The
+compute module passed the images bucket name to the IAM policy but never to the app, so the app fell
+back to its hardcoded default (`cloudforge-images-dev`, without the per-environment suffix), which
+is not this project's bucket. `user_data.sh.tpl` now sets `S3_BUCKET`.
+
+Not yet tested: that a direct S3 object URL for the same key is denied. By design it should be,
+since the bucket has no public grant of any kind and only the app's IAM role can read it.
+
+Checked by reading code rather than by request: `app/cache.go` sets `productTTL = 60 * time.Second`,
+and its `get()` logs a warning and returns `(_, false)` on any Redis error instead of propagating
+it, which is the fail-open behavior shown above.
 
 See ADR-025 (`docs/adr/025-cloudfront-denied-edge-redesign.md`) for why this changed, ADR-013
 (`docs/adr/013-private-hosted-zone.md`) for the private CNAME behind the Redis connection, and

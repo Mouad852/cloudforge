@@ -110,3 +110,9 @@ Redesign the edge without CloudFront. The ALB becomes the public edge itself:
 - **If CloudFront access is ever granted later**, re-adding it is additive: a distribution with an
   ALB origin and an OAC-fronted S3 origin, same shape as before, laid on top of an edge that
   already works correctly without it — not a prerequisite this project is blocked on a second time.
+
+> **2026-09-25:** Applied to `dev` and `prod` and tested with real requests. The testing showed
+> that "same four rules" was not enough: none of them matches SQL injection
+> (`AWSManagedRulesCommonRuleSet` has no SQL-injection rules), and a request with
+> `' OR '1'='1` in the query string reached the app with a `200`. `AWSManagedRulesSQLiRuleSet`
+> was added as a fifth rule. See T2 in `docs/security/threat-model.md`.
