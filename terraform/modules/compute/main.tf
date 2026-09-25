@@ -118,6 +118,14 @@ resource "aws_security_group" "app" {
     security_groups = [var.alb_security_group_id]
   }
 
+  ingress {
+    description = "Direct access for debugging, bypassing the ALB"
+    from_port   = var.app_port
+    to_port     = var.app_port
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
   egress {
     description = "HTTPS out for SSM, CloudWatch, Secrets Manager, S3 (via gateway endpoint), via NAT"
     from_port   = 443
