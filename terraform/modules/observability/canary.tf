@@ -1,7 +1,7 @@
 # Renders the canary script with the real target URL baked in, then zips it into the
-# nodejs/node_modules/<file>.js layout the Synthetics puppeteer runtime accepts. Both are
-# build artifacts (generated at plan/apply time under build/ and build-<hash>.zip) -
-# gitignored, not committed; the source of truth is templates/canary.js.tpl.
+# nodejs/node_modules/<file>.js layout the Synthetics puppeteer runtime accepts. The zip
+# (build-<hash>.zip, generated at plan time) is a gitignored build artifact; the source of
+# truth is templates/canary.js.tpl.
 locals {
   canary_script = templatefile("${path.module}/templates/canary.js.tpl", {
     # Hits the ALB directly over HTTP - there is no CloudFront in front of it any more
@@ -15,16 +15,17 @@ locals {
   canary_zip_id = substr(sha256("${var.canary_runtime_version}\n${local.canary_script}"), 0, 16)
 }
 
-resource "local_file" "canary_script" {
-  filename = "${path.module}/build/nodejs/node_modules/apiCanary.js"
-  content  = local.canary_script
-}
-
+# The script goes straight into the zip. It used to be written to disk first with a
+# local_file resource, which a fresh CI checkout never has - so every plan, including
+# every drift check, reported "1 to add" for a file on the runner's disk.
 data "archive_file" "canary" {
   type        = "zip"
-  source_dir  = "${path.module}/build"
   output_path = "${path.module}/build-${local.canary_zip_id}.zip"
-  depends_on  = [local_file.canary_script]
+
+  source {
+    content  = local.canary_script
+    filename = "nodejs/node_modules/apiCanary.js"
+  }
 }
 
 resource "aws_iam_role" "canary" {
