@@ -74,6 +74,30 @@ resource "aws_iam_role_policy" "terraform_plan_sns_publish" {
   })
 }
 
+# ReadOnlyAccess also excludes secretsmanager:GetSecretValue, and every plan
+# refreshes the cache module's aws_secretsmanager_secret_version, which reads
+# the value back - without this, every PR plan and every drift check fails.
+# It exposes nothing new: the same token is in the Terraform state, which
+# ReadOnlyAccess can already read. Scoped to exactly the two Redis AUTH
+# secrets; "??????" matches only the 6-character suffix AWS appends to a
+# secret's name, so no other secret under cloudforge/ can match.
+resource "aws_iam_role_policy" "terraform_plan_read_redis_auth" {
+  name = "read-redis-auth-secrets"
+  role = aws_iam_role.terraform_plan.id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Effect = "Allow"
+      Action = "secretsmanager:GetSecretValue"
+      Resource = [
+        "arn:aws:secretsmanager:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:secret:cloudforge/dev/redis-auth-??????",
+        "arn:aws:secretsmanager:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:secret:cloudforge/prod/redis-auth-??????",
+      ]
+    }]
+  })
+}
+
 # Read-write - assumed only by workflow runs on pushes to the default branch,
 # for both `terraform apply` (dev/prod) and app.yml's deploy steps (S3
 # upload, launch template version, ASG instance refresh, ALB weight shift).

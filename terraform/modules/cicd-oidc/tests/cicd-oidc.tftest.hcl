@@ -192,3 +192,20 @@ run "subject_prefix_without_repo_rejected" {
 
   expect_failures = [var.github_oidc_subject_prefix]
 }
+
+run "plan_role_can_only_read_the_two_redis_auth_secrets" {
+  command = plan
+
+  assert {
+    condition     = jsondecode(aws_iam_role_policy.terraform_plan_read_redis_auth.policy).Statement[0].Action == "secretsmanager:GetSecretValue"
+    error_message = "The plan role's secret policy must grant secretsmanager:GetSecretValue and nothing else"
+  }
+
+  assert {
+    condition = toset(jsondecode(aws_iam_role_policy.terraform_plan_read_redis_auth.policy).Statement[0].Resource) == toset([
+      "arn:aws:secretsmanager:eu-west-3:123456789012:secret:cloudforge/dev/redis-auth-??????",
+      "arn:aws:secretsmanager:eu-west-3:123456789012:secret:cloudforge/prod/redis-auth-??????",
+    ])
+    error_message = "GetSecretValue must be scoped to exactly the dev and prod Redis AUTH secrets, never a wildcard over other secrets"
+  }
+}
