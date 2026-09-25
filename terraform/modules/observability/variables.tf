@@ -96,5 +96,5 @@ variable "canary_schedule_expression" {
 variable "canary_runtime_version" {
   description = "Synthetics canary Node.js/Puppeteer runtime version"
   type        = string
-  default     = "syn-nodejs-puppeteer-9.1"
+  default     = "syn-nodejs-puppeteer-17.0"
 }

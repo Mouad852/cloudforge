@@ -1,5 +1,5 @@
 # Renders the canary script with the real target URL baked in, then zips it into the
-# nodejs/node_modules/<file>.js layout the Synthetics puppeteer runtime requires. Both are
+# nodejs/node_modules/<file>.js layout the Synthetics puppeteer runtime accepts. Both are
 # build artifacts (generated at plan/apply time under build/ and build.zip) - gitignored,
 # not committed; the source of truth is templates/canary.js.tpl.
 resource "local_file" "canary_script" {

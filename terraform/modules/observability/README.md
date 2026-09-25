@@ -67,7 +67,7 @@ No modules.
 | <a name="input_artifacts_bucket_name"></a> [artifacts\_bucket\_name](#input\_artifacts\_bucket\_name) | S3 bucket (module.storage.artifacts\_bucket\_name) the Synthetics canary writes its run artifacts (screenshots, HAR files) to, under a canary/ prefix | `string` | n/a | yes |
 | <a name="input_asg_name"></a> [asg\_name](#input\_asg\_name) | Auto Scaling Group name (module.compute.asg\_name) | `string` | n/a | yes |
 | <a name="input_billing_budget_usd"></a> [billing\_budget\_usd](#input\_billing\_budget\_usd) | AWS/Billing EstimatedCharges alarm threshold - matches the $20 AWS Budget from PLAN.md §4 | `number` | `20` | no |
-| <a name="input_canary_runtime_version"></a> [canary\_runtime\_version](#input\_canary\_runtime\_version) | Synthetics canary Node.js/Puppeteer runtime version | `string` | `"syn-nodejs-puppeteer-9.1"` | no |
+| <a name="input_canary_runtime_version"></a> [canary\_runtime\_version](#input\_canary\_runtime\_version) | Synthetics canary Node.js/Puppeteer runtime version | `string` | `"syn-nodejs-puppeteer-17.0"` | no |
 | <a name="input_canary_schedule_expression"></a> [canary\_schedule\_expression](#input\_canary\_schedule\_expression) | How often the Synthetics canary runs | `string` | `"rate(5 minutes)"` | no |
 | <a name="input_db_instance_id"></a> [db\_instance\_id](#input\_db\_instance\_id) | RDS DBInstanceIdentifier (module.database.instance\_id) | `string` | n/a | yes |
 | <a name="input_environment"></a> [environment](#input\_environment) | Environment name (dev, prod, or test), used in resource naming/tags | `string` | n/a | yes |

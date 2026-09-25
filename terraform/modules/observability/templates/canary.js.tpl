@@ -1,5 +1,5 @@
-const synthetics = require('Synthetics');
-const log = require('SyntheticsLogger');
+const synthetics = require('@aws/synthetics-puppeteer');
+const log = require('@aws/synthetics-logger');
 
 const apiCanaryBlueprint = async function () {
   const url = "${target_url}";
