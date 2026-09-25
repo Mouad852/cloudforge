@@ -23,6 +23,11 @@ crash.*.log
 /app/*.exe
 /app/cloudstore
 
+# Python - checkov imports policy/custom_checks and caches the bytecode
+__pycache__/
+*.pyc
+
+
 # OS / editor noise
 .DS_Store
 Thumbs.db
