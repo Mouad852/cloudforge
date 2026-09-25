@@ -10,6 +10,9 @@ on:
     paths:
       - "terraform/**"
       - ".github/workflows/terraform.yml"
+  # "Run workflow" button: brings dev back after the nightly destroy without
+  # needing a commit. Runs the same gated applies as a push to main.
+  workflow_dispatch: {}
 
 permissions:
   contents: read
@@ -198,7 +201,7 @@ jobs:
 
   test-network:
     name: test (network)
-    if: github.event_name == 'push'
+    if: github.event_name != 'pull_request'
     runs-on: ubuntu-latest
     # network.tftest.hcl's route-table assertion is command = apply - the
     # only module test that launches a real EC2 instance. Without this,
@@ -235,7 +238,7 @@ jobs:
 
   apply-dev:
     name: apply (dev)
-    if: github.event_name == 'push'
+    if: github.event_name != 'pull_request'
     needs: [lint, test-readonly, test-network]
     runs-on: ubuntu-latest
     environment: dev
@@ -262,18 +265,42 @@ jobs:
           terraform_version: ${{ env.TF_VERSION }}
           terraform_wrapper: false
 
+      # Only used by ensure-artifact.sh, and only when the environment has no
+      # binary yet. Set up before the apply so the upload follows it quickly.
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: app/go.mod
+
       - name: terraform init
         run: terraform init -input=false
 
+      # The newest final snapshot is passed on every apply, but it only takes
+      # effect when the database is being created (after the nightly destroy):
+      # ignore_changes on the instance means a running database never sees it.
       - name: terraform apply
         run: |
+          SNAP=$(aws rds describe-db-snapshots \
+            --db-instance-identifier dev-cloudforge-db \
+            --snapshot-type manual \
+            --query "reverse(sort_by(DBSnapshots[?Status=='available'],&SnapshotCreateTime))[0].DBSnapshotIdentifier" \
+            --output text)
+          SNAP_ARGS=()
+          if [ -n "$SNAP" ] && [ "$SNAP" != "None" ]; then
+            echo "Restore source if the database is created: $SNAP"
+            SNAP_ARGS=(-var="snapshot_identifier=$SNAP")
+          fi
           terraform apply -auto-approve -input=false \
             -var="environment=dev" \
-            -var="alert_email=${{ vars.ALERT_EMAIL }}"
+            -var="alert_email=${{ vars.ALERT_EMAIL }}" \
+            "${SNAP_ARGS[@]}"
+
+      - name: upload the app binary if the environment has none
+        working-directory: ${{ github.workspace }}
+        run: bash scripts/ensure-artifact.sh dev
 
   apply-prod:
     name: apply (prod)
-    if: github.event_name == 'push'
+    if: github.event_name != 'pull_request'
     needs: [apply-dev]
     runs-on: ubuntu-latest
     environment: prod
@@ -300,6 +327,10 @@ jobs:
           terraform_version: ${{ env.TF_VERSION }}
           terraform_wrapper: false
 
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: app/go.mod
+
       - name: terraform init
         run: terraform init -input=false
 
@@ -308,3 +339,7 @@ jobs:
           terraform apply -auto-approve -input=false \
             -var="environment=prod" \
             -var="alert_email=${{ vars.ALERT_EMAIL }}"
+
+      - name: upload the app binary if the environment has none
+        working-directory: ${{ github.workspace }}
+        run: bash scripts/ensure-artifact.sh prod
