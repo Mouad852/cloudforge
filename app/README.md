@@ -23,7 +23,6 @@ GET    /whoami     instance-id + AZ from IMDSv2 (returns "local-dev" off-EC2)
 
 ```
 docker compose up -d --wait   # Postgres, Redis, LocalStack
-docker compose run --rm migrate
 AWS_ACCESS_KEY_ID=test AWS_SECRET_ACCESS_KEY=test \
   aws --endpoint-url=http://localhost:4566 --region=eu-west-3 s3 mb s3://cloudforge-images-dev
 
@@ -32,6 +31,12 @@ REDIS_ADDR=localhost:6379 S3_ENDPOINT=http://localhost:4566 S3_BUCKET=cloudforge
 AWS_ACCESS_KEY_ID=test AWS_SECRET_ACCESS_KEY=test \
   go run .
 ```
+
+The app applies `migrations/` itself on startup, before it starts serving, and so do the tests.
+The SQL files are embedded in the binary, so a deployed instance needs nothing else to bring a
+fresh database up to date. An advisory lock stops several instances from migrating at once.
+`docker compose run --rm migrate` (`make migrate`) still works if you want the schema without
+starting the app.
 
 Postgres is published on host port `5433`, not `5432` — pick your own free port if that also
 collides locally.

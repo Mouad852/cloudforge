@@ -21,6 +21,10 @@ func newTestServer(t *testing.T) *server {
 		t.Skip("DATABASE_URL not set; run against `make dev-up` to exercise this")
 	}
 
+	if _, err := runMigrations(dsn); err != nil {
+		t.Fatalf("migrations: %v", err)
+	}
+
 	ctx := context.Background()
 	st, err := newStore(ctx, dsn)
 	if err != nil {
@@ -33,6 +37,16 @@ func newTestServer(t *testing.T) *server {
 		store: st,
 		cache: newCache(envOr("REDIS_ADDR", "localhost:6379"), "", false, "", log),
 		log:   log,
+	}
+}
+
+// Every instance the ASG launches runs the migrations on boot, almost always
+// against a database that is already up to date, so a second run has to be a
+// no-op rather than an error.
+func TestMigrationsRerunCleanly(t *testing.T) {
+	newTestServer(t) // skips without DATABASE_URL, migrates otherwise
+	if _, err := runMigrations(os.Getenv("DATABASE_URL")); err != nil {
+		t.Fatalf("second run: %v", err)
 	}
 }
 

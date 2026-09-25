@@ -30,7 +30,15 @@ func main() {
 		os.Exit(1)
 	}
 
+	version, err := migrateWithRetry(cfg.DatabaseURL, log)
+	if err != nil {
+		log.Error("migrations failed", "error", err)
+		os.Exit(1)
+	}
+	log.Info("schema up to date", "version", version)
+
 	st, err := newStore(ctx, cfg.DatabaseURL)
+
 	if err != nil {
 		log.Error("store init failed", "error", err)
 		os.Exit(1)
