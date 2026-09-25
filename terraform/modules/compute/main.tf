@@ -203,6 +203,7 @@ resource "aws_launch_template" "app" {
     redis_addr            = var.redis_addr
     redis_secret_arn      = var.redis_secret_arn
     redis_tls_server_name = var.redis_tls_server_name
+    images_bucket_name    = var.images_bucket_name
   }))
 
   tag_specifications {

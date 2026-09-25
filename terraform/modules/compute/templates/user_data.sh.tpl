@@ -34,8 +34,8 @@ Environment=DB_SECRET_ARN=${db_secret_arn}
 Environment=REDIS_ADDR=${redis_addr}
 Environment=REDIS_AUTH_SECRET_ARN=${redis_secret_arn}
 Environment=REDIS_TLS_SERVER_NAME=${redis_tls_server_name}
+Environment=S3_BUCKET=${images_bucket_name}
 StandardOutput=append:/var/log/cloudforge/app.log
-StandardError=append:/var/log/cloudforge/app.log
 
 [Install]
 WantedBy=multi-user.target
