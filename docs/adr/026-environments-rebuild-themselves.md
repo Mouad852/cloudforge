@@ -113,6 +113,10 @@ same day:
 - 2026-09-25, `dev`: `ensure-artifact.sh` left the existing artifact alone. The missing
   (`404`) and forbidden (`403`) cases were tested with stand-in `aws`, `terraform` and `make`
   commands.
-- **Pending: the full round trip.** A product `survives-the-night` was created on `dev` at
-  16:48 UTC before the nightly destroy. The rebuild on 2026-09-26 should restore it, upload the
-  binary and bring the instances up with no manual step.
+- 2026-09-25, `dev`, the full round trip with no manual step: a product `survives-the-night`
+  was created at 16:48 UTC. `nightly-destroy` (run by hand) deleted `dev` and took final
+  snapshot `dev-cloudforge-db-final-62798470` at 17:02. `terraform` (run by hand with "Run
+  workflow") restored the database from it at 17:25 and launched an instance at 17:34, before
+  any binary existed. `ensure-artifact.sh` uploaded one at 17:35:00, the instance's wait loop
+  picked it up, and the app logged `"schema up to date","version":1` at 17:35:11.
+  `GET /api/products` then returned `survives-the-night` with its original ID.
