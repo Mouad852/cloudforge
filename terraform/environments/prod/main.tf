@@ -118,7 +118,7 @@ variable "green_weight" {
 # The defaults below are prod's real settings. CI passes only `environment` and
 # `alert_email`, so anything that only lived in the local, gitignored
 # terraform.tfvars never reached the prod CI deploys - that is how prod ran
-# with 1-day backups and no deletion protection (docs/security/well-architected.md).
+# with no deletion protection (docs/security/well-architected.md).
 
 variable "db_multi_az" {
   description = "RDS Multi-AZ deployment - off: accepted on cost with the remaining credit (docs/security/well-architected.md, REL 10)"
@@ -133,9 +133,9 @@ variable "db_deletion_protection" {
 }
 
 variable "db_backup_retention_period" {
-  description = "RDS automated backup retention in days - free up to the size of the database"
+  description = "RDS automated backup retention in days - 1 is the maximum on the AWS Free plan (7 was rejected with FreeTierRestrictionError on 2026-09-27); longer recovery points are M11's job"
   type        = number
-  default     = 7
+  default     = 1
 }
 
 variable "db_apply_immediately" {
