@@ -131,3 +131,33 @@ resource "aws_accessanalyzer_analyzer" "account" {
   analyzer_name = "cloudforge-account"
   type          = "ACCOUNT"
 }
+
+# The two GitHub Actions roles are the only expected external access: GitHub's
+# OIDC provider (a federated principal outside the account) can assume them,
+# limited by their trust policies to this repository's PRs, main branch and
+# dev/prod environments (modules/cicd-oidc). Archiving exactly those two
+# findings keeps the active list empty, so any new external access - a public
+# bucket, a shared snapshot, another role trusting an outside account - is the
+# only thing that shows up.
+resource "aws_accessanalyzer_archive_rule" "github_actions_roles" {
+  analyzer_name = aws_accessanalyzer_analyzer.account.analyzer_name
+  rule_name     = "github-actions-oidc-roles"
+
+  filter {
+    criteria = "resource"
+    eq = [
+      module.cicd_oidc.terraform_plan_role_arn,
+      module.cicd_oidc.terraform_apply_role_arn,
+    ]
+  }
+
+  filter {
+    criteria = "principal.Federated"
+    eq       = [module.cicd_oidc.github_oidc_provider_arn]
+  }
+
+  filter {
+    criteria = "isPublic"
+    eq       = ["false"]
+  }
+}
