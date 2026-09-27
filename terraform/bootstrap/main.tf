@@ -119,3 +119,15 @@ module "cicd_oidc" {
   # token's actual "sub" carries owner/repo IDs, not just their names.
   github_oidc_subject_prefix = "repo:Mouad852@185850806/cloudforge@1358410203"
 }
+
+# IAM Access Analyzer (M10): reports every resource in the account whose policy
+# grants access to a principal outside it - another AWS account or the public.
+# Account-level like the state bucket and the OIDC roles, so it lives here
+# rather than in an environment. The ACCOUNT type is free; the paid "unused
+# access" analyzer type is deliberately not used. Regional: it covers
+# eu-west-3 (where everything but the billing SNS topics and alarms lives)
+# plus IAM roles, which are global.
+resource "aws_accessanalyzer_analyzer" "account" {
+  analyzer_name = "cloudforge-account"
+  type          = "ACCOUNT"
+}
