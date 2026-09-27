@@ -4,7 +4,7 @@
 - `well-architected.md` — the AWS Well-Architected Tool review: every finding, what was remediated, what was accepted and why. Written in M10.
 - `encryption-inventory.md` — every data store, at rest and in transit, with its key type. Written in M10.
 
-**None of these exist yet.** IAM policies and the GitHub OIDC trust policy get documented here as they're built (M3, M8) rather than held back for M10 — see the evidence checkpoints in `PLAN.md`.
+IAM policies and the GitHub OIDC trust policy are documented here as they're built (M3, M8) rather than held back for M10 — see the evidence checkpoints in `PLAN.md`.
 
 ## M3 — the app instance role (`dev-cloudforge-app`)
 
