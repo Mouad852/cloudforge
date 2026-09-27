@@ -20,12 +20,16 @@ jobs:
   destroy-dev:
     name: destroy (dev)
     runs-on: ubuntu-latest
-    environment: dev
-    # Same group terraform.yml's apply-dev uses - a push-triggered apply and
-    # this scheduled destroy must never touch dev's state at the same time.
-    concurrency:
-      group: cloudforge-apply-dev
-      cancel-in-progress: false
+    # No `environment: dev`: the dev environment requires a reviewer, so every
+    # "nightly" destroy used to sit waiting for a click, and dev ran on when
+    # nobody clicked. A scheduled run on main is trusted by the apply role
+    # through its ref:refs/heads/main subject instead.
+    #
+    # No shared concurrency group with terraform.yml's apply-dev either: a
+    # forgotten apply (dev) approval held that group for two days (2026-09-25
+    # to 09-27) and blocked every destroy queued behind it. The S3 state lock
+    # (use_lockfile) keeps an apply and this destroy from running at once, and
+    # -lock-timeout below makes the destroy wait for a running apply to finish.
     permissions:
       id-token: write
       contents: read
@@ -51,6 +55,6 @@ jobs:
 
       - name: terraform destroy
         run: |
-          terraform destroy -auto-approve -input=false \
+          terraform destroy -auto-approve -input=false -lock-timeout=20m \
             -var="environment=dev" \
             -var="alert_email=${{ vars.ALERT_EMAIL }}"
