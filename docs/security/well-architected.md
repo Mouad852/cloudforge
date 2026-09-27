@@ -50,10 +50,13 @@ that already covers it.
 | REL 8 - How do you implement change? | A runbook for deployments; resiliency testing in the pipeline | A deployment runbook: normal deploy, blue/green, failed deploy and rollback. Resiliency testing is M12. |
 
 Also fixed in M10, although the question stays high risk because of the accepted Multi-AZ gap
-(REL 10): **prod's CI-deployed settings**. Seven-day backups, deletion protection and 30-day log
-retention existed only in a local, gitignored `terraform.tfvars` that CI never reads, so the prod
-that CI deploys ran on the defaults: 1-day backups and no deletion protection. They move into
-committed configuration.
+(REL 10): **prod's CI-deployed settings**. Deletion protection (database and ALB), 30-day log
+retention and deferred database changes (`apply_immediately = false`) existed only in a local,
+gitignored `terraform.tfvars` that CI never reads, so the prod that CI deploys ran without them.
+They are now the defaults of `terraform/environments/prod`. The same file asked for 7-day
+backups, but applying that failed: **the AWS Free plan caps RDS automated backups at 1 day**
+(`FreeTierRestrictionError`, 2026-09-27), so prod keeps 1 day and longer recovery points are
+M11's job.
 
 ### Evaluate in M10
 
@@ -98,7 +101,7 @@ directly. All are fixed unless noted:
 
 - **The prod that CI deploys was not the prod in the plan.** Multi-AZ, deletion protection,
   7-day backups and 30-day logs were only in a gitignored local `terraform.tfvars`. See "Fix in
-  M10" above.
+  M10" above; Multi-AZ stays off (REL 10) and 7-day backups are not allowed on the Free plan.
 - **PR plans had never worked.** The first pull request (PR #1, the custom-policy demo) showed
   that the read-only plan role could not read the Redis AUTH secret it refreshes, and that the
   plan comment posted an empty output. Fixed in PR #2.
