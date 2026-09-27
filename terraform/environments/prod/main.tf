@@ -115,28 +115,33 @@ variable "green_weight" {
   }
 }
 
+# The defaults below are prod's real settings. CI passes only `environment` and
+# `alert_email`, so anything that only lived in the local, gitignored
+# terraform.tfvars never reached the prod CI deploys - that is how prod ran
+# with 1-day backups and no deletion protection (docs/security/well-architected.md).
+
 variable "db_multi_az" {
-  description = "RDS Multi-AZ deployment - on in prod, off in dev"
+  description = "RDS Multi-AZ deployment - off: accepted on cost with the remaining credit (docs/security/well-architected.md, REL 10)"
   type        = bool
   default     = false
 }
 
 variable "db_deletion_protection" {
-  description = "RDS deletion protection - on in prod, off in dev"
+  description = "RDS deletion protection - set false and apply before a final `terraform destroy` of prod"
   type        = bool
-  default     = false
+  default     = true
 }
 
 variable "db_backup_retention_period" {
-  description = "RDS automated backup retention in days"
+  description = "RDS automated backup retention in days - free up to the size of the database"
   type        = number
-  default     = 1
+  default     = 7
 }
 
 variable "db_apply_immediately" {
-  description = "Apply RDS modifications immediately instead of waiting for the next maintenance window - on in dev for fast iteration, off in prod to avoid mid-day disruption"
+  description = "Apply RDS modifications immediately instead of waiting for the next maintenance window - off in prod to avoid mid-day disruption"
   type        = bool
-  default     = true
+  default     = false
 }
 
 variable "db_instance_class" {
@@ -160,13 +165,13 @@ variable "cache_node_type" {
 variable "log_retention_days" {
   description = "CloudWatch Logs retention, in days, for the app and VPC flow log groups"
   type        = number
-  default     = 14
+  default     = 30
 }
 
 variable "alb_deletion_protection" {
-  description = "ALB deletion protection - on in prod, off in dev"
+  description = "ALB deletion protection - set false and apply before a final `terraform destroy` of prod"
   type        = bool
-  default     = false
+  default     = true
 }
 
 variable "alb_log_retention_days" {

@@ -32,7 +32,7 @@ No resources.
 
 | Name | Description | Type | Default | Required |
 | ---- | ----------- | ---- | ------- | :------: |
-| <a name="input_alb_deletion_protection"></a> [alb\_deletion\_protection](#input\_alb\_deletion\_protection) | ALB deletion protection - on in prod, off in dev | `bool` | `false` | no |
+| <a name="input_alb_deletion_protection"></a> [alb\_deletion\_protection](#input\_alb\_deletion\_protection) | ALB deletion protection - set false and apply before a final `terraform destroy` of prod | `bool` | `true` | no |
 | <a name="input_alb_log_retention_days"></a> [alb\_log\_retention\_days](#input\_alb\_log\_retention\_days) | Days ALB access logs are kept in S3 before they expire | `number` | `90` | no |
 | <a name="input_alert_email"></a> [alert\_email](#input\_alert\_email) | Email address subscribed to the M7 observability SNS alerts topic | `string` | n/a | yes |
 | <a name="input_app_port"></a> [app\_port](#input\_app\_port) | Port the app listens on - the ALB (edge) targets it and the app security group and service (compute) use it | `number` | `8080` | no |
@@ -42,18 +42,18 @@ No resources.
 | <a name="input_blue_weight"></a> [blue\_weight](#input\_blue\_weight) | Percentage (0-100) of ALB traffic sent to the blue fleet - shifted with green\_weight during a blue/green deploy (ADR-017) | `number` | `100` | no |
 | <a name="input_cache_node_type"></a> [cache\_node\_type](#input\_cache\_node\_type) | ElastiCache node type - sized per environment through tfvars | `string` | `"cache.t4g.micro"` | no |
 | <a name="input_db_allocated_storage"></a> [db\_allocated\_storage](#input\_db\_allocated\_storage) | RDS allocated storage in GB - sized per environment through tfvars | `number` | `20` | no |
-| <a name="input_db_apply_immediately"></a> [db\_apply\_immediately](#input\_db\_apply\_immediately) | Apply RDS modifications immediately instead of waiting for the next maintenance window - on in dev for fast iteration, off in prod to avoid mid-day disruption | `bool` | `true` | no |
-| <a name="input_db_backup_retention_period"></a> [db\_backup\_retention\_period](#input\_db\_backup\_retention\_period) | RDS automated backup retention in days | `number` | `1` | no |
-| <a name="input_db_deletion_protection"></a> [db\_deletion\_protection](#input\_db\_deletion\_protection) | RDS deletion protection - on in prod, off in dev | `bool` | `false` | no |
+| <a name="input_db_apply_immediately"></a> [db\_apply\_immediately](#input\_db\_apply\_immediately) | Apply RDS modifications immediately instead of waiting for the next maintenance window - off in prod to avoid mid-day disruption | `bool` | `false` | no |
+| <a name="input_db_backup_retention_period"></a> [db\_backup\_retention\_period](#input\_db\_backup\_retention\_period) | RDS automated backup retention in days - free up to the size of the database | `number` | `7` | no |
+| <a name="input_db_deletion_protection"></a> [db\_deletion\_protection](#input\_db\_deletion\_protection) | RDS deletion protection - set false and apply before a final `terraform destroy` of prod | `bool` | `true` | no |
 | <a name="input_db_instance_class"></a> [db\_instance\_class](#input\_db\_instance\_class) | RDS instance class - sized per environment through tfvars | `string` | `"db.t4g.micro"` | no |
-| <a name="input_db_multi_az"></a> [db\_multi\_az](#input\_db\_multi\_az) | RDS Multi-AZ deployment - on in prod, off in dev | `bool` | `false` | no |
+| <a name="input_db_multi_az"></a> [db\_multi\_az](#input\_db\_multi\_az) | RDS Multi-AZ deployment - off: accepted on cost with the remaining credit (docs/security/well-architected.md, REL 10) | `bool` | `false` | no |
 | <a name="input_environment"></a> [environment](#input\_environment) | Environment name (dev, prod, or test) | `string` | n/a | yes |
 | <a name="input_green_asg_desired_capacity"></a> [green\_asg\_desired\_capacity](#input\_green\_asg\_desired\_capacity) | Green ASG desired capacity - 0 outside a deploy window, scaled up before shifting traffic to green | `number` | `0` | no |
 | <a name="input_green_asg_max_size"></a> [green\_asg\_max\_size](#input\_green\_asg\_max\_size) | Green ASG maximum size - matches blue's ceiling so green can take over blue's full traffic during a cutover | `number` | `6` | no |
 | <a name="input_green_asg_min_size"></a> [green\_asg\_min\_size](#input\_green\_asg\_min\_size) | Green ASG minimum size - 0 by default so the idle blue/green fleet costs nothing outside a deploy window (ADR-017) | `number` | `0` | no |
 | <a name="input_green_weight"></a> [green\_weight](#input\_green\_weight) | Percentage (0-100) of ALB traffic sent to the green fleet - shifted with blue\_weight during a blue/green deploy (ADR-017) | `number` | `0` | no |
 | <a name="input_instance_type"></a> [instance\_type](#input\_instance\_type) | EC2 instance type for the app ASG | `string` | `"t4g.small"` | no |
-| <a name="input_log_retention_days"></a> [log\_retention\_days](#input\_log\_retention\_days) | CloudWatch Logs retention, in days, for the app and VPC flow log groups | `number` | `14` | no |
+| <a name="input_log_retention_days"></a> [log\_retention\_days](#input\_log\_retention\_days) | CloudWatch Logs retention, in days, for the app and VPC flow log groups | `number` | `30` | no |
 | <a name="input_snapshot_identifier"></a> [snapshot\_identifier](#input\_snapshot\_identifier) | Restore this environment's DB from a snapshot instead of creating an empty one - set by `make <env>-up` after a `make <env>-down` (ADR-015) | `string` | `null` | no |
 
 ## Outputs
