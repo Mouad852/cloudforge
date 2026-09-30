@@ -30,7 +30,7 @@ store needs* and checks it gets that.
 | ALB access logs: client IP, user agent, request line | S3 ALB-logs bucket | **Confidential** | Expire after 90 days |
 | VPC flow logs: source and destination IPs, ports | CloudWatch Logs `/aws/vpc/<env>-cloudforge` | **Confidential** | 30 days in prod, 14 in dev |
 | WAF sampled requests: client IP, headers | WAF console | **Confidential** | Kept by AWS for 3 hours; no WAF logging is configured |
-| CloudTrail: API calls, caller identity, source IP | CloudTrail bucket (*console*, M0) | **Confidential** | **None set: kept forever** (gap D2) |
+| CloudTrail: API calls, caller identity, source IP | CloudTrail bucket (created in M0; policy and lifecycle in `terraform/bootstrap/account.tf`) | **Confidential** | Expire after 365 days (since 2026-09-30, gap D2) |
 | RDS master password | Secrets Manager `rds!db-*` | **Restricted** | Rotated by AWS (ADR-009) |
 | Redis AUTH token | Secrets Manager `cloudforge/<env>/redis-auth`, and Terraform state | **Restricted** | Not rotated (Checkov `CKV2_AWS_57` skip) |
 | Terraform state | S3 state bucket | **Restricted** (holds the Redis token) | Superseded versions expire after 90 days |
@@ -48,7 +48,8 @@ data in the system is visitor metadata collected by AWS services in front of the
   encryption at rest: the alert SNS topics, because CloudWatch alarms cannot publish to a topic
   encrypted with the AWS-managed key (`encryption-inventory.md`, G12).
 - **Confidential:** yes for the ALB logs, flow logs and WAF, all kept in eu-west-3 with limited
-  retention. **Not for CloudTrail** (gap D2).
+  retention. CloudTrail now has a one-year retention (gap D2, fixed), but its bucket is in
+  us-east-1, not the EU (gap D4).
 - **Restricted:** yes for Secrets Manager. The Redis token also sitting in Terraform state is
   accepted in `encryption-inventory.md` (G7): the bucket is private, versioned, TLS-only and
   readable only by the admin user and the two CI roles.
@@ -58,5 +59,6 @@ data in the system is visitor metadata collected by AWS services in front of the
 | # | Gap | Decision |
 |---|---|---|
 | D1 | Classification is manual. Nothing detects personal data appearing somewhere new (for example, a future change that logs client IPs in the app). | Accepted. Amazon Macie does this automatically, but it is priced per GB scanned plus per bucket, on a fixed credit balance. The app's request logging is the only place the application itself could start leaking personal data, and it is small enough to review by eye. |
-| D2 | The CloudTrail bucket, created by hand in M0, has no lifecycle rule, so personal data (operator identity, source IPs) is kept indefinitely. | Candidate fix, with the other CloudTrail gaps in `encryption-inventory.md` (G5). |
+| D2 | The CloudTrail bucket, created by hand in M0, has no lifecycle rule, so personal data (operator identity, source IPs) is kept indefinitely. | **Fixed 2026-09-30.** Objects expire after 365 days (`terraform/bootstrap/account.tf`): long enough to investigate an incident noticed late, while CloudTrail's own event history already covers the last 90 days. |
 | D3 | Log groups that AWS services create by themselves have no retention: RDS's Postgres log export and the Synthetics canary's Lambda logs. They are not in Terraform, so dev's nightly destroy leaves them behind: on 2026-09-29 there were five orphaned dev canary log groups, one per rebuild. | Candidate fix. The RDS group has a predictable name, so Terraform can create it first with a retention (and delete it on destroy). The canary's group name contains a generated ID, so it needs a different approach. |
+| D4 | The CloudTrail bucket was created in us-east-1 in M0, the trail's home Region, so CloudTrail logs (Confidential) are stored outside the EU. Found on 2026-09-30 while fixing D2. | Candidate fix. A trail can deliver to a bucket in another Region: a new bucket in eu-west-3 with the same policy and lifecycle, and the trail's `s3_bucket_name` pointed at it. Logs already written stay in us-east-1 until they expire. |
