@@ -58,3 +58,17 @@ jobs:
           terraform destroy -auto-approve -input=false -lock-timeout=20m \
             -var="environment=dev" \
             -var="alert_email=${{ vars.ALERT_EMAIL }}"
+
+      # The canary's Lambda creates its own log group, named with an ID that
+      # Synthetics generates on every rebuild, so Terraform cannot create it
+      # first and destroy leaves one behind each night (six by 2026-09-30,
+      # docs/security/data-classification.md D3). Once dev is destroyed, none of
+      # these groups belongs to anything.
+      - name: delete the destroyed canary's log groups
+        run: |
+          for group in $(aws logs describe-log-groups \
+              --log-group-name-prefix /aws/lambda/cwsyn-dev-api-avail- \
+              --query "logGroups[].logGroupName" --output text); do
+            echo "deleting $group"
+            aws logs delete-log-group --log-group-name "$group"
+          done
