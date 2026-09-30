@@ -80,9 +80,13 @@ M11's job.
 | COST 2 - How do you govern usage? | Account structure | Same Organizations constraint as SEC 1. |
 | COST 7 - How do you use pricing models? | Pricing model analysis | Savings Plans and Reserved Instances need one- or three-year terms, against a four-month project paid for by credits. |
 
-The one medium risk worth naming: **automatic rollback** is not enabled on the instance
-refresh (OPS 6). It is a single setting in `scripts/deploy.sh` and is fixed with the deployment
-runbook.
+The one medium risk worth naming: **rolling deploys have no automatic rollback** (OPS 6). It
+is not a setting to switch on: `scripts/deploy.sh` overwrites one fixed S3 key and creates an
+unchanged launch template version, so the ASG's own rollback would relaunch instances that
+download the new binary again. The manual rollback (restore the previous S3 object version,
+then refresh) is now in `docs/runbooks/deployment.md`; making it automatic needs one S3 key per
+version and is left for later. Blue/green deploys can already roll back instantly by shifting
+the ALB weights back (ADR-017).
 
 ### Planned in later milestones
 
@@ -99,6 +103,14 @@ runbook.
 Checking each answer against the live account turned up problems no question asked about
 directly. All are fixed unless noted:
 
+- **No alarm email was ever delivered.** Every alert topic was encrypted with the AWS-managed
+  `alias/aws/sns` key, which CloudWatch is not allowed to use, so from M7 until 2026-09-29 every
+  alarm in dev and prod logged "Failed to execute action" instead of notifying. Every runbook in
+  `docs/runbooks/` starts from an email that could never arrive. Only the account-wide `$15`
+  billing alarm worked, on an unencrypted topic created by hand in M0. The alert topics are now
+  unencrypted (`encryption-inventory.md`, G12) and a module test keeps them that way.
+  **Verification pending the apply:** force an alarm with `aws cloudwatch set-alarm-state` and
+  check that its history says "Successfully executed action" and the email arrives.
 - **The prod that CI deploys was not the prod in the plan.** Multi-AZ, deletion protection,
   7-day backups and 30-day logs were only in a gitignored local `terraform.tfvars`. See "Fix in
   M10" above; Multi-AZ stays off (REL 10) and 7-day backups are not allowed on the Free plan.
@@ -115,5 +127,11 @@ directly. All are fixed unless noted:
   Re-created and confirmed (issue #6).
 - **App instances carried no project tags.** Provider `default_tags` never reach instances an
   Auto Scaling group launches; the launch template now copies them (see `policy/README.md`).
+- **Not fixed: the app is never deployed to prod automatically.** `app.yml` deploys only to
+  dev; prod changes only when someone runs `scripts/deploy.sh prod`. On 2026-09-29 prod was
+  running a binary uploaded on 2026-09-25, older than `main`. Documented in
+  `docs/runbooks/deployment.md`.
+- **Not fixed:** the canary writes a report to the artifacts bucket every 5 minutes, and the
+  bucket's lifecycle rule only expires *superseded* versions, so the reports are never deleted.
 - **Not fixed:** a commit that only touches `terraform/bootstrap` still runs the whole
   `terraform` workflow and asks for dev and prod approvals it does not need.
