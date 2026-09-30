@@ -279,6 +279,25 @@ module "database" {
   apply_immediately       = var.db_apply_immediately
   instance_class          = var.db_instance_class
   allocated_storage       = var.db_allocated_storage
+  log_retention_days      = var.log_retention_days
+}
+
+# Until M10, RDS created the Postgres log group itself, with no retention, and
+# kept it after the database was deleted. The database module now creates it.
+# Where a group made by RDS already exists (prod, and any group dev's earlier
+# destroys left behind), adopt it instead of failing on "already exists";
+# otherwise the list is empty and Terraform creates the group.
+data "aws_cloudwatch_log_groups" "postgresql" {
+  log_group_name_prefix = "/aws/rds/instance/${var.environment}-cloudforge-db/postgresql"
+}
+
+import {
+  for_each = toset([
+    for name in data.aws_cloudwatch_log_groups.postgresql.log_group_names : name
+    if name == "/aws/rds/instance/${var.environment}-cloudforge-db/postgresql"
+  ])
+  to = module.database.aws_cloudwatch_log_group.postgresql
+  id = each.value
 }
 
 module "observability" {

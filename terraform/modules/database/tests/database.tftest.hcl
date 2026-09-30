@@ -130,6 +130,43 @@ run "retention_above_rds_limit_rejected" {
   expect_failures = [var.backup_retention_period]
 }
 
+run "postgres_log_group_is_created_with_a_retention" {
+  command = plan
+
+  assert {
+    condition     = aws_cloudwatch_log_group.postgresql.name == "/aws/rds/instance/test-cloudforge-db/postgresql"
+    error_message = "The log group must have the exact name RDS exports to, or RDS creates its own without a retention"
+  }
+
+  assert {
+    condition     = aws_cloudwatch_log_group.postgresql.retention_in_days == 14
+    error_message = "Postgres logs must default to 14 days, like the app log group"
+  }
+}
+
+run "postgres_log_retention_flows_through" {
+  command = plan
+
+  variables {
+    log_retention_days = 30
+  }
+
+  assert {
+    condition     = aws_cloudwatch_log_group.postgresql.retention_in_days == 30
+    error_message = "log_retention_days must reach the Postgres log group"
+  }
+}
+
+run "postgres_log_retention_of_zero_rejected" {
+  command = plan
+
+  variables {
+    log_retention_days = 0
+  }
+
+  expect_failures = [var.log_retention_days]
+}
+
 run "dns_ttl_defaults_to_300" {
   command = plan
 

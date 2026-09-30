@@ -24,6 +24,7 @@ No modules.
 
 | Name | Type |
 | ---- | ---- |
+| [aws_cloudwatch_log_group.postgresql](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/cloudwatch_log_group) | resource |
 | [aws_db_instance.main](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/db_instance) | resource |
 | [aws_db_parameter_group.main](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/db_parameter_group) | resource |
 | [aws_db_subnet_group.main](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/db_subnet_group) | resource |
@@ -46,6 +47,7 @@ No modules.
 | <a name="input_engine_version"></a> [engine\_version](#input\_engine\_version) | PostgreSQL engine version | `string` | `"16.15"` | no |
 | <a name="input_environment"></a> [environment](#input\_environment) | Environment name (dev, prod, or test), used in resource naming/tags | `string` | n/a | yes |
 | <a name="input_instance_class"></a> [instance\_class](#input\_instance\_class) | RDS instance class | `string` | `"db.t4g.micro"` | no |
+| <a name="input_log_retention_days"></a> [log\_retention\_days](#input\_log\_retention\_days) | CloudWatch Logs retention, in days, for the Postgres log export | `number` | `14` | no |
 | <a name="input_master_username"></a> [master\_username](#input\_master\_username) | Master username - the password itself is AWS-managed (ADR-009), never set here | `string` | `"cloudforge_admin"` | no |
 | <a name="input_multi_az"></a> [multi\_az](#input\_multi\_az) | Multi-AZ deployment - on in prod, off in dev | `bool` | `false` | no |
 | <a name="input_private_zone_id"></a> [private\_zone\_id](#input\_private\_zone\_id) | Route 53 private hosted zone ID (ADR-013) - the DNS record lives here | `string` | n/a | yes |

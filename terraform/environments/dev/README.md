@@ -10,7 +10,9 @@
 
 ## Providers
 
-No providers.
+| Name | Version |
+| ---- | ------- |
+| <a name="provider_aws"></a> [aws](#provider\_aws) | 5.100.0 |
 
 ## Modules
 
@@ -26,7 +28,9 @@ No providers.
 
 ## Resources
 
-No resources.
+| Name | Type |
+| ---- | ---- |
+| [aws_cloudwatch_log_groups.postgresql](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/cloudwatch_log_groups) | data source |
 
 ## Inputs
 

@@ -68,6 +68,15 @@ resource "random_id" "final_snapshot_suffix" {
   byte_length = 4
 }
 
+# RDS creates this log group itself the first time it exports a log, with no
+# retention, and leaves it behind when the instance is deleted (found in M10:
+# dev's group outlived every nightly destroy). Creating it first, with the
+# exact name RDS uses, gives it a retention and lets destroy remove it.
+resource "aws_cloudwatch_log_group" "postgresql" {
+  name              = "/aws/rds/instance/${var.environment}-cloudforge-db/postgresql"
+  retention_in_days = var.log_retention_days
+}
+
 resource "aws_db_instance" "main" {
   identifier     = "${var.environment}-cloudforge-db"
   engine         = "postgres"
@@ -116,6 +125,8 @@ resource "aws_db_instance" "main" {
   lifecycle {
     ignore_changes = [snapshot_identifier]
   }
+
+  depends_on = [aws_cloudwatch_log_group.postgresql]
 }
 
 resource "aws_route53_record" "db" {
