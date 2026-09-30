@@ -37,9 +37,9 @@ not that every endpoint works.
 
 ## Mitigate
 
-- If it's a bad deploy: roll back — redeploy the previous known-good S3 artifact key and
-  trigger a new instance refresh (see `docs/runbooks/` once M8's CI/CD rollback path
-  exists; until then, this is a manual launch-template revision + instance refresh).
+- If it's a bad deploy: roll back — restore the previous version of the S3 artifact and
+  trigger a new instance refresh, or shift the ALB weights back for a blue/green deploy
+  (`docs/runbooks/deployment.md`, "Rolling back").
 - If it's a saturated dependency: address that dependency directly (see the relevant
   `rds-*` / `redis-*` runbook) — the 5xx alarm will clear once the root cause does.
 - If it's an isolated, low-frequency route bug: this can usually wait for a normal fix
