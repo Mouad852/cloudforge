@@ -109,8 +109,10 @@ directly. All are fixed unless noted:
   `docs/runbooks/` starts from an email that could never arrive. Only the account-wide `$15`
   billing alarm worked, on an unencrypted topic created by hand in M0. The alert topics are now
   unencrypted (`encryption-inventory.md`, G12) and a module test keeps them that way.
-  **Verification pending the apply:** force an alarm with `aws cloudwatch set-alarm-state` and
-  check that its history says "Successfully executed action" and the email arrives.
+  **Verified on 2026-09-30:** `prod-cloudforge-ec2-cpu`, forced into ALARM with
+  `aws cloudwatch set-alarm-state`, logged "Successfully executed action" on
+  `prod-cloudforge-alerts`; its previous attempt, on 2026-09-16, had logged "Failed to execute
+  action".
 - **The prod that CI deploys was not the prod in the plan.** Multi-AZ, deletion protection,
   7-day backups and 30-day logs were only in a gitignored local `terraform.tfvars`. See "Fix in
   M10" above; Multi-AZ stays off (REL 10) and 7-day backups are not allowed on the Free plan.
