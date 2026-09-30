@@ -3,6 +3,8 @@
 - `threat-model.md` — what an attacker would try, what stops them at each layer, what was consciously not defended against. Written in M10.
 - `well-architected.md` — the AWS Well-Architected Tool review: every finding, what was remediated, what was accepted and why. Written in M10.
 - `encryption-inventory.md` — every data store, at rest and in transit, with its key type. Written in M10.
+- `incident-response.md` — severity levels, the incident process, evidence sources and playbooks for the likely security incidents. Written in M10.
+- `data-classification.md` — how sensitive each kind of data is, the controls and retention each level requires, and where they are missing. Written in M10.
 
 IAM policies and the GitHub OIDC trust policy are documented here as they're built (M3, M8) rather than held back for M10 — see the evidence checkpoints in `PLAN.md`.
 
