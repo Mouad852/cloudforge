@@ -123,7 +123,14 @@ repos:
           #   2026-09-29. A customer-managed key would cost ~1 USD/month per
           #   key; the messages are alarm names and metric values, deleted
           #   once delivered. See modules/observability/main.tf.
-          - --args=--skip-check=CKV_AWS_18,CKV_AWS_144,CKV_AWS_145,CKV2_AWS_62,CKV_AWS_382,CKV_AWS_126,CKV2_AWS_41,CKV_AWS_158,CKV_AWS_338,CKV_AWS_150,CKV_AWS_2,CKV2_AWS_20,CKV_AWS_103,CKV_AWS_21,CKV_AWS_378,CKV_AWS_260,CKV2_AWS_76,CKV2_AWS_31,CKV_AWS_157,CKV_AWS_293,CKV_AWS_354,CKV_AWS_118,CKV_AWS_149,CKV_AWS_191,CKV2_AWS_50,CKV2_AWS_57,CKV_SECRET_6,CKV2_AWS_61,CKV_AWS_394,CKV_AWS_26
+          # CKV_AWS_35/CKV2_AWS_10/CKV_AWS_252: the account CloudTrail trail
+          #   (terraform/bootstrap/account.tf). No KMS key for the same reason
+          #   as CKV_AWS_145 (cost, G4); log file validation already proves the
+          #   files were not altered. No CloudWatch Logs copy: ingesting every
+          #   management event costs money on a fixed credit balance, and the
+          #   free 90-day event history covers searching. No SNS topic: nothing
+          #   consumes a notification per delivered log file.
+          - --args=--skip-check=CKV_AWS_18,CKV_AWS_144,CKV_AWS_145,CKV2_AWS_62,CKV_AWS_382,CKV_AWS_126,CKV2_AWS_41,CKV_AWS_158,CKV_AWS_338,CKV_AWS_150,CKV_AWS_2,CKV2_AWS_20,CKV_AWS_103,CKV_AWS_21,CKV_AWS_378,CKV_AWS_260,CKV2_AWS_76,CKV2_AWS_31,CKV_AWS_157,CKV_AWS_293,CKV_AWS_354,CKV_AWS_118,CKV_AWS_149,CKV_AWS_191,CKV2_AWS_50,CKV2_AWS_57,CKV_SECRET_6,CKV2_AWS_61,CKV_AWS_394,CKV_AWS_26,CKV_AWS_35,CKV2_AWS_10,CKV_AWS_252
       - id: terraform_docs
         args:
           - --hook-config=--path-to-file=README.md
