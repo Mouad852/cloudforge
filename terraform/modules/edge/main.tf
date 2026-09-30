@@ -33,15 +33,32 @@ resource "aws_s3_bucket_server_side_encryption_configuration" "alb_logs" {
 resource "aws_s3_bucket_policy" "alb_logs" {
   bucket = aws_s3_bucket.alb_logs.id
 
+  # The ALB delivers its logs over HTTPS, so the TLS-only deny every other
+  # bucket already has does not block it (encryption-inventory G6).
   policy = jsonencode({
     Version = "2012-10-17"
-    Statement = [{
-      Sid       = "AllowALBLogDelivery"
-      Effect    = "Allow"
-      Principal = { AWS = data.aws_elb_service_account.main.arn }
-      Action    = "s3:PutObject"
-      Resource  = "${aws_s3_bucket.alb_logs.arn}/alb/*"
-    }]
+    Statement = [
+      {
+        Sid       = "AllowALBLogDelivery"
+        Effect    = "Allow"
+        Principal = { AWS = data.aws_elb_service_account.main.arn }
+        Action    = "s3:PutObject"
+        Resource  = "${aws_s3_bucket.alb_logs.arn}/alb/*"
+      },
+      {
+        Sid       = "DenyInsecureTransport"
+        Effect    = "Deny"
+        Principal = "*"
+        Action    = "s3:*"
+        Resource = [
+          aws_s3_bucket.alb_logs.arn,
+          "${aws_s3_bucket.alb_logs.arn}/*",
+        ]
+        Condition = {
+          Bool = { "aws:SecureTransport" = "false" }
+        }
+      },
+    ]
   })
 }
 
