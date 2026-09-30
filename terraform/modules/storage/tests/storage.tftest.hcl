@@ -107,10 +107,10 @@ run "canary_reports_expire_after_31_days_by_default" {
   command = plan
 
   assert {
-    condition = anytrue([
-      for r in aws_s3_bucket_lifecycle_configuration.artifacts.rule :
-      r.id == "expire-canary-reports" && r.filter[0].prefix == "canary/" && r.expiration[0].days == 31
-    ])
+    condition = (
+      one([for r in aws_s3_bucket_lifecycle_configuration.artifacts.rule : r if r.id == "expire-canary-reports"]).filter[0].prefix == "canary/" &&
+      one([for r in aws_s3_bucket_lifecycle_configuration.artifacts.rule : r if r.id == "expire-canary-reports"]).expiration[0].days == 31
+    )
     error_message = "Canary reports under canary/ must expire after 31 days by default, or they pile up forever"
   }
 }
@@ -123,10 +123,7 @@ run "canary_report_retention_flows_through" {
   }
 
   assert {
-    condition = anytrue([
-      for r in aws_s3_bucket_lifecycle_configuration.artifacts.rule :
-      r.id == "expire-canary-reports" && r.expiration[0].days == 7
-    ])
+    condition     = one([for r in aws_s3_bucket_lifecycle_configuration.artifacts.rule : r if r.id == "expire-canary-reports"]).expiration[0].days == 7
     error_message = "canary_report_retention_days must reach the canary report expiration rule"
   }
 }
