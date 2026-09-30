@@ -116,7 +116,14 @@ repos:
           #   what lets the module work in any region without hardcoding AZ
           #   names; pinning specific zone IDs would trade away that
           #   portability for no real security benefit here.
-          - --args=--skip-check=CKV_AWS_18,CKV_AWS_144,CKV_AWS_145,CKV2_AWS_62,CKV_AWS_382,CKV_AWS_126,CKV2_AWS_41,CKV_AWS_158,CKV_AWS_338,CKV_AWS_150,CKV_AWS_2,CKV2_AWS_20,CKV_AWS_103,CKV_AWS_21,CKV_AWS_378,CKV_AWS_260,CKV2_AWS_76,CKV2_AWS_31,CKV_AWS_157,CKV_AWS_293,CKV_AWS_354,CKV_AWS_118,CKV_AWS_149,CKV_AWS_191,CKV2_AWS_50,CKV2_AWS_57,CKV_SECRET_6,CKV2_AWS_61,CKV_AWS_394
+          # CKV_AWS_26: the alert SNS topics are deliberately unencrypted.
+          #   CloudWatch alarms cannot publish to a topic encrypted with the
+          #   AWS-managed alias/aws/sns key (its policy can't grant CloudWatch
+          #   access), which silently broke every alarm notification until
+          #   2026-09-29. A customer-managed key would cost ~1 USD/month per
+          #   key; the messages are alarm names and metric values, deleted
+          #   once delivered. See modules/observability/main.tf.
+          - --args=--skip-check=CKV_AWS_18,CKV_AWS_144,CKV_AWS_145,CKV2_AWS_62,CKV_AWS_382,CKV_AWS_126,CKV2_AWS_41,CKV_AWS_158,CKV_AWS_338,CKV_AWS_150,CKV_AWS_2,CKV2_AWS_20,CKV_AWS_103,CKV_AWS_21,CKV_AWS_378,CKV_AWS_260,CKV2_AWS_76,CKV2_AWS_31,CKV_AWS_157,CKV_AWS_293,CKV_AWS_354,CKV_AWS_118,CKV_AWS_149,CKV_AWS_191,CKV2_AWS_50,CKV2_AWS_57,CKV_SECRET_6,CKV2_AWS_61,CKV_AWS_394,CKV_AWS_26
       - id: terraform_docs
         args:
           - --hook-config=--path-to-file=README.md
