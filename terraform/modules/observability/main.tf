@@ -5,9 +5,15 @@ locals {
   name_prefix = "${var.environment}-cloudforge"
 }
 
+# Deliberately NOT encrypted. With kms_master_key_id = "alias/aws/sns" every alarm
+# notification failed from M7 until 2026-09-29 - "CloudWatch Alarms does not have
+# authorization to access the SNS topic encryption key": the AWS-managed key's policy
+# cannot be edited to let CloudWatch use it. A customer-managed key would work but costs
+# about 1 USD a month per key; the messages are alarm names and metric values (Internal,
+# docs/security/data-classification.md) and SNS deletes them once delivered. Checkov
+# CKV_AWS_26 is skipped for this; tests/observability.tftest.hcl keeps it from coming back.
 resource "aws_sns_topic" "alerts" {
-  name              = "${local.name_prefix}-alerts"
-  kms_master_key_id = "alias/aws/sns" # AWS-managed key - free, satisfies checkov CKV_AWS_26
+  name = "${local.name_prefix}-alerts"
 }
 
 resource "aws_sns_topic_subscription" "alerts_email" {
@@ -22,9 +28,8 @@ resource "aws_sns_topic_subscription" "alerts_email" {
 # environment's primary region - a second, us-east-1-only topic is the only
 # way to actually deliver its notifications.
 resource "aws_sns_topic" "billing_alerts" {
-  provider          = aws.use1
-  name              = "${local.name_prefix}-billing-alerts"
-  kms_master_key_id = "alias/aws/sns"
+  provider = aws.use1
+  name     = "${local.name_prefix}-billing-alerts"
 }
 
 resource "aws_sns_topic_subscription" "billing_alerts_email" {

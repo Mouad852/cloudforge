@@ -81,3 +81,12 @@ run "sns_subscription_matches_alert_email" {
     error_message = "SNS subscription must go to the configured alert email"
   }
 }
+
+run "alert_topics_stay_unencrypted_so_alarms_can_publish" {
+  command = plan
+
+  assert {
+    condition     = aws_sns_topic.alerts.kms_master_key_id == null && aws_sns_topic.billing_alerts.kms_master_key_id == null
+    error_message = "CloudWatch alarms cannot publish to an SNS topic encrypted with the AWS-managed alias/aws/sns key - every alarm notification failed until 2026-09-29. Encrypting these topics needs a customer-managed key whose policy allows cloudwatch.amazonaws.com."
+  }
+}
