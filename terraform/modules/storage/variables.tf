@@ -19,6 +19,17 @@ variable "artifact_version_retention_days" {
   }
 }
 
+variable "canary_report_retention_days" {
+  description = "Days a Synthetics canary report (under canary/ in the artifacts bucket) is kept. The default matches the 31 days of run history the canary itself keeps, so a report never outlives the run that links to it"
+  type        = number
+  default     = 31
+
+  validation {
+    condition     = var.canary_report_retention_days >= 1 && var.canary_report_retention_days <= 365
+    error_message = "canary_report_retention_days must be between 1 and 365 days."
+  }
+}
+
 variable "abort_incomplete_multipart_days" {
   description = "Days after which an unfinished multipart upload to the artifacts bucket is aborted, so abandoned parts stop costing storage"
   type        = number

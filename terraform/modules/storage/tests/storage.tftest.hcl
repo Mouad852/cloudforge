@@ -74,12 +74,12 @@ run "artifact_lifecycle_defaults_match_the_live_environments" {
   command = plan
 
   assert {
-    condition     = one(aws_s3_bucket_lifecycle_configuration.artifacts.rule).noncurrent_version_expiration[0].noncurrent_days == 90
+    condition     = [for r in aws_s3_bucket_lifecycle_configuration.artifacts.rule : r if r.id == "expire-old-artifact-versions"][0].noncurrent_version_expiration[0].noncurrent_days == 90
     error_message = "Default noncurrent artifact version retention must stay 90 days, the value the live environments already run"
   }
 
   assert {
-    condition     = one(aws_s3_bucket_lifecycle_configuration.artifacts.rule).abort_incomplete_multipart_upload[0].days_after_initiation == 7
+    condition     = [for r in aws_s3_bucket_lifecycle_configuration.artifacts.rule : r if r.id == "expire-old-artifact-versions"][0].abort_incomplete_multipart_upload[0].days_after_initiation == 7
     error_message = "Default multipart abort window must stay 7 days, the value the live environments already run"
   }
 }
@@ -93,14 +93,52 @@ run "artifact_lifecycle_settings_flow_through" {
   }
 
   assert {
-    condition     = one(aws_s3_bucket_lifecycle_configuration.artifacts.rule).noncurrent_version_expiration[0].noncurrent_days == 30
+    condition     = [for r in aws_s3_bucket_lifecycle_configuration.artifacts.rule : r if r.id == "expire-old-artifact-versions"][0].noncurrent_version_expiration[0].noncurrent_days == 30
     error_message = "artifact_version_retention_days must reach the noncurrent version expiration rule"
   }
 
   assert {
-    condition     = one(aws_s3_bucket_lifecycle_configuration.artifacts.rule).abort_incomplete_multipart_upload[0].days_after_initiation == 2
+    condition     = [for r in aws_s3_bucket_lifecycle_configuration.artifacts.rule : r if r.id == "expire-old-artifact-versions"][0].abort_incomplete_multipart_upload[0].days_after_initiation == 2
     error_message = "abort_incomplete_multipart_days must reach the multipart abort rule"
   }
+}
+
+run "canary_reports_expire_after_31_days_by_default" {
+  command = plan
+
+  assert {
+    condition = anytrue([
+      for r in aws_s3_bucket_lifecycle_configuration.artifacts.rule :
+      r.id == "expire-canary-reports" && r.filter[0].prefix == "canary/" && r.expiration[0].days == 31
+    ])
+    error_message = "Canary reports under canary/ must expire after 31 days by default, or they pile up forever"
+  }
+}
+
+run "canary_report_retention_flows_through" {
+  command = plan
+
+  variables {
+    canary_report_retention_days = 7
+  }
+
+  assert {
+    condition = anytrue([
+      for r in aws_s3_bucket_lifecycle_configuration.artifacts.rule :
+      r.id == "expire-canary-reports" && r.expiration[0].days == 7
+    ])
+    error_message = "canary_report_retention_days must reach the canary report expiration rule"
+  }
+}
+
+run "canary_report_retention_of_zero_rejected" {
+  command = plan
+
+  variables {
+    canary_report_retention_days = 0
+  }
+
+  expect_failures = [var.canary_report_retention_days]
 }
 
 run "artifact_version_retention_of_zero_rejected" {

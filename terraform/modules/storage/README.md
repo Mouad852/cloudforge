@@ -43,6 +43,7 @@ No modules.
 | ---- | ----------- | ---- | ------- | :------: |
 | <a name="input_abort_incomplete_multipart_days"></a> [abort\_incomplete\_multipart\_days](#input\_abort\_incomplete\_multipart\_days) | Days after which an unfinished multipart upload to the artifacts bucket is aborted, so abandoned parts stop costing storage | `number` | `7` | no |
 | <a name="input_artifact_version_retention_days"></a> [artifact\_version\_retention\_days](#input\_artifact\_version\_retention\_days) | Days a superseded (noncurrent) version of a deploy artifact is kept before it expires - the artifacts bucket is versioned, so old binaries pile up otherwise | `number` | `90` | no |
+| <a name="input_canary_report_retention_days"></a> [canary\_report\_retention\_days](#input\_canary\_report\_retention\_days) | Days a Synthetics canary report (under canary/ in the artifacts bucket) is kept. The default matches the 31 days of run history the canary itself keeps, so a report never outlives the run that links to it | `number` | `31` | no |
 | <a name="input_environment"></a> [environment](#input\_environment) | Environment name (dev, prod, or test), used in resource naming/tags | `string` | n/a | yes |
 
 ## Outputs

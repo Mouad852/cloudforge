@@ -42,6 +42,29 @@ resource "aws_s3_bucket_lifecycle_configuration" "artifacts" {
     }
   }
 
+  # The Synthetics canary (modules/observability) writes a report under
+  # canary/<env>/ on every run. Those are current versions, so the rule above
+  # never touched them and they piled up forever (found in M10). Expiring them
+  # leaves a delete marker; the old version then goes a day later, not after
+  # the 90 days kept for superseded app binaries. Where two rules overlap, S3
+  # acts on whichever expires the object first.
+  rule {
+    id     = "expire-canary-reports"
+    status = "Enabled"
+
+    filter {
+      prefix = "canary/"
+    }
+
+    expiration {
+      days = var.canary_report_retention_days
+    }
+
+    noncurrent_version_expiration {
+      noncurrent_days = 1
+    }
+  }
+
   depends_on = [aws_s3_bucket_versioning.artifacts]
 }
 
