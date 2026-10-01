@@ -31,9 +31,22 @@ type cache struct {
 // this, every connection attempt fails hostname verification. Dialing one
 // name while verifying against another is exactly what ServerName is for.
 func newCache(addr, authToken string, useTLS bool, tlsServerName string, log *slog.Logger) *cache {
+	// Fail fast: the cache is an optimisation, and every caller falls back to
+	// Postgres. With go-redis's defaults (5s dial, 5s read, 3 retries) a Redis
+	// that stopped answering held each call for 5s (measured in
+	// TestCacheFailsFastWhenRedisHangs), twice per uncached GET, and longer
+	// when it could not be reached at all, since failed dials are retried. In
+	// the VPC a healthy call takes a few milliseconds. ContextTimeoutEnabled
+	// makes the client also honour the request deadline (withRequestDeadline),
+	// which it ignores by default.
 	opts := &redis.Options{
-		Addr:     addr,
-		Password: authToken,
+		Addr:                  addr,
+		Password:              authToken,
+		DialTimeout:           500 * time.Millisecond,
+		ReadTimeout:           250 * time.Millisecond,
+		WriteTimeout:          250 * time.Millisecond,
+		MaxRetries:            1,
+		ContextTimeoutEnabled: true,
 	}
 	if useTLS {
 		opts.TLSConfig = &tls.Config{

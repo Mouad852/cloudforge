@@ -1,6 +1,10 @@
 package main
 
-import "net/http"
+import (
+	"context"
+	"net/http"
+	"time"
+)
 
 // withSecurityHeaders sets response headers that used to come from
 // CloudFront's response-headers policy, which no longer exists (ADR-025) -
@@ -17,5 +21,17 @@ func withSecurityHeaders(next http.Handler) http.Handler {
 		w.Header().Set("X-Frame-Options", "DENY")
 		w.Header().Set("Referrer-Policy", "same-origin")
 		next.ServeHTTP(w, r)
+	})
+}
+
+// withRequestDeadline gives every request's context a deadline. Without it the
+// context only ends when the client disconnects, so a database that stops
+// answering holds each request, and one of the pool's few connections, for as
+// long as the ALB waits.
+func withRequestDeadline(timeout time.Duration, next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		ctx, cancel := context.WithTimeout(r.Context(), timeout)
+		defer cancel()
+		next.ServeHTTP(w, r.WithContext(ctx))
 	})
 }

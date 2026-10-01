@@ -45,12 +45,14 @@ func loadConfig(ctx context.Context) (config, error) {
 		}
 		dbHost := envOr("DB_HOST", "db.cloudforge.internal")
 		dbName := envOr("DB_NAME", "cloudstore")
+		// connect_timeout: pgx has none by default, so connecting to an
+		// unreachable database waited for the OS to give up (minutes).
 		dsn := url.URL{
 			Scheme:   "postgres",
 			User:     url.UserPassword(username, password),
 			Host:     fmt.Sprintf("%s:5432", dbHost),
 			Path:     "/" + dbName,
-			RawQuery: "sslmode=require",
+			RawQuery: "sslmode=require&connect_timeout=5",
 		}
 		cfg.DatabaseURL = dsn.String()
 	} else {

@@ -69,10 +69,8 @@ func main() {
 	mux.HandleFunc("POST /api/products/{id}/image", s.handleUploadImage)
 	mux.HandleFunc("GET /api/products/{id}/image", s.handleGetImage)
 
-	httpServer := &http.Server{
-		Addr:    ":" + cfg.Port,
-		Handler: withRequestLogging(log, withSecurityHeaders(mux)),
-	}
+	httpServer := newHTTPServer(":"+cfg.Port,
+		withRequestLogging(log, withSecurityHeaders(withRequestDeadline(requestTimeout, mux))))
 
 	go func() {
 		log.Info("listening", "port", cfg.Port)
@@ -94,6 +92,32 @@ func main() {
 	defer cancel()
 	if err := httpServer.Shutdown(shutdownCtx); err != nil {
 		log.Error("graceful shutdown failed", "error", err)
+	}
+}
+
+// requestTimeout bounds the work behind one request: every Postgres, Redis
+// and S3 call made with the request's context gives up at this point. It is
+// well under the ALB's 60s idle timeout, so a hung dependency gets a fast 5xx
+// from the app and frees its pool connection, instead of holding it until the
+// ALB gives up on the request (M10, Well-Architected REL 5).
+const requestTimeout = 10 * time.Second
+
+// newHTTPServer sets the timeouts net/http leaves at zero (no limit):
+//   - ReadHeaderTimeout and ReadTimeout stop a client that sends a request
+//     slowly from holding a connection open; 30s covers a 5 MiB image upload.
+//   - WriteTimeout caps the whole response, past requestTimeout.
+//   - IdleTimeout must stay above the ALB's 60s idle timeout, so the ALB is
+//     always the side that closes an idle keep-alive connection. Left unset,
+//     it would fall back to ReadTimeout (30s), and the ALB would sometimes
+//     send a request on a connection the app had just closed: a 502.
+func newHTTPServer(addr string, handler http.Handler) *http.Server {
+	return &http.Server{
+		Addr:              addr,
+		Handler:           handler,
+		ReadHeaderTimeout: 5 * time.Second,
+		ReadTimeout:       30 * time.Second,
+		WriteTimeout:      30 * time.Second,
+		IdleTimeout:       75 * time.Second,
 	}
 }
 
