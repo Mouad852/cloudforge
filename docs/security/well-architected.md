@@ -133,7 +133,8 @@ directly. All are fixed unless noted:
   dev; prod changes only when someone runs `scripts/deploy.sh prod`. On 2026-09-29 prod was
   running a binary uploaded on 2026-09-25, older than `main`. Documented in
   `docs/runbooks/deployment.md`.
-- **Not fixed:** the canary writes a report to the artifacts bucket every 5 minutes, and the
-  bucket's lifecycle rule only expires *superseded* versions, so the reports are never deleted.
+- **The canary's reports were never deleted.** It writes one to the artifacts bucket every 5
+  minutes, and the bucket's lifecycle rule only expired *superseded* versions (1,631 objects in
+  prod by 2026-09-30). They now expire after 31 days (`data-classification.md`, D3).
 - **Not fixed:** a commit that only touches `terraform/bootstrap` still runs the whole
   `terraform` workflow and asks for dev and prod approvals it does not need.

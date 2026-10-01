@@ -21,11 +21,11 @@ store needs* and checks it gets that.
 | Products: `id`, `name`, `price_cents`, `image_key`, `created_at` | RDS `products` table | Public | Until deleted; automated backups 1 day (the Free plan maximum), a final snapshot on every destroy |
 | Product images | S3 images bucket | Public | Until deleted; versioned |
 | Cached products | ElastiCache Redis | Public (a copy of the table) | 60-second TTL; no Redis backups |
-| App binary, canary output | S3 artifacts bucket | Internal | Superseded versions expire after 90 days |
+| App binary, canary output | S3 artifacts bucket | Internal | Superseded versions expire after 90 days; canary reports (`canary/`) expire after 31 days, the same as the canary's own run history (since 2026-09-30) |
 | App request logs: request ID, method, path, status, duration | CloudWatch Logs `/cloudforge/<env>/app` | Internal | 30 days in prod, 14 in dev |
-| Postgres logs | CloudWatch Logs `/aws/rds/instance/<env>-cloudforge-db/postgresql` | Internal | **None set: kept forever** (gap D3) |
+| Postgres logs | CloudWatch Logs `/aws/rds/instance/<env>-cloudforge-db/postgresql` | Internal | 30 days in prod, 14 in dev (since 2026-09-30, gap D3) |
 | Performance Insights | RDS | Internal | 7 days (the free tier) |
-| Synthetics canary run logs | CloudWatch Logs `/aws/lambda/cwsyn-<env>-api-avail-*` | Internal | **None set: kept forever, and outlive dev's nightly destroy** (gap D3) |
+| Synthetics canary run logs | CloudWatch Logs `/aws/lambda/cwsyn-<env>-api-avail-*` | Internal | 30 days in prod, set by hand; dev's are deleted after every nightly destroy (gap D3) |
 | Alarm notifications: alarm name, state, metric value | SNS topics (unencrypted on purpose, see below), then email | Internal | Deleted by SNS once delivered; then in the recipient's mailbox |
 | ALB access logs: client IP, user agent, request line | S3 ALB-logs bucket | **Confidential** | Expire after 90 days |
 | VPC flow logs: source and destination IPs, ports | CloudWatch Logs `/aws/vpc/<env>-cloudforge` | **Confidential** | 30 days in prod, 14 in dev |
@@ -43,8 +43,8 @@ data in the system is visitor metadata collected by AWS services in front of the
 ## Does each store get the controls its level requires?
 
 - **Public and Internal:** encrypted at rest, private and reachable only through IAM, with public
-  access blocked on every bucket. Retention is set on everything Terraform creates, but **not on
-  the two log groups AWS services create by themselves** (gap D3). One accepted exception to
+  access blocked on every bucket. Retention is set everywhere, including the two log groups AWS
+  services used to create by themselves (gap D3, fixed). One accepted exception to
   encryption at rest: the alert SNS topics, because CloudWatch alarms cannot publish to a topic
   encrypted with the AWS-managed key (`encryption-inventory.md`, G12).
 - **Confidential:** yes for the ALB logs, flow logs and WAF, all kept in eu-west-3 with limited
@@ -60,5 +60,5 @@ data in the system is visitor metadata collected by AWS services in front of the
 |---|---|---|
 | D1 | Classification is manual. Nothing detects personal data appearing somewhere new (for example, a future change that logs client IPs in the app). | Accepted. Amazon Macie does this automatically, but it is priced per GB scanned plus per bucket, on a fixed credit balance. The app's request logging is the only place the application itself could start leaking personal data, and it is small enough to review by eye. |
 | D2 | The CloudTrail bucket, created by hand in M0, has no lifecycle rule, so personal data (operator identity, source IPs) is kept indefinitely. | **Fixed 2026-09-30.** Objects expire after 365 days (`terraform/bootstrap/account.tf`): long enough to investigate an incident noticed late, while CloudTrail's own event history already covers the last 90 days. |
-| D3 | Log groups that AWS services create by themselves have no retention: RDS's Postgres log export and the Synthetics canary's Lambda logs. They are not in Terraform, so dev's nightly destroy leaves them behind: on 2026-09-29 there were five orphaned dev canary log groups, one per rebuild. | Candidate fix. The RDS group has a predictable name, so Terraform can create it first with a retention (and delete it on destroy). The canary's group name contains a generated ID, so it needs a different approach. |
+| D3 | Log groups that AWS services create by themselves have no retention: RDS's Postgres log export and the Synthetics canary's Lambda logs. They are not in Terraform, so dev's nightly destroy leaves them behind: on 2026-09-29 there were five orphaned dev canary log groups, one per rebuild. | **Fixed 2026-09-30.** The RDS group has a predictable name, so `modules/database` now creates it with the environment's log retention, and destroy deletes it; the environments adopt a group RDS already made instead of failing. The canary's group is named with an ID Synthetics generates, so Terraform cannot create it first: `nightly-destroy.yml` deletes dev's after every destroy (the first run removed six), and prod's 30-day retention was set by hand (not in Terraform, so drift detection cannot see it; it has to be set again if prod's canary is ever recreated). |
 | D4 | The CloudTrail bucket was created in us-east-1 in M0, the trail's home Region, so CloudTrail logs (Confidential) are stored outside the EU. Found on 2026-09-30 while fixing D2. | Candidate fix. A trail can deliver to a bucket in another Region: a new bucket in eu-west-3 with the same policy and lifecycle, and the trail's `s3_bucket_name` pointed at it. Logs already written stay in us-east-1 until they expire. |
