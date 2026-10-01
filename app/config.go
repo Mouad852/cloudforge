@@ -26,6 +26,11 @@ type config struct {
 	S3Endpoint         string // set for LocalStack; empty in AWS, where the SDK resolves the real endpoint
 	AWSRegion          string
 	DrainTimeout       time.Duration
+	// DBPassword returns the database password as it is right now. Secrets
+	// Manager rotates it every 7 days (ADR-009), so the copy inside
+	// DatabaseURL is only good for the connections made at boot (migrations).
+	// Nil in local dev, where the password never changes.
+	DBPassword func(context.Context) (string, error)
 }
 
 func loadConfig(ctx context.Context) (config, error) {
@@ -39,9 +44,19 @@ func loadConfig(ctx context.Context) (config, error) {
 	}
 
 	if arn := os.Getenv("DB_SECRET_ARN"); arn != "" {
-		username, password, err := fetchDBSecret(ctx, cfg.AWSRegion, arn)
+		awsCfg, err := awsconfig.LoadDefaultConfig(ctx, awsconfig.WithRegion(cfg.AWSRegion))
+		if err != nil {
+			return cfg, err
+		}
+		secrets := secretsmanager.NewFromConfig(awsCfg)
+
+		username, password, err := fetchDBSecret(ctx, secrets, arn)
 		if err != nil {
 			return cfg, fmt.Errorf("fetching DB secret %s: %w", arn, err)
+		}
+		cfg.DBPassword = func(ctx context.Context) (string, error) {
+			_, password, err := fetchDBSecret(ctx, secrets, arn)
+			return password, err
 		}
 		dbHost := envOr("DB_HOST", "db.cloudforge.internal")
 		dbName := envOr("DB_NAME", "cloudstore")
@@ -83,6 +98,12 @@ func envOr(key, fallback string) string {
 	return fallback
 }
 
+// secretGetter is the one Secrets Manager call the app makes, so tests can
+// stand in for it.
+type secretGetter interface {
+	GetSecretValue(context.Context, *secretsmanager.GetSecretValueInput, ...func(*secretsmanager.Options)) (*secretsmanager.GetSecretValueOutput, error)
+}
+
 // fetchDBSecret reads the AWS-managed master-user credentials out of
 // Secrets Manager (ADR-009). The secret itself is just {"username",
 // "password"} - RDS doesn't include host/port/dbname in it, so those come
@@ -90,12 +111,7 @@ func envOr(key, fallback string) string {
 // and the database module's db_name) to build the actual DSN. Only used in
 // deployed environments (DB_SECRET_ARN set) — local dev passes DATABASE_URL
 // directly, since there's no Secrets Manager to talk to.
-func fetchDBSecret(ctx context.Context, region, arn string) (username, password string, err error) {
-	awsCfg, err := awsconfig.LoadDefaultConfig(ctx, awsconfig.WithRegion(region))
-	if err != nil {
-		return "", "", err
-	}
-	client := secretsmanager.NewFromConfig(awsCfg)
+func fetchDBSecret(ctx context.Context, client secretGetter, arn string) (username, password string, err error) {
 	out, err := client.GetSecretValue(ctx, &secretsmanager.GetSecretValueInput{
 		SecretId: aws.String(arn),
 	})

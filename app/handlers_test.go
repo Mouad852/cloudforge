@@ -26,7 +26,7 @@ func newTestServer(t *testing.T) *server {
 	}
 
 	ctx := context.Background()
-	st, err := newStore(ctx, dsn)
+	st, err := newStore(ctx, dsn, nil)
 	if err != nil {
 		t.Fatalf("store: %v", err)
 	}

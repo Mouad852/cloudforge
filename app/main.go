@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"context"
 	"crypto/rand"
 	"encoding/hex"
@@ -37,7 +38,7 @@ func main() {
 	}
 	log.Info("schema up to date", "version", version)
 
-	st, err := newStore(ctx, cfg.DatabaseURL)
+	st, err := newStore(ctx, cfg.DatabaseURL, cfg.DBPassword)
 
 	if err != nil {
 		log.Error("store init failed", "error", err)
@@ -132,24 +133,45 @@ func withRequestLogging(log *slog.Logger, next http.Handler) http.Handler {
 		rec := &statusRecorder{ResponseWriter: w, status: http.StatusOK}
 		next.ServeHTTP(rec, r)
 
-		log.Info("request",
+		attrs := []any{
 			"request_id", reqID,
 			"method", r.Method,
 			"path", r.URL.Path,
 			"status", rec.status,
 			"duration_ms", time.Since(start).Milliseconds(),
-		)
+		}
+		// The response body of a 5xx is writeError's {"error": "..."}. Without
+		// it in the log, the only record of why a request failed went to the
+		// client: during the 2026-09-30 outage the logs showed 500s and
+		// nothing else.
+		if rec.status >= http.StatusInternalServerError {
+			attrs = append(attrs, "error", rec.errorBody.String())
+		}
+		log.Info("request", attrs...)
 	})
 }
 
+// maxLoggedErrorBytes caps how much of a 5xx body goes into the log line.
+const maxLoggedErrorBytes = 512
+
 type statusRecorder struct {
 	http.ResponseWriter
-	status int
+	status    int
+	errorBody bytes.Buffer
 }
 
 func (r *statusRecorder) WriteHeader(status int) {
 	r.status = status
 	r.ResponseWriter.WriteHeader(status)
+}
+
+func (r *statusRecorder) Write(b []byte) (int, error) {
+	if r.status >= http.StatusInternalServerError {
+		if room := maxLoggedErrorBytes - r.errorBody.Len(); room > 0 {
+			r.errorBody.Write(b[:min(len(b), room)])
+		}
+	}
+	return r.ResponseWriter.Write(b)
 }
 
 func newRequestID() string {

@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"errors"
+	"fmt"
 	"time"
 
 	"github.com/jackc/pgx/v5"
@@ -23,8 +24,29 @@ type store struct {
 	pool *pgxpool.Pool
 }
 
-func newStore(ctx context.Context, dsn string) (*store, error) {
-	pool, err := pgxpool.New(ctx, dsn)
+// newStore opens the connection pool. With a password function (deployed
+// environments), every new connection asks it for the current password
+// instead of reusing the one read at boot. Until M10 it did reuse it: after
+// Secrets Manager rotated the password on 2026-09-30, each connection the pool
+// opened was refused, and prod's API returned 500 for about 40 hours, until
+// the next deploy restarted the app (docs/incidents/2026-09-30-db-password-rotation.md).
+func newStore(ctx context.Context, dsn string, password func(context.Context) (string, error)) (*store, error) {
+	cfg, err := pgxpool.ParseConfig(dsn)
+	if err != nil {
+		return nil, err
+	}
+	if password != nil {
+		cfg.BeforeConnect = func(ctx context.Context, cc *pgx.ConnConfig) error {
+			p, err := password(ctx)
+			if err != nil {
+				return fmt.Errorf("reading the current database password: %w", err)
+			}
+			cc.Password = p
+			return nil
+		}
+	}
+
+	pool, err := pgxpool.NewWithConfig(ctx, cfg)
 	if err != nil {
 		return nil, err
 	}
