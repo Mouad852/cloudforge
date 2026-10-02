@@ -45,6 +45,28 @@ run "alarm_thresholds_match_plan" {
   }
 }
 
+run "canary_failure_alarms" {
+  command = plan
+
+  assert {
+    condition = (
+      aws_cloudwatch_metric_alarm.canary_failed.namespace == "CloudWatchSynthetics" &&
+      aws_cloudwatch_metric_alarm.canary_failed.metric_name == "SuccessPercent" &&
+      aws_cloudwatch_metric_alarm.canary_failed.dimensions["CanaryName"] == aws_synthetics_canary.api.name
+    )
+    error_message = "The canary alarm must watch this environment's canary SuccessPercent"
+  }
+
+  assert {
+    condition = (
+      aws_cloudwatch_metric_alarm.canary_failed.threshold == 100 &&
+      aws_cloudwatch_metric_alarm.canary_failed.comparison_operator == "LessThanThreshold" &&
+      aws_cloudwatch_metric_alarm.canary_failed.evaluation_periods == 2
+    )
+    error_message = "Any failed canary run in 2 consecutive 5-minute windows must alarm: on 2026-09-30 every run failed for 40 hours and nothing alerted"
+  }
+}
+
 run "composite_alarm_watches_the_right_two_alarms" {
   command = plan
 

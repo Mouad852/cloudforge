@@ -43,6 +43,35 @@ resource "aws_cloudwatch_metric_alarm" "alb_5xx" {
   ok_actions    = [aws_sns_topic.alerts.arn]
 }
 
+# The only alarm that watches the API from the outside, the way a customer
+# sees it. Added after 2026-09-30, when prod's API returned 500 to every canary
+# run for about 40 hours and nothing alerted: the canary only fed a dashboard,
+# and its one request per 5 minutes never reaches alb_5xx's threshold of 10
+# (docs/incidents/2026-09-30-db-password-rotation.md). Two failing 5-minute
+# windows in a row, so one flaky run does not page.
+#
+# Not covered: a canary that stops running publishes no data, and missing data
+# is treated as not breaching, like the other alarms.
+resource "aws_cloudwatch_metric_alarm" "canary_failed" {
+  alarm_name          = "${local.name_prefix}-canary-failed"
+  alarm_description   = "The API availability canary failed in 2 consecutive 5-minute windows - customers are likely seeing errors"
+  namespace           = "CloudWatchSynthetics"
+  metric_name         = "SuccessPercent"
+  statistic           = "Average"
+  period              = 300
+  evaluation_periods  = 2
+  threshold           = 100
+  comparison_operator = "LessThanThreshold"
+  treat_missing_data  = "notBreaching"
+
+  dimensions = {
+    CanaryName = aws_synthetics_canary.api.name
+  }
+
+  alarm_actions = [aws_sns_topic.alerts.arn]
+  ok_actions    = [aws_sns_topic.alerts.arn]
+}
+
 resource "aws_cloudwatch_metric_alarm" "alb_latency_p95" {
   alarm_name          = "${local.name_prefix}-alb-latency-p95"
   alarm_description   = "p95 TargetResponseTime above 1s, sustained for 5 minutes"
