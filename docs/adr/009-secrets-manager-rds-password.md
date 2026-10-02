@@ -21,6 +21,8 @@ Set `manage_master_user_password = true` on the instance instead of `password`. 
 - Nobody, including me, retypes or stores this password anywhere — reading it (e.g. to open a `psql` session for verification) is a deliberate, logged `secretsmanager:GetSecretValue` call, not something sitting in a `.tfvars` file or shell history.
 - Rotation becomes an AWS Secrets Manager operation, not a Terraform apply — out of scope for this milestone, but the door is open for automatic rotation later without touching this resource's configuration at all.
 
+  **Correction (2026-10-01):** rotation was never "later". A secret created by `manage_master_user_password` is rotated by Secrets Manager every 7 days by default, from the day the instance is created. The app read the password once at boot, so the first rotation prod lived through (2026-09-30) took its API down for about 40 hours (`docs/incidents/2026-09-30-db-password-rotation.md`). Every new database connection now reads the current password from the secret (`app/store.go`). Anything else that connects to the database must do the same, or it breaks within a week.
+
 ## Known issue: SSM-reachable didn't mean actually reachable — a missing egress rule
 
 Proving the "psql from an instance via SSM works" half of this milestone's DoD surfaced a real network bug, unrelated to the password decision above but found while verifying it. The RDS security group's ingress was correctly scoped to the app security group only, and DNS (`db.cloudforge.internal`, ADR-013) resolved fine — but a `psql`/raw-TCP connection attempt from an app instance still failed.
