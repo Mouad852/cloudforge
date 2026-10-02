@@ -58,13 +58,13 @@ backups, but applying that failed: **the AWS Free plan caps RDS automated backup
 (`FreeTierRestrictionError`, 2026-09-27), so prod keeps 1 day and longer recovery points are
 M11's job.
 
-### Evaluate in M10
+### Evaluated in M10
 
-| Question | Missing | Question to answer |
+| Question | Missing | Outcome |
 |---|---|---|
-| OPS 4 - How do you implement observability? | Distributed tracing | Whether AWS X-Ray (its free tier records 100,000 traces a month) is worth instrumenting a single service with two dependencies. |
-| REL 5 - How do you mitigate interaction failures? | Retry limits, fail fast, client timeouts, emergency levers | Whether the app's Postgres and Redis calls have deadlines. Health checks do (500 ms, 2 s), and the Redis read path already fails open to Postgres, but request handlers have not been audited. |
-| REL 4 - How do you prevent interaction failures? | Loose coupling, idempotent mutations, constant work | Whether `POST /api/products` should take an idempotency key, so a retried request cannot create a duplicate. |
+| REL 5 - How do you mitigate interaction failures? | Retry limits, fail fast, client timeouts, emergency levers | **Fixed** (commit eeb2ddb, deployed to prod 2026-10-01). The audit found no deadline on any request: handlers used a context that only ends when the client disconnects, so a hung Postgres held each request, and one of the pool's 4 connections, until the ALB's 60-second timeout. The Redis "fail open" was slow: go-redis's defaults held each call for 5 seconds against a Redis that stopped answering, and ignored the request's deadline (both measured in `app/timeouts_test.go`). pgx had no connect timeout and `net/http` no server timeouts. Now: a 10-second deadline on every request, server timeouts with `IdleTimeout` above the ALB's idle timeout (so the ALB never reuses a connection the app just closed), Redis calls that give up after 250 ms with one retry, and a 5-second Postgres connect timeout. Emergency levers stay as they are: the WAF rate limit. |
+| REL 4 - How do you prevent interaction failures? | Loose coupling, idempotent mutations, constant work | **Accepted, not built.** A retried `POST /api/products` creates a duplicate. Nothing retries it today: the canary only reads, the deploy gate only calls `/readyz`, and there is no client SDK. If an automatic client is added, the design is an `Idempotency-Key` header stored with a unique constraint in the same transaction as the product. |
+| OPS 4 - How do you implement observability? | Distributed tracing | **Accepted, not built.** One service with two dependencies: every request already logs its ID, status and duration, and now the cause of every 5xx; ALB metrics, the canary and RDS Performance Insights cover the rest. X-Ray would add an agent, IAM permissions and SDK instrumentation for little new information. Revisit if a second service appears. |
 
 ### Accepted
 
@@ -103,6 +103,15 @@ the ALB weights back (ADR-017).
 Checking each answer against the live account turned up problems no question asked about
 directly. All are fixed unless noted:
 
+- **Prod's API was down for about 40 hours, and no alarm fired** (SEV1,
+  `docs/incidents/2026-09-30-db-password-rotation.md`). Secrets Manager rotates the RDS-managed
+  master password every 7 days by default (ADR-009 assumed it did not), and the app read the
+  password only at boot. From 2026-09-30 00:31 every request that touched the database
+  returned 500, until a deploy on 2026-10-01 replaced the instance. The canary failed every
+  run, but it only fed a dashboard, and its one request per 5 minutes never reached the 5xx
+  alarm's threshold. Found during the REL 5 deploy. Fixed: every new connection reads the
+  current password (proven with a forced rotation on 2026-10-01), every 5xx logs its cause,
+  and `modules/observability` adds a `canary-failed` alarm on the canary.
 - **No alarm email was ever delivered.** Every alert topic was encrypted with the AWS-managed
   `alias/aws/sns` key, which CloudWatch is not allowed to use, so from M7 until 2026-09-29 every
   alarm in dev and prod logged "Failed to execute action" instead of notifying. Every runbook in
