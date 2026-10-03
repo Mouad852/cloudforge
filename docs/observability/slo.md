@@ -4,7 +4,7 @@ Defined in M7, before any M12 game day (ADR-020). Every chaos experiment measure
 damage against the numbers on this page — not the other way around.
 
 All three SLIs are measured from **outside** the application: the Synthetics canary
-(`dev-api-avail`, hitting CloudFront) and the ALB's own metrics. Nothing here reads the
+(`<env>-api-avail`, hitting the ALB directly since ADR-025) and the ALB's own metrics. Nothing here reads the
 app's own view of itself, because the app's view is exactly what's unavailable during the
 failures these SLOs exist to catch — a service that has crashed cannot self-report that it
 has crashed.
@@ -13,11 +13,11 @@ has crashed.
 
 | SLI | Definition | Measured by |
 |---|---|---|
-| Availability | successful canary runs ÷ total canary runs | `CloudWatchSynthetics` → `SuccessPercent`, dimension `CanaryName = dev-api-avail` |
+| Availability | successful canary runs ÷ total canary runs | `CloudWatchSynthetics` → `SuccessPercent`, dimension `CanaryName = <env>-api-avail` |
 | Latency | proportion of requests with `TargetResponseTime` < 500 ms | `AWS/ApplicationELB` → `TargetResponseTime`, `p99` |
 | Correctness | proportion of responses that are not 5xx | `AWS/ApplicationELB` → `HTTPCode_Target_5XX_Count` ÷ `RequestCount` (metric-math) |
 
-All three are plotted live on the SLO dashboard (`dev-slo` in CloudWatch → Dashboards),
+All three are plotted live on the SLO dashboard (`<env>-slo` in CloudWatch → Dashboards),
 each against a horizontal line marking its target below.
 
 ## SLOs (30-day rolling)
@@ -28,7 +28,7 @@ each against a horizontal line marking its target below.
 | Latency (p99 < 500 ms) | 99% | 1% of requests may be slow |
 | Correctness | 99.9% | 0.1% of requests may 5xx |
 
-These are a **starting proposal** (PLAN.md §10), not a permanent contract. Once the canary
+These are a **starting proposal** (from the original plan, ADR-020), not a permanent contract. Once the canary
 has run for long enough to produce a real baseline, these numbers get revisited — and if
 they change, the reason for the change is written down here, not silently edited away.
 
@@ -61,20 +61,24 @@ An alarm firing doesn't automatically mean the SLO is at risk — a single 6-min
 can trip the `alb-latency-p95` alarm and barely dent a 30-day error budget. The alarms are
 the smoke detector; the SLOs are the monthly inspection report.
 
-## Current status
+## Current status (2026-10-03)
 
-The canary and both dashboards are built and deployed (M7), but the canary targets the
-CloudFront domain per ADR-014 (the ALB rejects anything not arriving through CloudFront),
-and CloudFront itself is not live yet — blocked on an open AWS Support case, tracked
-separately from M7. Until that's resolved, `SuccessPercent` has no real samples to report.
-Once CloudFront is live, the canary starts producing genuine data immediately (its 5-minute
-schedule was already running), and the first real error-budget numbers get recorded in
-PLAN.md §11's measurements table starting with M12's first experiment.
+The canary has hit the ALB directly since ADR-025 (2026-09-22; CloudFront was denied), so
+`SuccessPercent` carries real samples in both environments. Until 2026-10-02 it only fed the
+dashboard; the `<env>-cloudforge-canary-failed` alarm now pages on it
+(`docs/runbooks/canary-failed.md`).
+
+**The prod availability budget is exhausted.** The 2026-09-30 database password rotation
+outage (`docs/incidents/2026-09-30-db-password-rotation.md`) failed every canary run for about
+40 hours, against a monthly budget of about 3.6 hours. The 30-day window clears around
+2026-10-31. Under the policy above this is a deploy freeze with reliability work only. M12's
+game days count as reliability work, so they go ahead, and each records the budget it consumes.
+
+The error-budget report for the whole period is written in M13 (`PLAN.md` §9).
 
 ## See also
 
 - ADR-020 (`docs/adr/020-slos-before-gamedays.md`) — why these are defined now, not in M12.
-- ADR-014 (`docs/adr/014-alb-locked-to-cloudfront.md`) — why the canary must target
-  CloudFront, not the ALB directly.
-- PLAN.md §10 — the original proposal these numbers are copied from.
-- PLAN.md §11 — where measured game-day numbers get filled in against this budget.
+- ADR-025 (`docs/adr/025-cloudfront-denied-edge-redesign.md`) — why the canary targets the
+  ALB (ADR-014's CloudFront-only lockdown is superseded).
+- `PLAN.md` §10 — the measurements table that game-day results are filled into.

@@ -51,20 +51,34 @@ REDIS_ADDR=localhost:6379 go test ./...
 ## Config
 
 Everything is env vars, read once at boot (a restart is the deploy mechanism — see M3's ASG
-instance refresh):
+instance refresh). **The one exception is the database password**, which is not cached: see
+below.
 
 | Var | Default | Notes |
 |---|---|---|
 | `PORT` | `8080` | |
 | `DATABASE_URL` | local docker-compose DSN | Ignored if `DB_SECRET_ARN` is set |
-| `DB_SECRET_ARN` | unset | When set, the DSN is fetched from Secrets Manager at boot instead |
+| `DB_SECRET_ARN` | unset | When set, the username and the current password come from this Secrets Manager secret. The password is read again for **every new database connection**, not once at boot |
+| `DB_HOST` / `DB_NAME` | `db.cloudforge.internal` / `cloudstore` | Used with `DB_SECRET_ARN` |
 | `REDIS_ADDR` | `localhost:6379` | |
+| `REDIS_AUTH_SECRET_ARN` | unset | When set, the Redis AUTH token is read from Secrets Manager at boot and TLS is used |
+| `REDIS_TLS_SERVER_NAME` | unset | Certificate hostname when dialling through the private DNS name (ADR-022) |
 | `S3_BUCKET` | `cloudforge-images-dev` | |
 | `S3_ENDPOINT` | unset | Set to LocalStack's URL for local dev; unset in AWS |
 | `AWS_REGION` | `eu-west-3` | |
 
 ## Behavior worth knowing
 
+- **The database password survives rotation.** Secrets Manager rotates the RDS-managed
+  password every 7 days. A `BeforeConnect` hook (`store.go`) fetches the current password for
+  each new pool connection, so connections opened after a rotation log in with the new one.
+  Reading it only at boot caused a 40-hour prod outage
+  (`docs/incidents/2026-09-30-db-password-rotation.md`); `rotation_test.go` guards the fix.
+- **Every request has a deadline.** 10 s per request, server read/write/idle timeouts, Redis
+  calls that give up after 250 ms with one retry, and a 5 s Postgres connect timeout
+  (`timeouts_test.go`, `docs/security/well-architected.md` REL 5).
+- **Every 5xx logs its cause**, alongside the request ID, status and duration.
+- **Migrations run at startup** (`migrate.go`), behind a Postgres advisory lock (ADR-026).
 - **Redis fails open.** A cache read/write error is logged and falls through to Postgres —
   a dead cache degrades latency, not availability (`cache.go`).
 - **`/healthz` never touches Postgres or Redis.** It's the ALB's health check; if it depended on

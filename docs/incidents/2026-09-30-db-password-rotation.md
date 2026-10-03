@@ -69,8 +69,8 @@ Found by accident, during a deploy, not by an alarm meant for it.
   6046480, deployed to prod 2026-10-01.
 - [x] Every 5xx logs the error behind it (`withRequestLogging`). Same commit.
 - [x] Proven against a real rotation: forced by hand on 2026-10-01, see Verification below.
-- [ ] `<env>-cloudforge-canary-failed` alarm on the canary's `SuccessPercent`, and its runbook
-  `docs/runbooks/canary-failed.md`.
+- [x] `<env>-cloudforge-canary-failed` alarm on the canary's `SuccessPercent`, and its runbook
+  `docs/runbooks/canary-failed.md`. Commit 5cd5e2b, live in prod (state `OK` on 2026-10-03).
 - [x] ADR-009 corrected: rotation is on, every 7 days, and the app depends on reading the
   secret for each new connection.
 
