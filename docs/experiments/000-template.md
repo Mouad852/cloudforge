@@ -1,6 +1,6 @@
 # Experiment NN — <name>
 
-**Date:** <UTC>                    **Environment:** prod (ephemeral, spun up for this session)
+**Date:** <UTC>                    **Environment:** prod (session start/stop: <UTC> / <UTC>)
 
 ## Hypothesis
 
@@ -8,14 +8,14 @@ What you expect to happen, and why — written **before** running the experiment
 
 ## Method
 
-Exact command or AWS FIS experiment template used. Include the template ARN or the raw CLI invocation, not a paraphrase.
+The exact fault command (raw AWS CLI invocation, not a paraphrase; AWS FIS is not available on this account's plan) and the k6 load running during it.
 
 ## Timeline (UTC)
 
 | Time | Event |
 |---|---|
 | | Fault introduced |
-| | First alarm / metric change (detection) |
+| | Detection: which alarm or signal, and did the one that should have fired actually fire? |
 | | Recovery action started |
 | | Service restored |
 
@@ -23,8 +23,9 @@ Exact command or AWS FIS experiment template used. Include the template ARN or t
 
 - Detection time:
 - Recovery time:
-- Total requests during window / failed / error rate:
-- Error budget consumed:
+- k6: total requests during window / failed / error rate:
+- Error budget consumed (against `docs/observability/slo.md`):
+- Steady state confirmed (how):
 
 ## What surprised me
 
@@ -36,4 +37,4 @@ If nothing changed, say why the current configuration was already correct — do
 
 ## Evidence
 
-Screenshots: `../screenshots/12-gamedays/NN-<name>/`
+One CloudWatch graph spanning the whole incident window (timestamps visible) in `../screenshots/12-gamedays/NN-<name>/`, and the k6 summary pasted as text above. No other screenshots unless they prove something specific.

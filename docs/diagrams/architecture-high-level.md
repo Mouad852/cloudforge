@@ -1,36 +1,54 @@
-# High-Level Architecture
+# High-Level Architecture — as built
 
-Target design (`PLAN.md` §5). This is the **pre-implementation** version — expect details here to firm up, and possibly change, as M1–M6 are actually built. Update this file when they do; don't let it drift from reality.
+**This is the canonical architecture diagram.** It shows what is deployed today (`PLAN.md` §4),
+not the original target design. The original showed CloudFront in front of the ALB, Multi-AZ RDS
+and two instances per environment; none of that is built. CloudFront was denied by AWS Support
+(ADR-025), and the rest are recorded compromises (`PLAN.md` §6.2).
 
 ```mermaid
 flowchart TB
-    Internet((Internet))
-    CF["CloudFront<br/>+ AWS WAF managed rules"]
-    S3["S3 — private, OAC<br/>/images/*"]
-    ALB["ALB — public subnets<br/>/api/* — locked to CloudFront"]
-    EC2A["EC2 · ASG · AZ-A<br/>app subnet"]
-    EC2B["EC2 · ASG · AZ-B<br/>app subnet"]
-    RDS[("RDS PostgreSQL<br/>Multi-AZ · data subnet")]
-    Redis[("ElastiCache Redis<br/>data subnet")]
+    Client(("Client<br/>HTTP :80"))
 
-    Internet --> CF
-    CF -->|"/images/*"| S3
-    CF -->|"/api/*"| ALB
-    ALB --> EC2A
-    ALB --> EC2B
-    EC2A --> RDS
-    EC2B --> RDS
-    EC2A --> Redis
-    EC2B --> Redis
+    subgraph Edge["Public subnets · 2 AZs"]
+        WAF{{"AWS WAF (REGIONAL)<br/>Common · KnownBadInputs · IP reputation · SQLi<br/>rate limit 2,000 / 5 min / IP · 8 KB body cap"}}
+        ALB["Application Load Balancer<br/>HTTP only · listener :80<br/>weighted forward blue 100 / green 0"]
+        NAT["NAT instance (t3.micro)<br/>AZ-a only"]
+    end
+
+    subgraph App["App subnets · 2 AZs"]
+        ASG["Auto Scaling group (blue)<br/>prod: 1 × t4g.small, max 2<br/>CPU target tracking 60%"]
+        Green["Green ASG<br/>0 instances at rest"]
+    end
+
+    subgraph Data["Data subnets"]
+        RDS[("RDS PostgreSQL db.t4g.micro<br/>Single-AZ · encrypted · TLS forced<br/>1-day backups (Free plan cap)")]
+        Redis[("ElastiCache Redis cache.t4g.micro<br/>1 node · TLS + AUTH")]
+    end
+
+    S3[("S3: artifacts · images · ALB logs<br/>private, TLS-only, versioned")]
+    SM["Secrets Manager<br/>RDS password (rotated every 7 days)<br/>Redis AUTH token"]
+    DNS["Route 53 private zone<br/>db / cache .cloudforge.internal"]
+
+    Client --> WAF --> ALB --> ASG
+    ALB -.-> Green
+    ASG --> RDS
+    ASG --> Redis
+    ASG -->|S3 gateway endpoint| S3
+    ASG -->|via NAT| SM
+    ASG -.-> DNS
 ```
 
-**Cross-cutting, not shown above** (full breakdown in `PLAN.md` §5):
+**Cross-cutting, not shown above:**
 
-| Observability | Security | Resilience |
+| Observability | Security | Delivery |
 |---|---|---|
-| CloudWatch metrics + logs | IAM least privilege | AWS Backup + cross-region copy |
-| Alarms → SNS → email | Secrets Manager + rotation | AWS FIS experiments |
-| Synthetics canary | SSM Session Manager | SSM Automation runbooks |
-| SLO dashboard | CloudTrail, GuardDuty | Automated restore testing |
+| CloudWatch agent, JSON app logs | IAM least privilege, SSM only, IMDSv2 | GitHub Actions with OIDC, approval-gated applies |
+| 12 metric alarms + composite → SNS → email | WAF on the ALB, security-group chain | Rolling deploy with a k6 gate (`scripts/deploy.sh`) |
+| Golden Signals and SLO dashboards | CloudTrail, Access Analyzer, VPC Flow Logs | Daily drift check, nightly dev destroy |
+| Synthetics canary on the ALB + `canary-failed` alarm | Encryption at rest and in transit behind the ALB | Rebuilt environments converge on their own (ADR-026) |
 
-Everything above is provisioned by Terraform; both environments are ephemeral.
+Everything above is provisioned by Terraform. Dev is destroyed every night; prod is meant to be
+up only for working sessions (`PLAN.md` §12, decision D1).
+
+Detail diagrams: [`network-vpc.md`](network-vpc.md), [`traffic-flow.md`](traffic-flow.md),
+[`data-flow.md`](data-flow.md), [`security-flow.md`](security-flow.md).

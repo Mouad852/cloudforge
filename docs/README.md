@@ -1,20 +1,26 @@
 # Documentation Index
 
-This directory accumulates evidence as CloudForge is built — it is not written after the fact. See [`PLAN.md`](../PLAN.md) for the full roadmap; every milestone there specifies exactly what to capture and where.
+This directory accumulated as CloudForge was built; it was not written after the fact. See
+[`PLAN.md`](../PLAN.md) for the as-built summary and the remaining work.
 
-| Folder | What lives here |
-|---|---|
-| [`architecture/`](architecture/) | The system as designed and as built — narrative, linking out to diagrams |
-| [`diagrams/`](diagrams/) | Versioned Mermaid/draw.io source for every architecture diagram |
-| [`infrastructure/`](infrastructure/) | Terraform module structure, environment strategy, deployment strategies |
-| [`security/`](security/) | Threat model, IAM policies, encryption inventory, Well-Architected review |
-| [`observability/`](observability/) | SLOs, error budget, dashboards, alarm runbooks |
-| [`resilience/`](resilience/) | Scaling behavior, capacity planning, load-test analysis |
-| [`disaster-recovery/`](disaster-recovery/) | Backup strategy, RPO/RTO targets and tested results |
-| [`experiments/`](experiments/) | One report per game-day experiment — hypothesis, measurements, what changed |
-| [`adr/`](adr/) | Architecture Decision Records — the project's decision log |
-| [`runbooks/`](runbooks/) | Operational procedures, written to be followed under pressure |
-| [`screenshots/`](screenshots/) | Evidence captured at each milestone, organized by phase |
-| `cost-analysis.md` | Real Cost Explorer numbers, before/after each optimization |
+**Start here:** the [SEV1 incident review](incidents/2026-09-30-db-password-rotation.md), the
+[Well-Architected review](security/well-architected.md), [ADR-025](adr/025-cloudfront-denied-edge-redesign.md)
+and the [as-built architecture](diagrams/architecture-high-level.md).
 
-**Convention:** a folder with no files yet means that phase of the project hasn't happened. Nothing in here is filled in advance of the work — see `PLAN.md` §18 for why that matters.
+| Folder | What lives here | State |
+|---|---|---|
+| [`diagrams/`](diagrams/) | As-built architecture, network, traffic, data and security flows (Mermaid) | current |
+| [`adr/`](adr/) | Architecture Decision Records, the decision log | 24 ADRs, 018/019 reserved |
+| [`incidents/`](incidents/) | Post-incident reviews of real outages | 1 (SEV1, 2026-09-30) |
+| [`security/`](security/) | Threat model, IAM walkthrough, OIDC trust policy, encryption inventory, data classification, incident response, Well-Architected review | current |
+| [`observability/`](observability/) | SLOs, SLIs and the error-budget policy | current; error-budget report in M13 |
+| [`runbooks/`](runbooks/) | One runbook per alarm, deployment and rollback, readiness checklist, account teardown | current |
+| [`experiments/`](experiments/) | One report per game day | planned (M12) |
+| [`disaster-recovery/`](disaster-recovery/) | DR strategy, RPO/RTO targets and tested results | planned (M11) |
+| [`resilience/`](resilience/) | Capacity planning from load tests | planned (M13) |
+| [`infrastructure/`](infrastructure/) | Deployment strategies compared | optional (M13) |
+| [`screenshots/`](screenshots/) | Selected evidence, by milestone | partial by design |
+| `cost-analysis.md` | Real Cost Explorer numbers | planned (M13) |
+
+**Convention:** nothing here is filled in ahead of the work. A folder marked "planned" means
+that phase hasn't happened yet.

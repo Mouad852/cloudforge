@@ -1,7 +1,10 @@
 # Architecture
 
-The system as designed (`PLAN.md` §5) and, as each milestone lands, as actually built.
+The as-built architecture is described in `PLAN.md` §4 (components and sizes) and §6
+(decisions and the compromises behind them), and drawn in
+[`../diagrams/architecture-high-level.md`](../diagrams/architecture-high-level.md), the canonical
+diagram.
 
-- `overview.md` — narrative walkthrough of the architecture. Written once the core (M1–M6) is deployed. **Not written yet.**
-
-Diagrams live in [`../diagrams/`](../diagrams/), not here — they're versioned separately so the same diagram can be referenced from multiple docs without duplication.
+A separate `overview.md` narrative was planned and has been dropped: the root README, the
+diagrams in [`../diagrams/`](../diagrams/) and the ADR index in [`../adr/`](../adr/) cover it
+without a fourth copy that could drift.
