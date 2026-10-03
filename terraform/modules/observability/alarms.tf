@@ -94,15 +94,18 @@ resource "aws_cloudwatch_metric_alarm" "alb_latency_p95" {
 
 resource "aws_cloudwatch_metric_alarm" "asg_in_service_instances" {
   alarm_name          = "${local.name_prefix}-asg-in-service-instances"
-  alarm_description   = "Fewer than 2 instances InService - the fleet has lost redundancy"
+  alarm_description   = "Fewer instances InService than the ASG minimum (${var.asg_min_size}) for 2 minutes - with a one-instance fleet the app tier is down"
   namespace           = "AWS/AutoScaling"
   metric_name         = "GroupInServiceInstances"
-  statistic           = "Average"
+  statistic           = "Minimum"
   period              = 60
   evaluation_periods  = 2
-  threshold           = 2
+  threshold           = var.asg_min_size
   comparison_operator = "LessThanThreshold"
-  treat_missing_data  = "notBreaching"
+  # "missing", not "notBreaching": with no datapoints the alarm goes to
+  # INSUFFICIENT_DATA instead of reporting OK, so a metric that stops arriving
+  # is visible. notBreaching is how this alarm stayed OK with no data at all.
+  treat_missing_data = "missing"
 
   dimensions = {
     AutoScalingGroupName = var.asg_name

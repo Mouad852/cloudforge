@@ -260,3 +260,17 @@ run "launched_instances_and_volumes_carry_the_default_tags" {
     error_message = "Launched instances and volumes must carry the provider's default_tags plus their Name - default_tags alone never reach them"
   }
 }
+
+run "asg_publishes_the_group_metrics_its_alarm_needs" {
+  command = plan
+
+  assert {
+    condition     = contains(aws_autoscaling_group.app.enabled_metrics, "GroupInServiceInstances")
+    error_message = "The blue ASG must publish GroupInServiceInstances - without it the in-service alarm has no data (PLAN.md §8, #9)"
+  }
+
+  assert {
+    condition     = aws_autoscaling_group.app.metrics_granularity == "1Minute"
+    error_message = "Group metrics must be published every minute, matching the alarm's 60-second period"
+  }
+}

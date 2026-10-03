@@ -35,6 +35,16 @@ variable "asg_name" {
   type        = string
 }
 
+variable "asg_min_size" {
+  description = "Minimum size of the app Auto Scaling group (the environment's asg_min_size) - the in-service alarm fires below this floor, so it follows the fleet's real size instead of a hardcoded 2"
+  type        = number
+
+  validation {
+    condition     = var.asg_min_size >= 1
+    error_message = "asg_min_size must be at least 1 - an alarm on fewer than 0 in-service instances can never fire."
+  }
+}
+
 variable "app_log_group_name" {
   description = "CloudWatch Logs group receiving structured app logs (module.compute.app_log_group_name) - metric filter source"
   type        = string

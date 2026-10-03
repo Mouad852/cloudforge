@@ -249,6 +249,18 @@ resource "aws_autoscaling_group" "app" {
   health_check_grace_period = var.health_check_grace_period
   target_group_arns         = var.target_group_arns
 
+  # Group metrics are published only when enabled. Without them the
+  # GroupInServiceInstances alarm (modules/observability) never had a datapoint
+  # and sat in OK from M7 to 2026-10-03 (PLAN.md §8, #9). They carry no charge
+  # at 1-minute granularity.
+  enabled_metrics = [
+    "GroupDesiredCapacity",
+    "GroupInServiceInstances",
+    "GroupMaxSize",
+    "GroupMinSize",
+  ]
+  metrics_granularity = "1Minute"
+
   instance_refresh {
     strategy = "Rolling"
     triggers = ["launch_template"]

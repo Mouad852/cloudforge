@@ -13,6 +13,7 @@ variables {
   alb_arn_suffix             = "app/test-alb/50dc6c495c0c9188"
   target_group_arn_suffix    = "targetgroup/test-tg/73e2d6bc24d8a067"
   asg_name                   = "test-cloudforge-app"
+  asg_min_size               = 1
   app_log_group_name         = "/cloudforge/test/app"
   db_instance_id             = "test-cloudforge-db"
   redis_replication_group_id = "test-cloudforge-redis"
@@ -110,5 +111,32 @@ run "alert_topics_stay_unencrypted_so_alarms_can_publish" {
   assert {
     condition     = aws_sns_topic.alerts.kms_master_key_id == null && aws_sns_topic.billing_alerts.kms_master_key_id == null
     error_message = "CloudWatch alarms cannot publish to an SNS topic encrypted with the AWS-managed alias/aws/sns key - every alarm notification failed until 2026-09-29. Encrypting these topics needs a customer-managed key whose policy allows cloudwatch.amazonaws.com."
+  }
+}
+
+run "asg_in_service_alarm_follows_the_fleet_floor" {
+  command = plan
+
+  assert {
+    condition     = aws_cloudwatch_metric_alarm.asg_in_service_instances.threshold == 1 && aws_cloudwatch_metric_alarm.asg_in_service_instances.comparison_operator == "LessThanThreshold"
+    error_message = "The in-service alarm must fire below the ASG minimum it is given (1 here), not a hardcoded 2"
+  }
+
+  assert {
+    condition     = aws_cloudwatch_metric_alarm.asg_in_service_instances.treat_missing_data != "notBreaching"
+    error_message = "Missing ASG metrics must not read as OK - that is how this alarm sat silent with no data from M7 to 2026-10-03"
+  }
+}
+
+run "asg_in_service_alarm_threshold_tracks_a_larger_floor" {
+  command = plan
+
+  variables {
+    asg_min_size = 2
+  }
+
+  assert {
+    condition     = aws_cloudwatch_metric_alarm.asg_in_service_instances.threshold == 2
+    error_message = "The in-service alarm threshold must follow asg_min_size"
   }
 }

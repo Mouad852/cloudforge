@@ -313,6 +313,7 @@ module "observability" {
   alb_arn_suffix             = module.edge.alb_arn_suffix
   target_group_arn_suffix    = module.edge.blue_target_group_arn_suffix
   asg_name                   = module.compute.asg_name
+  asg_min_size               = var.asg_min_size
   app_log_group_name         = module.compute.app_log_group_name
   db_instance_id             = module.database.instance_id
   redis_replication_group_id = module.cache.replication_group_id
