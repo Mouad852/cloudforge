@@ -152,12 +152,13 @@ diagram. Supporting diagrams: `network-vpc.md`, `traffic-flow.md`, `data-flow.md
 
 | Item | State |
 |---|---|
-| **prod** | **Running continuously** since 2026-09-16 (serving since 2026-09-25): 1 app instance in `eu-west-3b`, NAT instance and RDS in `eu-west-3a`. Not ephemeral today, contrary to ADR-012. See decision D1. |
+| **prod** | **Running continuously** since 2026-09-16 (serving since 2026-09-25): 1 app instance in `eu-west-3b`, NAT instance and RDS in `eu-west-3a`. Not ephemeral today, contrary to ADR-012. **Decision D1 (approved 2026-10-03):** prod becomes ephemeral, up only for implementation, experiments, validation or demos. |
 | **dev** | Ephemeral. Destroyed nightly at 23:00 UTC with a final snapshot; rebuilt by any `terraform.yml` run, restoring the newest snapshot (ADR-026). Every prod apply rebuilds dev, because `apply (prod)` needs `apply (dev)`. |
 | Credit | **56.39 USD** left (`aws freetier get-account-plan-state`, 2026-10-03). Free plan expires **2027-03-02**. |
+| Account-plan risk | Per AWS's documentation, the Free plan **expires** six months after the account opened **or when the credits are used up**, whichever comes first. On expiry the account is closed and **access** to its resources and data is lost, but nothing is deleted at that point: AWS **retains the content for 90 days**, and upgrading to the Paid plan within those 90 days restores access. Only if no upgrade happens in that period does AWS **permanently delete** the account and its content. ([AWS Billing: Choosing a plan](https://docs.aws.amazon.com/awsaccountbilling/latest/aboutv2/free-tier-plans.html), [AWS Free Tier terms](https://aws.amazon.com/free/terms/), read 2026-10-03.) So running out of credit stops the project's AWS side until an upgrade; it is not just a bill. Even unspent, the plan expires on 2027-03-02, before graduation, so live demos after that date need an upgrade. The repository is unaffected. |
 | Burn rate | **3.4–3.9 USD/day** before credits with prod up (Cost Explorer, 2026-09-28 to 10-02). About **16 days of runway** if nothing changes. |
 | CI history | 106 workflow runs, 3 PRs (#1, #2, #5), 244 commits over 22 active days (2026-09-05 to 10-03). |
-| Open issues | #7 drift (prod), 2026-09-29: a new Amazon Linux AMI shows up as a launch-template change. AMI catalogue noise, not a console change. To be triaged (C2). |
+| Open issues | None. #7 (drift, prod) closed 2026-10-03: everything it reported (a newer Amazon Linux AMI on the launch template, a deploy description, the new `canary-failed` alarm) was code in `main` waiting for an apply, applied at 12:38 UTC. A read-only prod plan afterwards returned "No changes" (`-detailed-exitcode` 0). |
 | Broken today | `prod-cloudforge-asg-in-service-instances` has never received data: ASG group metrics are not enabled (`EnabledMetrics` empty), so with `treat_missing_data = notBreaching` it stays OK forever. Its threshold (< 2) also assumes a 2-instance fleet. See C1. |
 | Unavailable on this plan | GuardDuty, Security Hub, Inspector, **AWS FIS** (`SubscriptionRequiredException`, FIS checked 2026-10-03), CloudFront (denied by AWS Support), RDS backup retention above 1 day. |
 | Error budget | Availability budget for the 30 days after 2026-09-30 was spent about eleven times over by the 40-hour outage (§8). The window clears around 2026-10-31. |
@@ -244,7 +245,9 @@ fail-open, JSON logs, arm64 static binary (~14 MB). *Evidence:* `docs/screenshot
 
 **M3 — Compute** · done 2026-09-09
 Launch template (AL2023 ARM, IMDSv2), ASG, lifecycle hook, hand-written IAM. Manual termination
-→ replacement healthy in 3m 8s (dev, no load). ADR-003, 004, 007.
+→ replacement healthy in 3m 8s. *Historical:* measured on dev with **two** instances and no
+load, so it is not comparable to today's one-instance prod; E1 re-measures the current case.
+ADR-003, 004, 007.
 *Finding:* the 8-vCPU account quota blocked an instance refresh; raised to 16 on appeal.
 *Evidence:* `docs/security/README.md` (IAM walkthrough), `docs/screenshots/03-compute/`.
 
@@ -296,8 +299,9 @@ PR #1), Access Analyzer (0 active findings), CloudTrail in code, EBS default enc
 measured before credits, request/dependency timeouts, the rotation fix, `canary-failed` alarm,
 security-flow diagram. GuardDuty: unavailable, documented as accepted.
 *Evidence:* `docs/security/`, `docs/incidents/`, `docs/screenshots/10-security/`.
-*Open:* Well-Architected milestone 2 ("M10 remediated 2026-10-03") — confirm it exists in the
-tool (C3).
+Well-Architected milestones verified in the tool on 2026-10-03
+(`aws wellarchitected list-milestones`): 1 "M10 baseline 2026-09-27" and 2 "M10 remediated
+2026-10-03" (recorded 12:51 UTC).
 
 ---
 
@@ -358,28 +362,29 @@ Never hide or soften them.
 
 **Order:** close-out → M11 → M12 (the only AWS-heavy work) → M13 → M14 → M15 (local, ~0 USD).
 **Sessions on AWS:** two prod sessions in total (Session A for M11/M12, Session B for the
-rebuild and the video), with prod torn down between them, if D1 is accepted.
+rebuild and the video), with prod torn down between them (D1).
 **Rough effort:** close-out + M11 ≈ 1 week, M12 ≈ 1 week, M13 ≈ 3 days, M14 ≈ 1–2 weeks,
 M15 ≈ 1 week. Everything AWS-dependent should finish in October 2026.
 
-### Decisions needed before or during M11
+### Decisions
 
-| # | Decision | Recommendation |
+| # | Decision | Outcome |
 |---|---|---|
-| D1 | **Prod lifecycle.** Prod costs ~3.5 USD/day; the credit lasts ~16 days at that rate. On the Free plan, AWS closes the account when the credit runs out or the plan expires, unless it is upgraded (check the exact terms in the Billing console). | Run Session A, then `prod-down` (final snapshot). Bring prod up only for Session B and any re-runs. This also produces the full-rebuild and restore measurements. |
-| D2 | **Load-test source vs the WAF limit.** One IP is throttled at 2,000 requests per 5 minutes (~6.7 req/s), so k6 from one machine cannot find the saturation point. | Expose `waf_rate_limit` at the environment root, raise it for one measured window in one commit, and revert it in the next. Record the change in the experiment report. The fallback is a WAF-bounded test, stated honestly as such. |
-| D3 | **Blue/green.** Built, never run. Weights are only settable by a local `terraform apply -var`. | NICE: run one cutover and rollback under load in Session A if time allows. Otherwise the README says "implemented, not exercised". Never claim two measured strategies without the run. |
-| D4 | **Backup tooling** (ADR-018). | RDS-native: automated backups with point-in-time restore, final snapshot on destroy, manual snapshots before risky changes. AWS Backup adds a vault, a plan and a role for one database without changing the RPO or RTO. Revisit only if a quick test shows AWS Backup keeps recovery points past the Free plan's 1-day cap. |
-| D5 | **Where the interview story bank lives.** | Outside the public repo (private notes). The public repo carries the incident reports and the README "What broke" section. |
+| D1 | **Prod lifecycle.** Prod costs ~3.5 USD/day; the credit lasts ~16 days at that rate, and an exhausted credit expires the Free plan and cuts off access until an upgrade (§5, account-plan risk). | **Approved 2026-10-03.** Prod is ephemeral from now on: up only for implementation, experiments, validation or demos, down otherwise. Prod is up today, so the cheapest order is C1 → 11.1 → Session A → `prod-down`. If Session A cannot start within about three days, take prod down first with a manual final snapshot and bring it back for the session. |
+| D2 | **Load-test source vs the WAF limit.** One IP is throttled at 2,000 requests per 5 minutes (~6.7 req/s), so k6 from one machine cannot find the saturation point. | **Approved 2026-10-03, implemented.** A WAF IP set, `<env>-cloudforge-rate-limit-exempt`, **empty at rest**, referenced only as a `NOT` in the `RateLimitPerIP` scope-down: a listed source skips the rate limit and nothing else. Every managed rule still inspects it, and every other client keeps the 2,000 limit. `scripts/waf-benchmark-window.sh` opens and closes a window: it detects or takes the generator's public IPv4, adds exactly that /32 and verifies it, runs the benchmark under a hard time cap, then empties the list in an exit trap (success, failure, Ctrl-C, SIGTERM, SIGHUP) and verifies it empty. It also proves the web ACL unchanged (same lock token) and logs UTC timestamps with the address only as a hash. Backstops for a generator that dies outright: `--cleanup-only`, and the daily drift check failing with a count-only issue if the list is not empty. Trade-off: the list's contents live outside Terraform so the address never reaches the public repo or state. Procedure: `docs/runbooks/load-test-window.md`. Rejected: raising `waf_rate_limit` (weakens it for every client, and two prod applies that rebuild dev); benchmarking from inside the VPC (skips the real path, needs a security-group hole); several source IPs (each still capped). |
+| D3 | **Blue/green.** Built, never run. Weights are only settable by a local `terraform apply -var`. | NICE (E7) if Session A has time; otherwise the README says "implemented, not exercised". Never claim two measured strategies without the run. |
+| D4 | **Backup tooling** (ADR-018). | **Decided 2026-10-03:** AWS Backup stays NICE TO HAVE, adopted only if it demonstrates something RDS snapshots, point-in-time restore and a tested drill cannot (for example, keeping recovery points past the Free plan's 1-day cap). The mandatory outcome is proof: data restored, integrity verified, recovery time and RPO measured, whichever service does it. |
+| D5 | **Where the interview story bank lives.** | **Approved 2026-10-03:** private, outside the public repository. The repo carries the technical evidence (incident reports, ADRs, experiments, measurements, diagrams, runbooks), never rehearsed STAR or interview answers. |
 
-### Close-out (before Session A) — MUST unless marked
+### Close-out (before Session A)
 
-| # | Task | Why |
+| # | Task | Status |
 |---|---|---|
-| C1 | **Fix the ASG in-service alarm:** enable ASG group metrics (`enabled_metrics`) and derive the threshold from `asg_min_size` instead of the hardcoded 2. Batch with D2 and the stale `db_multi_az` descriptions ("on in prod") so one CI apply cycle covers all three. | E1 depends on detection working. It is also a finding to record (§8, #9). |
-| C2 | Triage issue #7: label it AMI-catalogue noise and close it, and decide whether the drift check should tolerate launch-template AMI updates. | An open drift issue on a public repo reads as neglect. |
-| C3 | Confirm Well-Architected milestone 2 exists in the tool. | `well-architected.md` says it does. |
-| C4 | NICE: CloudTrail bucket in us-east-1 (D4 in the data classification) — leave as an accepted gap unless trivial. | Low value. |
+| C1 | **Make the ASG in-service alarm real.** Enable group metrics on the blue ASG (`enabled_metrics`, 1-minute granularity). The threshold follows `asg_min_size`, passed from the environment, instead of a hardcoded 2. `treat_missing_data = "missing"`, so absent data shows as INSUFFICIENT_DATA, never OK. `Minimum` statistic. Module tests for each. Same batch: the D2 IP set, the window script and runbook, the drift-check backstop, and the stale `db_multi_az` descriptions. Prod plan: 1 to add, 3 in-place, 0 to destroy, no instance replaced. | MUST — implemented in the working tree 2026-10-03, not yet applied |
+| C1-verify | After the apply: (1) `describe-auto-scaling-groups` lists the enabled metrics; (2) `get-metric-statistics` returns `GroupInServiceInstances` datapoints; (3) the alarm's state reason quotes a datapoint, not "no datapoints"; (4) a **real transition**, not `set-alarm-state`: terminate dev's instance with `terminate-instance-in-auto-scaling-group --no-should-decrement-desired-capacity`, see the alarm reach ALARM and the email arrive, then OK and the recovery email once the replacement is in service. Record the timings as **a new, separate measurement** (dev, one instance, no load, C1 verification). They neither replace nor compare with the historical 3m 8s (dev, two instances, M3), and they are a rehearsal for E1, not E1. | MUST |
+| C2 | Issue #7 | **Done 2026-10-03:** verified applied and closed, see §5. Open question kept: every new Amazon Linux AMI will appear as drift until the next apply. Accept that as an expected signal ("an AMI update is waiting"), or exclude it. Decide when it next fires. |
+| C3 | Well-Architected milestone 2 | **Done:** verified in the tool, see §7, M10. |
+| C4 | CloudTrail bucket in us-east-1 | NICE — accepted gap unless trivial. |
 
 ### M11 — Restore and disaster recovery
 
@@ -398,7 +403,7 @@ measured numbers. Not an enterprise DR platform.
 | 11.8 `restore-test.yml` (manual dispatch) | NICE | Only if the script is stable and the OIDC role change is small. Not scheduled, because prod will usually be down. |
 | ~~SSM Automation runbooks~~ | REMOVE | A tested script is just as executable and needs no extra IAM or YAML. |
 | ~~Weekly scheduled restore test~~ | REMOVE | It needs prod up every week, which conflicts with D1. |
-| ~~AWS Backup vault and plan~~ | REMOVE (unless D4 changes) | No change to the RPO or RTO. |
+| 11.9 AWS Backup vault and plan | NICE (D4) | Only if it shows something the RDS-native drill cannot, e.g. recovery points beyond the 1-day cap. |
 
 **DoD:** a point-in-time restore and a full prod rebuild from snapshot have each been timed and
 integrity-checked, and `strategy.md` shows RPO/RTO actual vs target.
@@ -419,9 +424,9 @@ Free plan.
 
 | # | Experiment | Method | Key measurement | Tag |
 |---|---|---|---|---|
-| E1 | **Instance failure, 1 instance vs 2** | `aws autoscaling terminate-instance-in-auto-scaling-group` under steady k6. Run once at prod's real size (1), then with desired = 2 temporarily (set back in the same session, or the drift check reports it). | Outage window and failed requests with 1 instance; 0 expected with 2. This turns the single-instance compromise into a priced, measured trade-off. | MUST |
+| E1 | **Instance failure, 1 instance vs 2** | `aws autoscaling terminate-instance-in-auto-scaling-group` under steady k6. Run once at prod's real size (1), then with desired = 2 temporarily (set back in the same session, or the drift check reports it). | Outage window and failed requests with 1 instance; 0 expected with 2. This turns the single-instance compromise into a priced, measured trade-off. The historical 3m 8s (dev, two instances, no load, M3) is context only, never the comparison baseline. | MUST |
 | E2 | **Redis failure** | `aws elasticache reboot-cache-cluster` under k6 on `/api/products` (not `/readyz`, which reports Redis down by design). | 5xx count (hypothesis: 0) and the p95 change while the app falls back to Postgres. If it 500s, fix and re-run. | MUST |
-| E3 | **Load and scaling** | k6 ramp under the D2 setup until p95 > 500 ms or errors appear. | Max sustainable req/s on 1 × t4g.small, where it saturates (app CPU, DB, connection pool), whether CPU target tracking at 60% triggers 1 → 2 in time. Feeds M13. | MUST |
+| E3 | **Load and scaling** | A dedicated window through `scripts/waf-benchmark-window.sh` (D2), from whichever generator gives the most trustworthy measurement: near `eu-west-3`, with CPU and bandwidth to outrun one `t4g.small` (CloudShell in eu-west-3 is one option, not a requirement). Benchmark: `scripts/capacity-test.js`, a `ramping-arrival-rate` scenario that stops at the first sustained breach of p95 < 500 ms or 1% errors. | Max sustainable req/s on 1 × t4g.small at the p95 target, where it saturates (app CPU, DB, connection pool), whether CPU target tracking at 60% triggers 1 → 2 in time. If the generator saturates first (CPU ≥ 85% or k6 `dropped_iterations`), the run measured the generator: report it as such, never as CloudForge's capacity. The report includes the window's timeline (exemption opened, closed, verified empty). Feeds M13. | MUST |
 | E4 | **Rolling deploy under load** | `scripts/deploy.sh prod` with k6 running. | Failed requests (target 0), rollout duration per phase. Also write up the existing 198 → 0 evidence from 2026-09-25 as the "before". | MUST |
 | E5 | **Database recovery** | The M11 point-in-time restore drill. | Restore duration, measured RPO, integrity. No extra spend. | MUST (shared with M11) |
 | E6 | **Full rebuild from zero** | `prod-down` → `prod-up` (M11). Cross-check against the dev nightly round trips in CI history. | Wall-clock from an empty account state to a serving, data-restored environment. | MUST (shared with M11) |
@@ -523,6 +528,14 @@ the measured number from E1. Optionally close on the 2-instance run showing 0 fa
 | 15.4 Cold read | MUST | Someone who hasn't seen the project reads the README for 90 s and says what it proves. |
 | 15.5 Public write-up | NICE | If not done in M14. |
 
+### All remaining work at a glance
+
+| Tier | Tasks |
+|---|---|
+| **MUST** | C1 + C1-verify · 11.1 `prod-down`/`prod-up` · 11.2 RPO/RTO targets · 11.3 point-in-time restore drill · 11.4 `strategy.md` · 11.5 ADR-018 · 11.6 restore-capacity finding · ADR-019 (scripted fault injection) · E1 instance failure (1 vs 2) · E2 Redis failure · E3 load and scaling (D2 window) · E4 rolling deploy under load · E5 restore (= 11.3) · E6 full rebuild (= 11.1) · 13.1 measurements table · 13.2 capacity planning · 13.3 error-budget report · 13.4 cost analysis · 13.5 RPO/RTO actual vs target · 14.1 README · 14.2 canonical diagram · 14.3 incident case study · 14.4 demo video · 14.5 LICENSE, topics, badges, pin · 14.6 index READMEs · 15.1 story bank · 15.2 questions cold · 15.3 CV bullets · 15.4 cold read |
+| **NICE TO HAVE** | C4 CloudTrail bucket region · 11.7 cross-region snapshot copy + restore · 11.8 `restore-test.yml` (manual) · 11.9 AWS Backup (D4) · E7 blue/green cutover (D3) · 13.6 `deployment-strategies.md` · 14.7 / 15.5 public write-up · optional PNG export of the diagram · WAF SQLi screenshot |
+| **REMOVE** | AZ impairment · RDS Multi-AZ failover · FIS CPU stress · region loss as a game day · the 10-experiment quota · SSM Automation runbooks · weekly scheduled restore test · rebuilding Multi-AZ, NAT Gateway or CloudFront to satisfy the old plan · `docs/architecture/overview.md` · GitHub Pages, Projects board, release tags, pinned issues · backfilling screenshots for 04, 07, 08 · five-screenshot-per-experiment quota · the "bottleneck moved app → DB → cache" narrative unless the data shows it · six-bullet CV section |
+
 ---
 
 ## 10. Measurements table
@@ -537,7 +550,7 @@ plausible invented one. "Pending" means planned in §9.
 | Rolling deploy, 1-instance group, terminate-before-launch | 198 ALB errors | dev, 2026-09-25 | ADR-026 |
 | Rolling deploy after launch-before-terminate | 0 ALB errors | dev, 2026-09-25 | ADR-026 |
 | Deploy k6 gate during the incident fix | 0 failed / 2,215 requests | prod, 2026-10-01 | incident report |
-| Instance replacement after manual termination | 3m 8s to InService/Healthy (22:47:19 → 22:50:27 UTC) | dev, 2 instances, no load, 2026-09-09 | §7, M3 |
+| Instance replacement after manual termination (**historical**) | 3m 8s to InService/Healthy (22:47:19 → 22:50:27 UTC) | dev, **two** instances, no load, 2026-09-09. Not comparable to one-instance prod; E1 re-measures the current case | §7, M3 |
 | Rotation outage | ~40 h; 0 alarms fired; found by accident | prod, 2026-09-30 | incident report |
 | Rotation fix verification | 230/230 requests OK over 19 h on the same instance | prod, 2026-10-02 | incident report |
 | WAF SQLi test | 200 before the SQLi rule group, 403 after | dev + prod, 2026-09-25 | `traffic-flow.md` |
@@ -606,13 +619,14 @@ Remaining:
    apply rebuilds dev: approve late, destroy early.
 3. **No always-on resource added for portfolio value.** Before any new resource: *is the
    evidence worth the credit?*
-4. **Temporary resources die in the same session** (restored DB instances, scaled-up ASGs,
-   raised WAF limits). Run `scripts/aws-inventory.sh` after each session.
+4. **Temporary resources and exceptions end in the same session** (restored DB instances,
+   scaled-up ASGs, the WAF rate-limit exemption list emptied). Run `scripts/aws-inventory.sh`
+   after each session.
 5. **Prefer local work and existing evidence.** M13–M15 need no AWS at all.
 6. **Watch the budget, not the CloudWatch billing alarms.** The alarms read 0 on credits; the
    pre-credit budget (`terraform/bootstrap/budget.tf`) is the real signal.
 
-**Indicative budget, if D1 is accepted:**
+**Indicative budget, with D1 in effect:**
 
 | Item | Estimate |
 |---|---|
@@ -622,7 +636,7 @@ Remaining:
 | Resting cost between sessions (state, snapshots, logs) | measured in M13; expected well under 1 USD/week |
 | Margin kept untouched | ≥ 30 USD |
 
-If prod stays up instead, the credit runs out around 2026-10-19 regardless of the work done.
+If prod stays up instead, the credit runs out around 2026-10-19 regardless of the work done, which expires the Free plan and cuts off access to every resource until an upgrade (§5).
 
 ---
 
@@ -638,13 +652,15 @@ Operational and process gaps; the architectural compromises are in §6.2.
 | Rolling deploys have no automatic rollback (one fixed S3 key) | Accepted, manual rollback documented (OPS 6) |
 | Blue/green never exercised end to end | NICE in M12 (E7); otherwise stated in the README |
 | `ALBRequestCountPerTarget` scaling policy never added (ADR-007) | Accepted; E3 tests whether CPU alone is enough |
-| Load tests capped by the WAF per-IP limit | D2 |
+| Load tests capped by the WAF per-IP limit | D2: empty-at-rest exemption list, used only in the E3 window |
+| The exemption list's contents are outside Terraform, so the plan does not watch them | Accepted (D2). The window script empties and verifies it on every catchable exit; the daily drift check fails with a count-only issue if it is ever left non-empty; CloudTrail records every change |
 | A bootstrap-only commit still asks for dev and prod approvals | Accepted (reject the approvals) |
 | Every CI apply after a deploy shows a no-op launch-template update | Accepted noise (ADR-026) |
-| Daily drift check reports new AMIs as drift (#7) | C2 |
+| Daily drift check reports each new Amazon Linux AMI as drift until the next apply | Open question in C2 (#7 itself verified and closed) |
 | CloudTrail bucket in us-east-1, not the EU | Accepted (C4) |
 | Postgres TLS not server-verified (`sslmode=require`, G3) | Candidate fix, not planned |
 | Dev and prod in one account; long-lived admin key | Accepted, plan limit (ADR-021) |
+| Credit fate on a Paid-plan upgrade is unclear: AWS's billing docs say remaining credits carry over to future bills; ADR-021 records the console's Organizations screen saying they would expire | Unresolved. Matters only if an upgrade is ever considered (for example, to keep live demos after 2027-03-02); check the console's upgrade screen first |
 | Terraform state holds the Redis AUTH token (G7) | Accepted |
 | Retried `POST` creates a duplicate (REL 4) | Accepted; design written in `well-architected.md` |
 
@@ -789,7 +805,7 @@ with its reason. That is a better story than a plan executed to the letter.
 | M9 "both environments apply from identical code" live proof | done | CI applies dev and prod from the same modules |
 | M10 GuardDuty | REMOVE | Unavailable; documented |
 | M10 Checkov custom policy, Access Analyzer, WA review | done | §7 |
-| M11 AWS Backup vault/plan | REMOVE (D4) | No RPO/RTO change |
+| M11 AWS Backup vault/plan | NICE (D4) | Only if it adds a capability the RDS-native drill lacks |
 | M11 SSM Automation | REMOVE | Script is equally executable |
 | M11 weekly `restore-test.yml` | REMOVE / NICE as manual | Conflicts with D1 |
 | M11 cross-region copy | NICE (11.7) | Cheap, data tier only |
