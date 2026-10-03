@@ -117,7 +117,7 @@ flowchart LR
 | IAM Access Analyzer (`cloudforge-account`) | Any resource shared outside the account; 0 active findings | T7 |
 | WAF metrics and sampled requests | Blocked requests per rule | T2, T4 |
 | CloudWatch alarms, and the `canary-failed` alarm on the API itself | Availability and load | T4 |
-| Billing alarms | Cost spikes ("denial of wallet", cryptomining on a stolen key) | T4, T13 |
+| The `cloudforge-monthly-credit` budget, measured before credits (the CloudWatch billing alarms read 0 on credits) | Cost spikes ("denial of wallet", cryptomining on a stolen key) | T4, T13 |
 | Checkov (with two custom policies), gitleaks, tflint in CI and pre-commit; daily drift check | Insecure or unexpected infrastructure changes | T12, T16 |
 
 **Missing:** threat detection. GuardDuty, Security Hub and Inspector are unavailable on the Free

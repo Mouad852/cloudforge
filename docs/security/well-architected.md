@@ -116,12 +116,22 @@ directly. All are fixed unless noted:
   `alias/aws/sns` key, which CloudWatch is not allowed to use, so from M7 until 2026-09-29 every
   alarm in dev and prod logged "Failed to execute action" instead of notifying. Every runbook in
   `docs/runbooks/` starts from an email that could never arrive. Only the account-wide `$15`
-  billing alarm worked, on an unencrypted topic created by hand in M0. The alert topics are now
+  billing alarm could deliver, on an unencrypted topic created by hand in M0, and it could never
+  fire (next item). The alert topics are now
   unencrypted (`encryption-inventory.md`, G12) and a module test keeps them that way.
   **Verified on 2026-09-30:** `prod-cloudforge-ec2-cpu`, forced into ALARM with
   `aws cloudwatch set-alarm-state`, logged "Successfully executed action" on
   `prod-cloudforge-alerts`; its previous attempt, on 2026-09-16, had logged "Failed to execute
   action".
+- **No cost alert could ever fire.** On the AWS Free plan credits pay every charge, so
+  `EstimatedCharges` read 0.0 every day (checked back to 2026-09-20) while September cost
+  113.26 USD before credits. The three CloudWatch billing alarms (account `$15`, dev and prod
+  `$20`) and the console budget, which included credits, all stayed at zero, and the threat
+  model and incident playbooks named them as the backstop for cost abuse. Found 2026-10-02 from
+  a "$.00" in an alarm email. Fixed: the budget is now in `terraform/bootstrap/budget.tf`,
+  measures cost before credits (60 USD a month, alerts at 50/80/95% of actual and 100% of
+  forecast), and showed 1.55 USD of real spend right after the change. The CloudWatch billing
+  alarms stay, but cannot fire while the account is on credits.
 - **The prod that CI deploys was not the prod in the plan.** Multi-AZ, deletion protection,
   7-day backups and 30-day logs were only in a gitignored local `terraform.tfvars`. See "Fix in
   M10" above; Multi-AZ stays off (REL 10) and 7-day backups are not allowed on the Free plan.

@@ -98,7 +98,8 @@ CloudTrail shows calls you did not make.
    new one (ADR-021's rotation).
 5. **Recover:** run `terraform plan` for `bootstrap`, dev and prod, and the drift check, to
    confirm nothing Terraform manages was changed.
-6. Watch the billing alarms for the next days. Cryptomining on stolen keys shows up there first.
+6. Watch the credit balance and the `cloudforge-monthly-credit` budget (cost before credits, `terraform/bootstrap/budget.tf`) for the next days. Cryptomining on stolen
+   keys shows up there first. The CloudWatch billing alarms will not: on credits they read 0.
 
 ### P2 — Access Analyzer reports external access
 
@@ -131,7 +132,7 @@ bill jumps from traffic.
    requests are being blocked instead, find which rule matched in the samples.
 4. **Recover:** the ASG scales out on CPU on its own; check `asg-in-service-instances`.
 5. There is no AWS Shield Advanced. A large distributed attack is beyond what this setup can
-   absorb; the billing alarms are the backstop.
+   absorb; the `cloudforge-monthly-credit` budget (cost before credits, `terraform/bootstrap/budget.tf`) is the backstop.
 
 ### P4 — An instance looks compromised
 
@@ -170,13 +171,13 @@ traffic behind it, or a CloudTrail call made with the instance role from outside
 
 ### P6 — An unexpected cost spike
 
-Signs: the `$15` account-wide or `$20` prod billing alarm, or the credit balance dropping
-faster than expected.
+Signs: an alert from the `cloudforge-monthly-credit` budget (cost before credits, `terraform/bootstrap/budget.tf`), or the credit balance dropping faster than expected
+(`aws freetier get-account-plan-state`). Not the CloudWatch billing alarms: while credits pay
+the bill, `EstimatedCharges` is 0 and they never fire (found 2026-10-02).
 
 1. **Triage:** Cost Explorer, grouped by Service and then by the `Project` and `Environment`
-   tags. Is the cost tagged (ours, grown) or untagged (created outside Terraform)? Grouping by
-   tag only works once those tags are activated as cost allocation tags in Billing, and only
-   for costs from after the activation.
+   tags. Is the cost tagged (ours, grown) or untagged (created outside Terraform)? The tags are
+   active as cost allocation tags since 2026-09-30, so grouping works for costs from then on.
 2. **Contain:** if dev is up and not needed, destroy it (`nightly-destroy` → Run workflow).
    Stop or delete any untagged resource you do not recognise, and check every Region.
 3. Untagged resources in unused Regions, especially GPU instances, mean a leaked credential:

@@ -4,6 +4,12 @@
 **Fires when:** `EstimatedCharges` exceeds the configured project budget (`$20`,
 `var.billing_budget_usd`). Checked every ~6 hours (the metric's own native reporting
 cadence — not configurable to a tighter period).
+> **This alarm cannot fire while the account is on AWS Free plan credits** (found
+> 2026-10-02). Credits pay every charge, so `EstimatedCharges` stays at 0. Until the account
+> pays real money, the working cost alert is the `cloudforge-monthly-credit` budget, which
+> measures cost before credits (`terraform/bootstrap/budget.tf`); this runbook's diagnosis and
+> mitigation steps apply to its alerts too.
+
 **Severity:** Page now — this account has no 12-month free tier (PLAN.md §11.4); every
 running hour draws down a finite, real budget.
 
