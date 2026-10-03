@@ -116,7 +116,7 @@ variable "green_weight" {
 }
 
 variable "db_multi_az" {
-  description = "RDS Multi-AZ deployment - on in prod, off in dev"
+  description = "RDS Multi-AZ deployment - off in both environments: accepted on cost (docs/security/well-architected.md, REL 10)"
   type        = bool
   default     = false
 }

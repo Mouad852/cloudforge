@@ -75,7 +75,7 @@ variable "master_username" {
 }
 
 variable "multi_az" {
-  description = "Multi-AZ deployment - on in prod, off in dev"
+  description = "Multi-AZ deployment - off in both CloudForge environments today (cost, docs/security/well-architected.md REL 10); set true for a standby in a second AZ"
   type        = bool
   default     = false
 }
