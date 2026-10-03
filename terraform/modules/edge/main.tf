@@ -222,6 +222,29 @@ resource "aws_s3_bucket_lifecycle_configuration" "alb_logs" {
   }
 }
 
+# Load-test exemption from RateLimitPerIP only (PLAN.md §9, D2). Empty at
+# rest, so the web ACL behaves exactly as before. For a dedicated load-test
+# window, the load generator's single /32 is added with `aws wafv2
+# update-ip-set` and removed as soon as the run ends. Every other rule
+# (managed groups, SQLi, body size) still inspects that traffic, and the rate
+# rule keys on the TCP source address, which a client cannot set with a header.
+#
+# The addresses are deliberately outside Terraform: putting an operator's IP
+# in a public repository is worse than the drift check not watching this one
+# list. Both UpdateIPSet calls land in CloudTrail, and the experiment report
+# records the list as empty again at the end of the window.
+resource "aws_wafv2_ip_set" "rate_limit_exempt" {
+  name               = "${var.environment}-cloudforge-rate-limit-exempt"
+  description        = "Load-test source exempt from the per-IP rate limit only. Empty except during a dedicated test window."
+  scope              = "REGIONAL"
+  ip_address_version = "IPV4"
+  addresses          = []
+
+  lifecycle {
+    ignore_changes = [addresses]
+  }
+}
+
 # ADR-025: REGIONAL scope, associated directly with the ALB below - there is
 # no CloudFront distribution to attach a CLOUDFRONT-scope web ACL to any
 # more. A REGIONAL web ACL lives in the same region as the resource it
@@ -371,6 +394,18 @@ resource "aws_wafv2_web_acl" "alb" {
       rate_based_statement {
         limit              = var.waf_rate_limit
         aggregate_key_type = "IP"
+
+        # Everyone is rate limited except an address in the exemption list,
+        # which is empty outside a load-test window (aws_wafv2_ip_set above).
+        scope_down_statement {
+          not_statement {
+            statement {
+              ip_set_reference_statement {
+                arn = aws_wafv2_ip_set.rate_limit_exempt.arn
+              }
+            }
+          }
+        }
       }
     }
 

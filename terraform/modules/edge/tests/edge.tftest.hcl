@@ -326,3 +326,22 @@ run "waf_rate_limit_above_the_waf_maximum_rejected" {
 
   expect_failures = [var.waf_rate_limit]
 }
+
+run "rate_limit_exemption_is_empty_at_rest_and_scoped_to_the_rate_rule" {
+  command = plan
+
+  assert {
+    condition     = length(coalesce(aws_wafv2_ip_set.rate_limit_exempt.addresses, [])) == 0
+    error_message = "The rate-limit exemption list must be empty in code - addresses are added only for a load-test window, by CLI, and removed after (PLAN.md §9, D2)"
+  }
+
+  assert {
+    condition     = one([for r in aws_wafv2_web_acl.alb.rule : r if r.name == "RateLimitPerIP"]).statement[0].rate_based_statement[0].limit == var.waf_rate_limit
+    error_message = "The per-IP rate limit itself must stay at waf_rate_limit for everyone outside the exemption list"
+  }
+
+  assert {
+    condition     = length(one([for r in aws_wafv2_web_acl.alb.rule : r if r.name == "RateLimitPerIP"]).statement[0].rate_based_statement[0].scope_down_statement[0].not_statement) == 1
+    error_message = "The exemption must be a NOT around the IP set inside the rate rule's scope-down, so it can only ever exempt from rate limiting, never from the managed rules"
+  }
+}
