@@ -28,3 +28,8 @@ Blue/green is built on infrastructure that already existed for other reasons, no
 - A blue/green deploy costs more than rolling for its duration — the green fleet runs at full size alongside blue until the cutover completes — but that window is short and `desired_capacity = 0` at rest keeps steady-state cost identical to rolling-only.
 - Every weight shift is a Terraform apply, so it shows up in `terraform plan`/`apply` history and CI logs the same way any other infrastructure change does, instead of being an untracked ALB console click.
 - `drift.yml` can treat "listener rule doesn't match state" as a real signal rather than a routine false positive, because the only sanctioned way to change it is through the same tool the drift check itself runs.
+
+> **Status update (2026-10-03):**
+>
+> - Since ADR-025 (2026-09-22) there is no `from_cloudfront` listener rule: the weighted `forward` is now the ALB listener's **default action** (`aws_lb_listener.http` in `modules/edge`). The CloudFront and ADR-014 reasoning in the alternatives above is history.
+> - **Blue/green has never been run end to end.** The green ASG, the second target group and the weights exist and are covered by module tests, but no cutover has been done and nothing has been measured. CI passes only `environment` and `alert_email`, so a weight shift needs a local `terraform apply -var`. `PLAN.md` §9 makes one measured cutover and rollback optional (M12, E7, decision D3). Until it runs, the project claims one measured deploy strategy (rolling) and one implemented one.

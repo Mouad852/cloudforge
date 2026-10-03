@@ -33,3 +33,9 @@ it at — not faked with a placeholder ARN today.
 - M4 must add the second policy, not replace this one — the plan is both policies running
   together (a target tracking group can hold more than one metric), matching `PLAN.md`'s
   original "target tracking on `ALBRequestCountPerTarget` **+ CPU** policy" wording.
+
+> **Status update (2026-10-03):** the `ALBRequestCountPerTarget` policy was never added. M4
+> through M10 shipped with the CPU policy alone (`aws_autoscaling_policy.cpu_target_tracking`,
+> target 60%), and prod runs one instance with a maximum of two. Whether CPU alone reacts in
+> time is now a question for the M12 load test (E3) to answer with data; add the second policy
+> only if E3 shows CPU under-reacting (`PLAN.md` §9, §13).
