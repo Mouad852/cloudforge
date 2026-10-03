@@ -51,6 +51,17 @@ variable "allocated_storage" {
   }
 }
 
+variable "storage_type" {
+  description = "RDS storage type. gp2 is what RDS picks when none is set, so it keeps existing instances unchanged; gp3 costs the same at 20 GB and is a separate capacity pool"
+  type        = string
+  default     = "gp2"
+
+  validation {
+    condition     = contains(["gp2", "gp3"], var.storage_type)
+    error_message = "storage_type must be gp2 or gp3."
+  }
+}
+
 variable "db_name" {
   description = "Initial database name"
   type        = string

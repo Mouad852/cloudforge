@@ -52,6 +52,7 @@ No modules.
 | <a name="input_multi_az"></a> [multi\_az](#input\_multi\_az) | Multi-AZ deployment - on in prod, off in dev | `bool` | `false` | no |
 | <a name="input_private_zone_id"></a> [private\_zone\_id](#input\_private\_zone\_id) | Route 53 private hosted zone ID (ADR-013) - the DNS record lives here | `string` | n/a | yes |
 | <a name="input_snapshot_identifier"></a> [snapshot\_identifier](#input\_snapshot\_identifier) | Restore from this snapshot instead of creating an empty DB - set to a final snapshot ID to bring data back after a dev-down (ADR-015) | `string` | `null` | no |
+| <a name="input_storage_type"></a> [storage\_type](#input\_storage\_type) | RDS storage type. gp2 is what RDS picks when none is set, so it keeps existing instances unchanged; gp3 costs the same at 20 GB and is a separate capacity pool | `string` | `"gp2"` | no |
 | <a name="input_vpc_id"></a> [vpc\_id](#input\_vpc\_id) | VPC ID the RDS security group lives in | `string` | n/a | yes |
 
 ## Outputs

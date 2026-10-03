@@ -275,6 +275,11 @@ module "database" {
   instance_class          = var.db_instance_class
   allocated_storage       = var.db_allocated_storage
   log_retention_days      = var.log_retention_days
+
+  # gp3 from 2026-10-03: three restores in a row failed with
+  # InsufficientDBInstanceCapacity for db.t4g.micro on gp2 in both data-subnet
+  # AZs. A gp2 snapshot restores onto gp3 at the same price. Prod stays gp2.
+  storage_type = "gp3"
 }
 
 # Until M10, RDS created the Postgres log group itself, with no retention, and

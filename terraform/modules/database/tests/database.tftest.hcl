@@ -91,6 +91,28 @@ run "prod_profile_flows_through" {
   }
 }
 
+run "storage_type_defaults_to_gp2_and_flows_through" {
+  command = plan
+
+  variables {
+    storage_type = "gp3"
+  }
+
+  assert {
+    condition     = aws_db_instance.main.storage_type == "gp3"
+    error_message = "storage_type must reach the instance"
+  }
+}
+
+run "storage_type_default_keeps_existing_instances_on_gp2" {
+  command = plan
+
+  assert {
+    condition     = aws_db_instance.main.storage_type == "gp2"
+    error_message = "The default must stay gp2, what RDS chose for every existing instance, or prod would be modified"
+  }
+}
+
 run "dns_record_points_at_the_instance" {
   command = plan
 
