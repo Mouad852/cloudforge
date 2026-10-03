@@ -2,7 +2,8 @@
 
 **Workload:** `CloudForge` in the AWS Well-Architected Tool (eu-west-3), AWS Well-Architected
 Framework lens. **Reviewed:** 2026-09-27 (M10). **Baseline saved as milestone 1**, "M10 baseline
-2026-09-27", so later remediation shows up as a difference against it.
+2026-09-27", so later remediation shows up as a difference against it. **Re-answered after the
+M10 fixes** on 2026-10-03 and saved as milestone 2, "M10 remediated 2026-10-03".
 
 ![Well-Architected summary](../screenshots/10-security/well-architected-summary.png)
 
@@ -17,6 +18,38 @@ Framework lens. **Reviewed:** 2026-09-27 (M10). **Baseline saved as milestone 1*
 | Cost Optimization | 11 | 5 | 4 | 2 |
 | Sustainability | 6 | 0 | 6 | 0 |
 | **Total** | **57** | **22** | **23** | **12** |
+
+## After M10
+
+**Remediated 6 of 22 high risks.** These are the six M10 set out to fix (five planned fixes plus
+REL 5 after evaluation), and all six moved. The other 16 are accepted or planned for a later
+milestone, as listed below. The answers were updated only after each fix was deployed to prod
+and checked there.
+
+| Pillar | High risk | Medium risk | No risk |
+|---|---|---|---|
+| Operational Excellence | 4 → 2 | 4 → 5 | 3 → 4 |
+| Security | 8 → 6 | 0 → 2 | 3 → 3 |
+| Reliability | 5 → 3 | 4 → 6 | 4 → 4 |
+| Performance Efficiency | 0 → 0 | 5 → 5 | 0 → 0 |
+| Cost Optimization | 5 → 5 | 4 → 4 | 2 → 2 |
+| Sustainability | 0 → 0 | 6 → 6 | 0 → 0 |
+| **Total** | **22 → 16** | **23 → 28** | **12 → 13** |
+
+| Question | Now | What moved it | Why it is not lower |
+|---|---|---|---|
+| OPS 10 - workload and operations events | High → none | Incident process with severities tied to the SLOs, used for the 2026-09-30 outage | - |
+| OPS 7 - ready to support | High → medium | Readiness checklist, investigation playbooks | Basic support plan |
+| SEC 7 - data classification | High → medium | `data-classification.md`, a retention for every store | Classification is manual (no Macie) |
+| SEC 10 - incidents | High → medium | `incident-response.md`: plan, access prepared in advance, playbooks | Playbooks not yet exercised (M12), forensics stops at EBS snapshots |
+| REL 5 - mitigate interaction failures | High → medium | Request deadline, server, Redis and Postgres timeouts, bounded retries | No emergency levers beyond the WAF |
+| REL 8 - implement change | High → medium | `docs/runbooks/deployment.md` | No resiliency testing in the pipeline (M12) |
+
+Twelve other answers changed only their notes, so their risk stayed the same. They now describe
+the M10 work: EBS encryption by default, CloudTrail retention, cost allocation tags, the budget
+measured before credits, the canary-failed alarm and the first post-incident review. They also
+correct four notes that had gone stale: how the app reaches prod, how a deploy rolls back, the
+Free plan's 1-day backup cap, and govulncheck.
 
 ## How the questions were answered
 
@@ -70,7 +103,7 @@ M11's job.
 
 | Question | Missing | Why it is accepted |
 |---|---|---|
-| SEC 1 - How do you securely operate your workload? | Separate accounts for dev and prod; security services | Separate accounts need AWS Organizations, which moves the account off the Free plan and forfeits its remaining credit (ADR-021). GuardDuty, Security Hub and Inspector are unavailable on the Free plan (checked 2026-09-27: `SubscriptionRequiredException`). Partly compensated: IAM Access Analyzer (0 active findings), Checkov with two custom policies in CI, daily drift detection, CloudTrail in all Regions, billing alarms. |
+| SEC 1 - How do you securely operate your workload? | Separate accounts for dev and prod; security services | Separate accounts need AWS Organizations, which moves the account off the Free plan and forfeits its remaining credit (ADR-021). GuardDuty, Security Hub and Inspector are unavailable on the Free plan (checked 2026-09-27: `SubscriptionRequiredException`). Partly compensated: IAM Access Analyzer (0 active findings), Checkov with two custom policies in CI, daily drift detection, CloudTrail in all Regions, a budget measured before credits. |
 | SEC 2 - How do you manage identities? | Strong sign-in and temporary credentials for the one human identity; central identity provider; rotation | ADR-021: IAM Identity Center requires an Organization (same forfeit). The admin user `cloudforge-admin` has a long-lived access key and no console password; root has MFA and no access keys. Every machine identity (CI, EC2) already uses temporary credentials. |
 | SEC 3 - How do you manage permissions? | Least privilege for the CI apply role and the admin user; guardrails; lifecycle; emergency access | The apply role is `PowerUserAccess` plus a hand-scoped IAM policy; writing a least-privilege policy for everything Terraform manages is a large effort for a one-person project. No SCPs without an Organization. Root with MFA is the break-glass identity. |
 | SEC 6 - How do you protect your compute resources? | Vulnerability scanning, hardened images, signed artifacts | Inspector needs the paid plan. Instances are immutable and launch from the newest Amazon Linux 2023 AMI; dev on every rebuild after the nightly destroy, prod on every deploy. No SSH (SSM only), IMDSv2 required. |
