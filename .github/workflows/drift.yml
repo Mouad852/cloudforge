@@ -122,3 +122,50 @@ jobs:
       - name: fail if plan errored
         if: steps.plan.outputs.exitcode == '1'
         run: exit 1
+
+      # Backstop for the load-test window (PLAN.md §9, D2;
+      # docs/runbooks/load-test-window.md). The WAF rate-limit exemption list
+      # is managed outside Terraform on purpose, so the plan above never sees
+      # its contents, and it must be empty outside a window.
+      # scripts/waf-benchmark-window.sh empties it on every exit it can catch;
+      # this catches the one it cannot (the load generator itself dying). It
+      # reports a count only: issues are public, and the list would hold an
+      # operator's address.
+      - name: check the WAF rate-limit exemption list is empty
+        if: always() && steps.up.outputs.up == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          NAME="${{ matrix.environment }}-cloudforge-rate-limit-exempt"
+          ID=$(aws wafv2 list-ip-sets --scope REGIONAL \
+            --query "IPSets[?Name=='${NAME}'].Id | [0]" --output text)
+          if [ -z "$ID" ] || [ "$ID" = "None" ]; then
+            echo "${NAME} does not exist in ${{ matrix.environment }} - nothing to check"
+            exit 0
+          fi
+          COUNT=$(aws wafv2 get-ip-set --scope REGIONAL --name "$NAME" --id "$ID" \
+            --query "length(IPSet.Addresses)" --output text)
+          echo "${NAME} holds ${COUNT} address(es)"
+          if [ "$COUNT" = "0" ]; then
+            exit 0
+          fi
+
+          TITLE="WAF rate-limit exemption left active (${{ matrix.environment }})"
+          {
+            echo "The WAF rate-limit exemption list \`${NAME}\` holds **${COUNT}** address(es) outside a load-test window."
+            echo "Those sources bypass the per-IP rate limit (every other WAF rule still applies to them)."
+            echo
+            echo "Empty it now: \`scripts/waf-benchmark-window.sh ${{ matrix.environment }} --cleanup-only\`"
+            echo "(docs/runbooks/load-test-window.md). The address is deliberately not shown here."
+            echo
+            echo "Workflow run: $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
+          } > exemption-issue.md
+
+          EXISTING_ISSUE=$(gh issue list --repo "$GITHUB_REPOSITORY" --state open \
+            --search "\"$TITLE\" in:title" --json number --jq '.[0].number // empty')
+          if [ -n "$EXISTING_ISSUE" ]; then
+            gh issue comment "$EXISTING_ISSUE" --repo "$GITHUB_REPOSITORY" --body-file exemption-issue.md
+          else
+            gh issue create --repo "$GITHUB_REPOSITORY" --title "$TITLE" --body-file exemption-issue.md
+          fi
+          exit 1
