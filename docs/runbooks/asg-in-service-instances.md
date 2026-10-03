@@ -1,17 +1,25 @@
 # Runbook — ASG in-service instance count
 
-**Alarm:** `dev-cloudforge-asg-in-service-instances`
+**Alarm:** `<env>-cloudforge-asg-in-service-instances`
 **Fires when:** `GroupInServiceInstances` < 2, for 2 consecutive minutes.
-**Severity:** Page now — the fleet has lost its redundancy floor (`asg_min_size = 2`).
+**Severity:** Page now — with the current sizing, fewer in-service instances than the
+configured size means the app tier is down, not just less redundant.
+
+> **Known defect (found 2026-10-03, fix planned in `PLAN.md` §9, C1).** This alarm has never
+> received a datapoint: the ASG does not enable group metrics (`enabled_metrics` is unset), so
+> `GroupInServiceInstances` is never published, and with `treat_missing_data = notBreaching`
+> the alarm stays OK no matter what happens. Its threshold (< 2) also predates the current
+> sizing. Until C1 lands, use `alb-unhealthy-hosts` and `canary-failed` to detect a lost
+> instance.
 
 ---
 
 ## What it means
 
-The ASG is configured with `min_size = 2`, `max_size = 6`, `desired_capacity = 2` — two
-instances is the deliberate floor for redundancy across the two app subnets
-(`app-a`/`app-b`). Fewer than 2 in-service means either an instance failed outright, or
-enough instances are unhealthy/terminating that the ASG hasn't replaced them yet.
+Both environments run `min_size = 1`, `desired_capacity = 1`, `max_size = 2` (the committed
+defaults CI applies; one instance is a cost decision, `PLAN.md` §6.2). With one instance there
+is no redundancy floor: an instance that fails outright or is being replaced means no healthy
+target until the replacement passes its health check, and the ALB returns 503s meanwhile.
 
 ## Likely causes
 
@@ -39,20 +47,21 @@ enough instances are unhealthy/terminating that the ASG hasn't replaced them yet
 - If new instances are stuck in a launch/fail loop: this points at the launch template
   itself (bad AMI, broken user-data, missing IAM permissions) — pause and fix the launch
   template rather than letting the ASG keep burning through failed launches.
-- If an entire AZ is impaired: this is the scenario M12's "AZ impairment" game day is
-  built to test — the other AZ's instance(s) should already be absorbing traffic; confirm
-  via the target group's Targets tab.
+- If an entire AZ is impaired: the ASG launches the replacement in the other app subnet.
+  Note that the NAT instance and the database both sit in `eu-west-3a`, so losing that AZ
+  takes egress and the database with it (`PLAN.md` §6.2).
 
 ## Escalate
 
-If the ASG can't get back to 2 in-service instances after a few replacement cycles (not
+If the ASG can't get back to its desired capacity after a few replacement cycles (not
 just one grace period), stop and investigate the launch template directly — repeatedly
 letting the ASG retry a broken template just burns EC2 launches without fixing anything.
 
 ## Verify resolved
 
-`GroupInServiceInstances` back to 2 (or higher, if scaled out); target group's Targets
-tab shows the instances as `healthy`; recovery email arrives automatically.
+`GroupInServiceInstances` back to the desired capacity (once group metrics are enabled);
+target group's Targets tab shows the instances as `healthy`; recovery email arrives
+automatically.
 
 ## Related
 

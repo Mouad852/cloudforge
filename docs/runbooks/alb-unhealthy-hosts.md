@@ -1,6 +1,6 @@
 # Runbook — ALB unhealthy hosts
 
-**Alarm:** `dev-cloudforge-alb-unhealthy-hosts`
+**Alarm:** `<env>-cloudforge-alb-unhealthy-hosts`
 **Fires when:** `UnHealthyHostCount` ≥ 1 for 2 consecutive minutes, on the blue target group.
 **Severity:** Page now — this is one leg of the `service-degraded` composite alarm.
 
@@ -8,17 +8,22 @@
 
 ## What it means
 
-The ALB's health checker (path-based, hits the app's `/readyz`) has marked at least one
-EC2 instance behind the blue target group as unable to serve traffic. The ALB stops
-routing to that instance immediately — this alarm is about *reduced redundancy*, not
-necessarily *downtime*, since the ASG's `min_size = 2` means at least one other instance
-should still be healthy.
+The ALB's health checker (path-based, hits the app's shallow `/healthz`, ADR-006) has marked
+at least one EC2 instance behind the blue target group as unable to serve traffic. The ALB
+stops routing to that instance immediately. Both environments run **one** instance
+(`min_size = 1`, `PLAN.md` §6.2), so an unhealthy host usually means no healthy target at all
+and the ALB answering 503: treat it as downtime, not reduced redundancy.
+
+`/healthz` never touches Postgres or Redis, so this alarm does **not** fire when a dependency
+is down. A broken database looks healthy here while every real request fails; that is exactly
+how the 2026-09-30 outage stayed invisible to the ALB
+(`docs/incidents/2026-09-30-db-password-rotation.md`). Watch `alb-5xx` and `canary-failed`
+for that case.
 
 ## Likely causes
 
-- The instance's `/readyz` endpoint is failing its own dependency checks (RDS or Redis
-  unreachable) — see `docs/troubleshooting` / M6's Redis TLS incident for the exact shape
-  of this failure.
+- The process is not answering at all: crashed, stuck at boot waiting for its binary
+  (ADR-026), or a failed migration that stops it from starting.
 - A fresh instance from a launch-template rollout or instance refresh hasn't finished
   its `health_check_grace_period` (300s) yet — check whether this coincides with a
   deploy before assuming an incident.
@@ -35,7 +40,8 @@ should still be healthy.
    around the time the alarm fired.
 3. Connect via **SSM Session Manager** (no bastion, no SSH key — ADR-005) and check the
    process is actually running: `systemctl status cloudstore-api` (or equivalent), then
-   `curl localhost:8080/readyz` locally to see the real error the ALB can't see.
+   `curl localhost:8080/healthz` (what the ALB checks) and `curl localhost:8080/readyz`
+   (dependencies) locally to see the real error the ALB can't see.
 
 ## Mitigate
 

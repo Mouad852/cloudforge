@@ -1,6 +1,6 @@
 # Runbook — ALB elevated 5xx rate
 
-**Alarm:** `dev-cloudforge-alb-5xx`
+**Alarm:** `<env>-cloudforge-alb-5xx`
 **Fires when:** more than 10 `HTTPCode_Target_5XX_Count` in a 5-minute window.
 **Severity:** Page now — this is one leg of the `service-degraded` composite alarm.
 
@@ -10,9 +10,13 @@
 
 Targets behind the ALB are returning HTTP 5xx to real clients. Unlike
 `alb-unhealthy-hosts`, this doesn't necessarily mean a host is down — a perfectly
-"healthy" instance (per its `/readyz` check) can still be returning 500s on specific
-request paths, since the health check only proves the shallow dependency checks pass,
-not that every endpoint works.
+"healthy" instance (per the ALB's shallow `/healthz` check, ADR-006, which never touches
+Postgres or Redis) can still be returning 500s on every database-backed path.
+
+**This alarm needs traffic to fire.** With no real users, the canary's one request per
+5 minutes never crosses 10 errors; that is why it stayed silent through the 40-hour outage
+on 2026-09-30 (`docs/incidents/2026-09-30-db-password-rotation.md`). `canary-failed` covers
+the low-traffic case.
 
 ## Likely causes
 
@@ -20,8 +24,10 @@ not that every endpoint works.
   `CloudForge/App` → `ExceptionCount` metric, sourced from the `status >= 500` log
   filter, to confirm this is app-side and not the ALB's own 5xx generation).
 - A downstream dependency (RDS, Redis) is reachable but erroring under load — the app
-  passes its shallow `/readyz` check yet fails specific queries.
+  still passes the shallow `/healthz` check yet fails specific queries.
 - A bad deploy — correlate the timestamp against the most recent instance refresh.
+- A rotated database password the app failed to pick up (fixed 2026-10-01, but the first
+  thing to rule out): the 5xx logs say `password authentication failed`.
 
 ## Diagnose
 

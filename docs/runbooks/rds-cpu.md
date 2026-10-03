@@ -40,7 +40,7 @@ through its CPU credit balance (t-class instances are credit-based, not flat-rat
   Redis instead of hitting RDS every time.
 - If it's proportional to a genuine traffic increase: this is a capacity conversation
   (bigger instance class), not an emergency action — `db.t4g.micro` has a low ceiling by
-  design (dev/portfolio budget, PLAN.md §4).
+  design (dev/portfolio budget, `PLAN.md` §12).
 - If CPU credits are exhausted: there's no quick fix except reduced load — this is the
   clearest signal the instance class needs revisiting.
 

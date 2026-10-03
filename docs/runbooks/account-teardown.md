@@ -171,6 +171,7 @@ Target: **$0.00/day**, with only the KMS 7-day tail outstanding.
 ## Why this matters beyond today
 
 This loop — provision, verify, destroy, verify the bill — is the operating discipline
-CloudForge is built on. The account is on the post-July-2025 model with **no 12-month
-free tier** (see PLAN.md §11.4), so every running hour draws down a finite $158.
-Getting fluent at teardown is what makes the ephemeral strategy in PLAN.md §2 work.
+CloudForge is built on. The account is on the AWS Free plan, with credits and **no 12-month
+free tier**, so every running hour draws down a finite balance (158 USD when this runbook was
+written on 2026-09-04; 56.39 USD on 2026-10-03, see `PLAN.md` §12). Getting fluent at
+teardown is what makes the ephemeral strategy (ADR-012) work.

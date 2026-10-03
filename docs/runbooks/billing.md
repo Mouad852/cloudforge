@@ -10,7 +10,7 @@ cadence — not configurable to a tighter period).
 > measures cost before credits (`terraform/bootstrap/budget.tf`); this runbook's diagnosis and
 > mitigation steps apply to its alerts too.
 
-**Severity:** Page now — this account has no 12-month free tier (PLAN.md §11.4); every
+**Severity:** Page now — this account has no 12-month free tier (`PLAN.md` §12); every
 running hour draws down a finite, real budget.
 
 ---
@@ -27,7 +27,7 @@ same figure.
 ## Likely causes
 
 - An environment was left running longer than intended (the whole point of the
-  ephemeral-environment strategy in PLAN.md §2 is that nothing should run 24/7).
+  ephemeral-environment strategy in ADR-012 is that nothing should run 24/7).
 - A resource wasn't fully torn down by `terraform destroy` and is quietly still billing
   — NAT Gateways, unattached EBS volumes, and idle Elastic IPs are the classic culprits
   (see `docs/runbooks/account-teardown.md` Phase 6 and 7).
