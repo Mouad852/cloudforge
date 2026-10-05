@@ -115,7 +115,7 @@ cleanup() {
   fi
   if [[ "${MARKER_WRITTEN}" == true ]]; then
     log "cleanup: removing source marker ${MARKER}"
-    if ! run_ssm_script "remove source marker" "$(psql_script "${SOURCE_ENDPOINT}" "DELETE FROM restore_drill_markers WHERE marker = '${MARKER}';")" >/dev/null; then
+    if ! run_ssm_script "remove source marker" "$(psql_script "${SOURCE_ENDPOINT}" "${SOURCE_SECRET}" "DELETE FROM restore_drill_markers WHERE marker = '${MARKER}';")" >/dev/null; then
       log "WARNING: could not remove source marker ${MARKER}; remove it manually after reviewing the SSM output"
     fi
   fi
@@ -193,13 +193,13 @@ run_ssm_script() {
 }
 
 psql_script() {
-  local endpoint="$1" sql="$2"
+  local endpoint="$1" secret_arn="$2" sql="$3"
   printf '%s' "$(cat <<EOF
 set -euo pipefail
 if ! command -v psql >/dev/null 2>&1; then
   dnf install -y postgresql15 || dnf install -y postgresql
 fi
-SECRET_JSON=\$(aws secretsmanager get-secret-value --region '${REGION}' --secret-id '${SOURCE_SECRET}' --query SecretString --output text)
+SECRET_JSON=\$(aws secretsmanager get-secret-value --region '${REGION}' --secret-id '${secret_arn}' --query SecretString --output text)
 DB_USER=\$(printf '%s' "\${SECRET_JSON}" | python3 -c 'import json,sys; print(json.load(sys.stdin)["username"])')
 DB_PASSWORD=\$(printf '%s' "\${SECRET_JSON}" | python3 -c 'import json,sys; print(json.load(sys.stdin)["password"])')
 export PGPASSWORD="\${DB_PASSWORD}"
@@ -212,7 +212,7 @@ EOF
 }
 
 MARKER_SQL="CREATE TABLE IF NOT EXISTS restore_drill_markers (marker text PRIMARY KEY, written_at timestamptz NOT NULL); INSERT INTO restore_drill_markers (marker, written_at) VALUES ('${MARKER}', clock_timestamp()); SELECT 'MARKER_TIMESTAMP=' || to_char(written_at AT TIME ZONE 'UTC', 'YYYY-MM-DD\"T\"HH24:MI:SS\"Z\"') FROM restore_drill_markers WHERE marker = '${MARKER}';"
-MARKER_OUTPUT=$(run_ssm_script "write marker" "$(psql_script "${SOURCE_ENDPOINT}" "${MARKER_SQL}")") || die "could not write the source marker through SSM"
+MARKER_OUTPUT=$(run_ssm_script "write marker" "$(psql_script "${SOURCE_ENDPOINT}" "${SOURCE_SECRET}" "${MARKER_SQL}")") || die "could not write the source marker through SSM"
 MARKER_WRITTEN=true
 MARKER_TIME=$(printf '%s\n' "${MARKER_OUTPUT}" | sed -n 's/^MARKER_TIMESTAMP=//p' | tail -1)
 require_value "marker timestamp" "${MARKER_TIME}"
@@ -294,11 +294,13 @@ done
 [[ "${TARGET_STATUS:-}" == "available" ]] || die "temporary DB did not become available within ${MAX_WAIT_SECONDS}s"
 TARGET_ENDPOINT=$(rds describe-db-instances --db-instance-identifier "${TARGET_DB}" --query 'DBInstances[0].Endpoint.Address' --output text)
 require_value "temporary database endpoint" "${TARGET_ENDPOINT}"
+TARGET_SECRET=$(rds describe-db-instances --db-instance-identifier "${TARGET_DB}" --query 'DBInstances[0].MasterUserSecret.SecretArn' --output text)
+require_value "temporary database master secret" "${TARGET_SECRET}"
 RESTORE_AVAILABLE_EPOCH=$(date -u +%s)
 log "temporary DB available after $((RESTORE_AVAILABLE_EPOCH - RESTORE_STARTED_EPOCH))s"
 
 VERIFY_SQL="SELECT 'MARKER_FOUND=' || count(*) FROM restore_drill_markers WHERE marker = '${MARKER}'; SELECT 'PRODUCT_ROW_COUNT=' || count(*) FROM products;"
-VERIFY_OUTPUT=$(run_ssm_script "verify restored marker" "$(psql_script "${TARGET_ENDPOINT}" "${VERIFY_SQL}")") || die "could not query the temporary database through SSM"
+VERIFY_OUTPUT=$(run_ssm_script "verify restored marker" "$(psql_script "${TARGET_ENDPOINT}" "${TARGET_SECRET}" "${VERIFY_SQL}")") || die "could not query the temporary database through SSM"
 printf '%s\n' "${VERIFY_OUTPUT}" | tee "${OUT_DIR}/verification.log"
 MARKER_FOUND=$(printf '%s\n' "${VERIFY_OUTPUT}" | sed -n 's/^MARKER_FOUND=//p' | tail -1)
 PRODUCT_ROW_COUNT=$(printf '%s\n' "${VERIFY_OUTPUT}" | sed -n 's/^PRODUCT_ROW_COUNT=//p' | tail -1)
