@@ -295,7 +295,7 @@ jobs:
           SNAP=$(aws rds describe-db-snapshots \
             --db-instance-identifier dev-cloudforge-db \
             --snapshot-type manual \
-            --query "reverse(sort_by(DBSnapshots[?Status=='available'],&SnapshotCreateTime))[0].DBSnapshotIdentifier" \
+            --query "reverse(sort_by(DBSnapshots[?Status=='available' && starts_with(DBSnapshotIdentifier, 'dev-cloudforge-db-final-')],&SnapshotCreateTime))[0].DBSnapshotIdentifier" \
             --output text)
           SNAP_ARGS=()
           if [ -n "$SNAP" ] && [ "$SNAP" != "None" ]; then
