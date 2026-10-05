@@ -465,9 +465,9 @@ timestamps) and the k6 summary as text. No five-screenshot quota.
 | Task | Tag | Notes |
 |---|---|---|
 | 13.1 Fill §10 from the reports only | MUST | Anything not measured comes out of the headline table, no "~" estimates in it. |
-| 13.2 `docs/resilience/capacity-planning.md` | MUST | From E3: req/s at the p95 target, the saturation point, the bottleneck, whether 60% CPU is the right target. One graph. If E3 was WAF-bounded, say so. |
+| 13.2 `docs/resilience/capacity-planning.md` | MUST | Template prepared. Fill it from E3 with req/s at the p95 target, the saturation point, the bottleneck, whether 60% CPU is the right target and one graph. If E3 was WAF-bounded, say so. |
 | 13.3 Error-budget report in `slo.md` | MUST | Canary `SuccessPercent` and ALB 5xx over the period, including the outage and the game days. |
-| 13.4 `docs/cost-analysis.md` | MUST | Pre-credit Cost Explorer data: September total, cost per prod-up day and hour, resting cost after `prod-down` (at least 3 days of data), cost by tag from 2026-09-30 (tags were inactive before). Optimisation deltas only where measured; list-price comparisons (NAT instance vs gateway) labelled as such. |
+| 13.4 `docs/cost-analysis.md` | MUST | Template prepared. Fill it with pre-credit Cost Explorer data: September total, cost per prod-up day and hour, resting cost after `prod-down` (at least 3 days of data), and cost by tag from 2026-09-30 (tags were inactive before). Optimisation deltas only where measured; list-price comparisons (NAT instance vs gateway) labelled as such. |
 | 13.5 RPO/RTO actual vs target | MUST | In `strategy.md` (M11). |
 | 13.6 `docs/infrastructure/deployment-strategies.md` | NICE | Short. Rolling measured (E4); blue/green measured (E7) or stated as not exercised. Can live inside the E4 report instead. |
 | ~~"Bottleneck moved app → DB → cache" narrative~~ | REMOVE | Only if the data shows it. |

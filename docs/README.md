@@ -17,10 +17,10 @@ and the [as-built architecture](diagrams/architecture-high-level.md).
 | [`runbooks/`](runbooks/) | One runbook per alarm, deployment and rollback, readiness checklist, account teardown | current |
 | [`experiments/`](experiments/) | One report per game day | reports prepared; live results pending (M12) |
 | [`disaster-recovery/`](disaster-recovery/) | DR strategy, RPO/RTO targets and tested results | strategy and drill implemented; live results pending (M11) |
-| [`resilience/`](resilience/) | Capacity planning from load tests | planned (M13) |
+| [`resilience/`](resilience/) | Capacity planning from load tests | template ready; measurements pending (M13) |
 | [`infrastructure/`](infrastructure/) | Deployment strategies compared | optional (M13) |
 | [`screenshots/`](screenshots/) | Selected evidence, by milestone | partial by design |
-| `cost-analysis.md` | Real Cost Explorer numbers | planned (M13) |
+| [`cost-analysis.md`](cost-analysis.md) | Real Cost Explorer numbers | template ready; measurements pending (M13) |
 
 **Convention:** nothing here is filled in ahead of the work. A folder marked "planned" means
 that phase hasn't happened yet.
