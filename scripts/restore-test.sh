@@ -274,6 +274,11 @@ for storage in "${STORAGE_TYPES[@]}"; do
       log "restore request accepted: storage=${storage}, az=${az}"
       break 2
     fi
+    if grep -q 'InstanceQuotaExceeded' "${ATTEMPT_ERR}"; then
+      log "RDS account quota blocked the temporary restore; free an instance slot (for example, make dev-down) and retry"
+      log "restore request failed: $(tr '\n' ' ' <"${ATTEMPT_ERR}")"
+      exit 1
+    fi
     if grep -q 'InsufficientDBInstanceCapacity' "${ATTEMPT_ERR}"; then
       log "capacity unavailable: storage=${storage}, az=${az}; trying documented fallback"
       continue
