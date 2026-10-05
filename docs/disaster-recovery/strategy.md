@@ -66,9 +66,10 @@ attempts to restore dev's `db.t4g.micro` on gp2 failed with
 same AWS capacity error for gp3. Therefore a snapshot being available does not prove that a
 restore can start immediately.
 
-`scripts/restore-test.sh` records every attempted storage type and Availability Zone in a
-timestamped timeline outside the repository. It tries the live configuration first, then tries the
-other gp storage type and the DB subnet group's other Availability Zone only after an explicit
+`scripts/restore-test.sh` records every attempted instance class, storage type and Availability
+Zone in a timestamped timeline outside the repository. It tries the live configuration first,
+then tries the other gp storage type and the DB subnet group's other Availability Zone, and
+finally the orderable `db.t3.micro` class, only after an explicit
 `InsufficientDBInstanceCapacity` error. The timeline includes failed capacity attempts, so a
 successful fallback is never presented as if the first configuration had capacity. No capacity
 result is claimed until the point-in-time drill succeeds. On 2026-10-05 the first prod drill

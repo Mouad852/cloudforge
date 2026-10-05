@@ -51,6 +51,7 @@ and is documented in the [recovery strategy](../disaster-recovery/strategy.md) a
 
 Capacity is part of the measured recovery result. Dev snapshot restores have failed for
 `db.t4g.micro` with both gp2 and gp3 because no suitable Availability Zone capacity was available.
-The restore script must record each storage-type and Availability-Zone attempt, use a documented
-fallback, and report failed capacity attempts rather than presenting a recovery time as universal.
+The restore script must record each instance-class, storage-type and Availability-Zone attempt,
+use documented fallbacks, and report failed capacity attempts rather than presenting a recovery
+time as universal.
 No RPO or RTO actual is claimed until the drill succeeds.

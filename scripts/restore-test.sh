@@ -19,7 +19,7 @@ Options:
 
 The drill writes a small marker row to the live database, then creates and
 deletes a temporary RDS instance. It does not change Terraform state or the
-source DB instance. The timeline records every storage-type/AZ capacity
+source DB instance. The timeline records every instance-class/storage-type/AZ capacity
 attempt; do not report an RTO until a run completes successfully.
 EOF
   exit 2
@@ -235,12 +235,17 @@ done
   die "LatestRestorableTime never reached marker ${MARKER_TIME}; no restore was started and no RPO is measured"
 log "LatestRestorableTime ${LATEST_RESTORABLE} includes the marker"
 
-# Try the live storage type/AZ first. A capacity error then tries the other
-# gp volume type and each AZ in the DB subnet group. The timeline makes every
-# fallback explicit; a successful fallback is not reported as if the first
-# configuration had capacity.
+# Try the live instance class and storage type/AZ first. Capacity errors then
+# try the other gp volume type, each AZ in the DB subnet group, and finally the
+# orderable db.t3.micro class. The timeline makes every fallback explicit; a
+# successful fallback is not reported as if the first configuration had
+# capacity.
 SUBNET_AZS=$(rds describe-db-subnet-groups --db-subnet-group-name "${SUBNET_GROUP}" \
   --query 'DBSubnetGroups[0].Subnets[].SubnetAvailabilityZone.Name' --output text)
+INSTANCE_CLASSES=()
+for instance_class in "${SOURCE_CLASS}" db.t3.micro; do
+  [[ " ${INSTANCE_CLASSES[*]} " == *" ${instance_class} "* ]] || INSTANCE_CLASSES+=("${instance_class}")
+done
 STORAGE_TYPES=()
 for storage in "${SOURCE_STORAGE}" gp3 gp2; do
   [[ " ${STORAGE_TYPES[*]} " == *" ${storage} "* ]] || STORAGE_TYPES+=("${storage}")
@@ -252,42 +257,44 @@ done
 
 RESTORE_STARTED_EPOCH=$(date -u +%s)
 RESTORE_ACCEPTED=false
-for storage in "${STORAGE_TYPES[@]}"; do
-  for az in "${AVAILABILITY_ZONES[@]}"; do
-    log "restore attempt: storage=${storage}, az=${az}"
-    ATTEMPT_ERR="${OUT_DIR}/restore-${storage}-${az}.err"
-    if rds restore-db-instance-to-point-in-time \
-      --source-db-instance-identifier "${SOURCE_DB}" \
-      --target-db-instance-identifier "${TARGET_DB}" \
-      --use-latest-restorable-time \
-      --db-instance-class "${SOURCE_CLASS}" \
-      --db-subnet-group-name "${SUBNET_GROUP}" \
-      --vpc-security-group-ids ${SECURITY_GROUPS} \
-      --db-parameter-group-name "${PARAMETER_GROUP}" \
-      --availability-zone "${az}" \
-      --storage-type "${storage}" \
-      --no-multi-az --no-publicly-accessible \
-      --tags "Key=Project,Value=cloudforge" "Key=Purpose,Value=restore-drill" \
-      >"${OUT_DIR}/restore-${storage}-${az}.json" 2>"${ATTEMPT_ERR}"; then
-      TARGET_CREATED=true
-      RESTORE_ACCEPTED=true
-      log "restore request accepted: storage=${storage}, az=${az}"
-      break 2
-    fi
-    if grep -q 'InstanceQuotaExceeded' "${ATTEMPT_ERR}"; then
-      log "RDS account quota blocked the temporary restore; free an instance slot (for example, make dev-down) and retry"
-      log "restore request failed: $(tr '\n' ' ' <"${ATTEMPT_ERR}")"
+for instance_class in "${INSTANCE_CLASSES[@]}"; do
+  for storage in "${STORAGE_TYPES[@]}"; do
+    for az in "${AVAILABILITY_ZONES[@]}"; do
+      log "restore attempt: class=${instance_class}, storage=${storage}, az=${az}"
+      ATTEMPT_ERR="${OUT_DIR}/restore-${instance_class}-${storage}-${az}.err"
+      if rds restore-db-instance-to-point-in-time \
+        --source-db-instance-identifier "${SOURCE_DB}" \
+        --target-db-instance-identifier "${TARGET_DB}" \
+        --use-latest-restorable-time \
+        --db-instance-class "${instance_class}" \
+        --db-subnet-group-name "${SUBNET_GROUP}" \
+        --vpc-security-group-ids ${SECURITY_GROUPS} \
+        --db-parameter-group-name "${PARAMETER_GROUP}" \
+        --availability-zone "${az}" \
+        --storage-type "${storage}" \
+        --no-multi-az --no-publicly-accessible \
+        --tags "Key=Project,Value=cloudforge" "Key=Purpose,Value=restore-drill" \
+        >"${OUT_DIR}/restore-${instance_class}-${storage}-${az}.json" 2>"${ATTEMPT_ERR}"; then
+        TARGET_CREATED=true
+        RESTORE_ACCEPTED=true
+        log "restore request accepted: class=${instance_class}, storage=${storage}, az=${az}"
+        break 3
+      fi
+      if grep -q 'InstanceQuotaExceeded' "${ATTEMPT_ERR}"; then
+        log "RDS account quota blocked the temporary restore; free an instance slot (for example, make dev-down) and retry"
+        log "restore request failed: $(tr '\n' ' ' <"${ATTEMPT_ERR}")"
+        exit 1
+      fi
+      if grep -q 'InsufficientDBInstanceCapacity' "${ATTEMPT_ERR}"; then
+        log "capacity unavailable: class=${instance_class}, storage=${storage}, az=${az}; trying documented fallback"
+        continue
+      fi
+      log "restore request failed for a non-capacity reason: $(tr '\n' ' ' <"${ATTEMPT_ERR}")"
       exit 1
-    fi
-    if grep -q 'InsufficientDBInstanceCapacity' "${ATTEMPT_ERR}"; then
-      log "capacity unavailable: storage=${storage}, az=${az}; trying documented fallback"
-      continue
-    fi
-    log "restore request failed for a non-capacity reason: $(tr '\n' ' ' <"${ATTEMPT_ERR}")"
-    exit 1
+    done
   done
 done
-[[ "${RESTORE_ACCEPTED}" == true ]] || die "all storage-type/AZ restore attempts lacked capacity; see ${OUT_DIR}"
+[[ "${RESTORE_ACCEPTED}" == true ]] || die "all instance-class/storage-type/AZ restore attempts lacked capacity; see ${OUT_DIR}"
 
 log "waiting for temporary DB ${TARGET_DB} to become available"
 deadline=$(deadline_epoch)
