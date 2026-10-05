@@ -18,16 +18,16 @@ store needs* and checks it gets that.
 
 | Data | Where | Level | Retention |
 |---|---|---|---|
-| Products: `id`, `name`, `price_cents`, `image_key`, `created_at` | RDS `products` table | Public | Until deleted; automated backups 1 day (the Free plan maximum), a final snapshot on every destroy |
-| Product images | S3 images bucket | Public | Until deleted; versioned |
+| Products: `id`, `name`, `price_cents`, `image_key`, `created_at` | RDS `products` table | Public | Until deleted; automated backups 1 day (the Free plan maximum), a final snapshot on every destroy. A planned prod teardown restores these rows but not their S3 image objects. |
+| Product images | S3 images bucket | Public | Versioned while prod is up; permanently deleted by the explicit `prod-down` lifecycle. |
 | Cached products | ElastiCache Redis | Public (a copy of the table) | 60-second TTL; no Redis backups |
-| App binary, canary output | S3 artifacts bucket | Internal | Superseded versions expire after 90 days; canary reports (`canary/`) expire after 31 days, the same as the canary's own run history (since 2026-09-30) |
+| App binary, canary output | S3 artifacts bucket | Internal | Superseded versions expire after 90 days; canary reports (`canary/`) after 31 days while prod is up. Both are deleted by `prod-down` and recreated from source on `prod-up`. |
 | App request logs: request ID, method, path, status, duration | CloudWatch Logs `/cloudforge/<env>/app` | Internal | 30 days in prod, 14 in dev |
 | Postgres logs | CloudWatch Logs `/aws/rds/instance/<env>-cloudforge-db/postgresql` | Internal | 30 days in prod, 14 in dev (since 2026-09-30, gap D3) |
 | Performance Insights | RDS | Internal | 7 days (the free tier) |
 | Synthetics canary run logs | CloudWatch Logs `/aws/lambda/cwsyn-<env>-api-avail-*` | Internal | 30 days in prod, set by hand; dev's are deleted after every nightly destroy (gap D3) |
 | Alarm notifications: alarm name, state, metric value | SNS topics (unencrypted on purpose, see below), then email | Internal | Deleted by SNS once delivered; then in the recipient's mailbox |
-| ALB access logs: client IP, user agent, request line | S3 ALB-logs bucket | **Confidential** | Expire after 90 days |
+| ALB access logs: client IP, user agent, request line | S3 ALB-logs bucket | **Confidential** | Expire after 90 days while prod is up; intentionally deleted on a planned `prod-down`. |
 | VPC flow logs: source and destination IPs, ports | CloudWatch Logs `/aws/vpc/<env>-cloudforge` | **Confidential** | 30 days in prod, 14 in dev |
 | WAF sampled requests: client IP, headers | WAF console | **Confidential** | Kept by AWS for 3 hours; no WAF logging is configured |
 | CloudTrail: API calls, caller identity, source IP | CloudTrail bucket (created in M0; policy and lifecycle in `terraform/bootstrap/account.tf`) | **Confidential** | Expire after 365 days (since 2026-09-30, gap D2) |
@@ -62,3 +62,4 @@ data in the system is visitor metadata collected by AWS services in front of the
 | D2 | The CloudTrail bucket, created by hand in M0, has no lifecycle rule, so personal data (operator identity, source IPs) is kept indefinitely. | **Fixed 2026-09-30.** Objects expire after 365 days (`terraform/bootstrap/account.tf`): long enough to investigate an incident noticed late, while CloudTrail's own event history already covers the last 90 days. |
 | D3 | Log groups that AWS services create by themselves have no retention: RDS's Postgres log export and the Synthetics canary's Lambda logs. They are not in Terraform, so dev's nightly destroy leaves them behind: on 2026-09-29 there were five orphaned dev canary log groups, one per rebuild. | **Fixed 2026-09-30.** The RDS group has a predictable name, so `modules/database` now creates it with the environment's log retention, and destroy deletes it; the environments adopt a group RDS already made instead of failing. The canary's group is named with an ID Synthetics generates, so Terraform cannot create it first: `nightly-destroy.yml` deletes dev's after every destroy (the first run removed six), and prod's 30-day retention was set by hand (not in Terraform, so drift detection cannot see it; it has to be set again if prod's canary is ever recreated). |
 | D4 | The CloudTrail bucket was created in us-east-1 in M0, the trail's home Region, so CloudTrail logs (Confidential) are stored outside the EU. Found on 2026-09-30 while fixing D2. | Candidate fix. A trail can deliver to a bucket in another Region: a new bucket in eu-west-3 with the same policy and lifecycle, and the trail's `s3_bucket_name` pointed at it. Logs already written stay in us-east-1 until they expire. |
+| D5 | A planned `prod-down` deletes the environment's S3 buckets. The final RDS snapshot preserves relational rows but not product-image objects; operational artifacts and ALB logs are also discarded before their normal retention ends. | Accepted for D1's credit-saving lifecycle. CloudForge has no customer data; the restore boundary and its consequence are explicit in `docs/disaster-recovery/strategy.md`, and a teardown requires `CONFIRM_PROD_DOWN=YES`. |

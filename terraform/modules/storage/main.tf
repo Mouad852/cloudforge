@@ -11,9 +11,10 @@ resource "random_id" "bucket_suffix" {
 
 resource "aws_s3_bucket" "artifacts" {
   bucket = "cloudforge-artifacts-${var.environment}-${random_id.bucket_suffix.hex}"
-  # dev is meant to be fully destroyable (ADR-012/ADR-015) - without this,
-  # a populated, versioned bucket blocks terraform destroy outright.
-  force_destroy = var.environment == "dev"
+
+  # prod-down is intentionally a full teardown. The app binary and canary
+  # output are reproducible; planned recovery is limited to the RDS snapshot.
+  force_destroy = true
 }
 
 resource "aws_s3_bucket_versioning" "artifacts" {
@@ -110,8 +111,11 @@ resource "aws_s3_bucket_policy" "artifacts" {
 }
 
 resource "aws_s3_bucket" "images" {
-  bucket        = "cloudforge-images-${var.environment}-${random_id.bucket_suffix.hex}"
-  force_destroy = var.environment == "dev"
+  bucket = "cloudforge-images-${var.environment}-${random_id.bucket_suffix.hex}"
+
+  # Product images are deliberately outside the RDS recovery boundary.
+  # See docs/disaster-recovery/strategy.md.
+  force_destroy = true
 }
 
 resource "aws_s3_bucket_versioning" "images" {

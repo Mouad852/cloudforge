@@ -82,6 +82,15 @@ run "waf_associated_directly_with_the_alb" {
   # by reading main.tf.
 }
 
+run "alb_logs_bucket_is_destroyable_for_the_ephemeral_lifecycle" {
+  command = plan
+
+  assert {
+    condition     = aws_s3_bucket.alb_logs.force_destroy
+    error_message = "prod-down must be able to remove the ALB logs bucket as part of the documented full teardown"
+  }
+}
+
 run "deregistration_delay_defaults_to_30_on_both_target_groups" {
   command = plan
 

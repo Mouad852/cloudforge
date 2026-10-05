@@ -70,6 +70,15 @@ run "images_bucket_naming_and_lockdown" {
   }
 }
 
+run "buckets_are_destroyable_for_the_ephemeral_lifecycle" {
+  command = plan
+
+  assert {
+    condition     = aws_s3_bucket.artifacts.force_destroy && aws_s3_bucket.images.force_destroy
+    error_message = "prod-down must be able to remove artifacts and images: the RDS snapshot recovery boundary is explicit in docs/disaster-recovery/strategy.md"
+  }
+}
+
 run "artifact_lifecycle_defaults_match_the_live_environments" {
   command = plan
 

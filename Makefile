@@ -35,10 +35,11 @@ dev-down:
 	cd $(DEV_TF_DIR) && terraform destroy
 
 # Turns off prod deletion protection immediately, then destroys the environment.
-# The RDS module always creates a final snapshot. The explicit confirmation
-# prevents a short target name from becoming an accidental production teardown.
+# This is a full teardown: the final RDS snapshot preserves relational data,
+# but the artifacts, images and ALB-log buckets are deleted permanently.
 prod-down:
 	@test "$(CONFIRM_PROD_DOWN)" = "YES" || { echo "Refusing prod teardown. Run: make CONFIRM_PROD_DOWN=YES prod-down" >&2; exit 1; }
+	@echo "WARNING: prod-down permanently deletes prod artifacts, canary output, product images and ALB access logs."
 	@echo "==> prod-down: disabling deletion protection at $$(date -u '+%Y-%m-%dT%H:%M:%SZ')"
 	cd $(PROD_TF_DIR) && terraform apply \
 		-var="db_deletion_protection=false" \
