@@ -8,5 +8,9 @@ Recovery points today are RDS automated backups with point-in-time restore (one 
 plan maximum), a final snapshot on every destroy, and manual snapshots. A final snapshot restores
 the PostgreSQL database, not the S3 buckets deliberately deleted by `prod-down`.
 
-The restore drill (E5) and full rebuild (E6) are reported in
+[`../../scripts/restore-test.sh`](../../scripts/restore-test.sh) is the manual point-in-time
+restore drill, invoked as `make restore-test RESTORE_ENV=prod`. It writes a marker, restores a
+temporary database, checks the marker and product row count through SSM, records capacity
+fallbacks, and deletes the temporary instance. The restore drill (E5) and full rebuild (E6) are
+reported in
 [`../experiments/`](../experiments/) and summarised in the strategy.

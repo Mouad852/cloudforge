@@ -1,4 +1,4 @@
-.PHONY: dev-up dev-down prod-up prod-down
+.PHONY: dev-up dev-down prod-up prod-down restore-test
 
 AWS_REGION ?= eu-west-3
 
@@ -6,6 +6,7 @@ DEV_TF_DIR := terraform/environments/dev
 DEV_DB_INSTANCE := dev-cloudforge-db
 PROD_TF_DIR := terraform/environments/prod
 PROD_DB_INSTANCE := prod-cloudforge-db
+RESTORE_ENV ?= prod
 
 # Applies the full dev environment. If a manual snapshot exists from a
 # previous dev-down (the database module always takes a final snapshot on
@@ -72,3 +73,9 @@ prod-up:
 	@echo "==> prod-up: ensuring the rebuild has an artifact at $$(date -u '+%Y-%m-%dT%H:%M:%SZ')"
 	AWS_DEFAULT_REGION=$(AWS_REGION) bash scripts/ensure-artifact.sh prod
 	@echo "==> prod-up: complete at $$(date -u '+%Y-%m-%dT%H:%M:%SZ')"
+
+# Manual, destructive-cost DR evidence only: asks for confirmation before it
+# writes a marker and creates a temporary RDS instance, then always removes it.
+# Example: make restore-test RESTORE_ENV=prod
+restore-test:
+	AWS_REGION=$(AWS_REGION) bash scripts/restore-test.sh $(RESTORE_ENV)

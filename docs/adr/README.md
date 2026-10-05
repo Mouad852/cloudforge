@@ -24,7 +24,7 @@ superseding ADR rather than being rewritten.
 | [015](015-snapshot-lifecycle.md) | Snapshot on down, restore on up | accepted |
 | [016](016-terraform-native-tests.md) | Terraform native tests for every module | accepted |
 | [017](017-bluegreen-second-strategy.md) | Blue/green as a second deploy strategy | built, not yet exercised (status note) |
-| 018 | Backup approach | reserved for M11 |
+| [018](018-rds-native-recovery-over-aws-backup.md) | RDS-native recovery over AWS Backup | accepted |
 | 019 | Fault-injection approach (AWS FIS is unavailable on this account's plan) | reserved for M12 |
 | [020](020-slos-before-gamedays.md) | SLOs defined before game days | accepted |
 | [021](021-long-lived-key-over-identity-center.md) | Long-lived admin key over IAM Identity Center | accepted |

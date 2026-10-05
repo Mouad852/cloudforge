@@ -188,7 +188,7 @@ diagram. Supporting diagrams: `network-vpc.md`, `traffic-flow.md`, `data-flow.md
 | 015 | Snapshot on down, restore on up | accepted (dev) |
 | 016 | Terraform native tests for every module | accepted |
 | 017 | Blue/green as a second deploy strategy | **built, never exercised end to end** |
-| 018 | Backup approach | **reserved for M11** |
+| 018 | RDS-native recovery over AWS Backup | accepted |
 | 019 | Fault-injection approach | **reserved for M12** (FIS is unavailable on this plan) |
 | 020 | SLOs before game days | accepted |
 | 021 | Long-lived admin key over IAM Identity Center | accepted |
@@ -395,10 +395,10 @@ measured numbers. Not an enterprise DR platform.
 |---|---|---|
 | 11.1 `prod-down` / `prod-up` | MUST — implemented, untested | Guarded Makefile targets turn off deletion protection, destroy (the final RDS snapshot is automatic), then restore the newest final snapshot and run `ensure-artifact.sh`. They print UTC phase boundaries. A planned teardown also deletes the environment's S3 buckets; it restores PostgreSQL rows, not product images, artifacts or operational logs. This is the executable recovery workflow, credit saver (D1) and full-rebuild experiment (E6). |
 | 11.2 Recovery objectives | MUST — done 2026-10-05 | `docs/disaster-recovery/strategy.md` sets targets before any drill: unplanned database-loss RPO ≤ 15 min; planned-teardown RDS RPO = 0; point-in-time database RTO ≤ 60 min; full environment RTO ≤ 45 min. Planned-teardown S3 data has no recovery target by decision. Actuals remain pending. |
-| 11.3 Point-in-time restore drill | MUST | `scripts/restore-test.sh`: write a marker row, restore prod's DB to the latest restorable time into a temporary instance, check integrity over SSM (row count + marker), record each duration, delete the instance. The marker's timestamp against `LatestRestorableTime` gives a measured RPO. Run it at least twice on different days. ~0.05 USD per run. |
-| 11.4 DR strategy document | MUST | `strategy.md`: backup/restore vs pilot light vs warm standby vs active-active (cost, RPO, RTO); why backup/restore; what is lost (cache, in-flight requests) and why that is acceptable; the Free plan's 1-day cap; actual vs target, including misses. One Mermaid recovery flow in the same file, no separate diagram. |
-| 11.5 ADR-018 | MUST | Record D4. |
-| 11.6 Restore capacity finding | MUST | Already happened: three gp2 restores of dev failed with `InsufficientDBInstanceCapacity` (2026-10-03); dev moved to gp3. Write it into `strategy.md` as a real DR risk, with the mitigation (a fallback storage type or AZ in the restore script). |
+| 11.3 Point-in-time restore drill | MUST — implemented, untested | `scripts/restore-test.sh prod` writes a marker row, waits for `LatestRestorableTime` to include it, restores a temporary instance, checks the marker and product row count over SSM, records timing and deletes the instance. Run it at least twice on different days; actuals remain pending. |
+| 11.4 DR strategy document | MUST — done 2026-10-05 | [`docs/disaster-recovery/strategy.md`](docs/disaster-recovery/strategy.md) records backup/restore versus pilot light, warm standby and active-active; the targets, planned-teardown data boundary, Free-plan limit, capacity risk, and a Mermaid recovery flow. It distinguishes targets from pending actuals. |
+| 11.5 ADR-018 | MUST — done 2026-10-05 | [`docs/adr/018-rds-native-recovery-over-aws-backup.md`](docs/adr/018-rds-native-recovery-over-aws-backup.md) records D4: RDS-native backups, final snapshots and a tested drill are mandatory; AWS Backup remains NICE until it adds a distinct capability. |
+| 11.6 Restore capacity finding | MUST — implemented, untested | Three gp2 restores of dev failed with `InsufficientDBInstanceCapacity` (2026-10-03); a later gp3 dev rebuild also failed. `strategy.md` records this real risk, and `restore-test.sh` tries the source configuration first, then explicit gp2/gp3 and subnet-AZ fallbacks while preserving every attempted result. |
 | 11.7 Cross-region snapshot copy + one restore | NICE | `copy-db-snapshot` to a second region and one restore there: measured data-tier survival of a region loss for cents. State plainly that only the data tier is covered; the stack's region is hardcoded in the providers. |
 | 11.8 `restore-test.yml` (manual dispatch) | NICE | Only if the script is stable and the OIDC role change is small. Not scheduled, because prod will usually be down. |
 | ~~SSM Automation runbooks~~ | REMOVE | A tested script is just as executable and needs no extra IAM or YAML. |
