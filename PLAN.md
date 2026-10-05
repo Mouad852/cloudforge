@@ -402,7 +402,9 @@ measured numbers. Not an enterprise DR platform.
 > **11.3/11.6 evidence update (2026-10-05):** the first prod point-in-time drill wrote and
 > cleaned up its marker and reached RDS, but the temporary restore was rejected with
 > `InstanceQuotaExceeded` because the Free plan had no spare DB-instance slot. No RTO,
-> row-count or integrity result is claimed; retry after a slot is available.
+> row-count or integrity result is claimed. After dev was torn down, the retry reached all
+> four gp2/gp3 and eu-west-3a/eu-west-3b combinations, but every request returned
+> `InsufficientDBInstanceCapacity`; no temporary instance or restore result exists yet.
 
 | 11.7 Cross-region snapshot copy + one restore | NICE | `copy-db-snapshot` to a second region and one restore there: measured data-tier survival of a region loss for cents. State plainly that only the data tier is covered; the stack's region is hardcoded in the providers. |
 | 11.8 `restore-test.yml` (manual dispatch) | NICE | Only if the script is stable and the OIDC role change is small. Not scheduled, because prod will usually be down. |

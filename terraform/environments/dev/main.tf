@@ -140,9 +140,9 @@ variable "db_apply_immediately" {
 }
 
 variable "db_instance_class" {
-  description = "RDS instance class - sized per environment through tfvars"
+  description = "RDS instance class - dev uses db.t3.micro because db.t4g.micro restore capacity is unavailable in eu-west-3"
   type        = string
-  default     = "db.t4g.micro"
+  default     = "db.t3.micro"
 }
 
 variable "db_allocated_storage" {

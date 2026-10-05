@@ -77,12 +77,16 @@ had no additional DB-instance slot for the temporary target. The source marker w
 the cleanup path, and no restore duration or integrity result is claimed. A retry requires a
 free RDS instance slot (for example, `make dev-down` before retrying the prod drill, followed
 by `make dev-up` to restore dev from its final snapshot) or an account-plan change.
+After dev was torn down and the drill was retried on 2026-10-05, RDS accepted the account
+slot but reported `InsufficientDBInstanceCapacity` for gp2 and gp3 in both `eu-west-3a` and
+`eu-west-3b`. The marker was cleaned up; no temporary instance, restore duration or integrity
+result exists from that attempt either.
 
 ## What is measured next
 
-1. After a free RDS instance slot is available, run `scripts/restore-test.sh prod` twice on
-   different days: marker timestamp, latest restorable time, restore duration, row count and
-   marker integrity.
+1. After a free RDS instance slot and a capacity window are available, run
+   `scripts/restore-test.sh prod` twice on different days: marker timestamp, latest restorable
+   time, restore duration, row count and marker integrity.
 2. Run one complete `prod-down` / `prod-up` cycle, recording the UTC boundary timestamps printed
    by the Make targets and the time to a healthy application.
 3. Compare actual values with the targets above, including misses, in this document and the
