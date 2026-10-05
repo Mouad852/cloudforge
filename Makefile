@@ -18,7 +18,7 @@ dev-up:
 		--region $(AWS_REGION) \
 		--db-instance-identifier $(DEV_DB_INSTANCE) \
 		--snapshot-type manual \
-		--query "reverse(sort_by(DBSnapshots[?Status=='available'],&SnapshotCreateTime))[0].DBSnapshotIdentifier" \
+		--query "reverse(sort_by(DBSnapshots[?Status=='available' && starts_with(DBSnapshotIdentifier, '$(DEV_DB_INSTANCE)-final-')],&SnapshotCreateTime))[0].DBSnapshotIdentifier" \
 		--output text 2>/dev/null); \
 	if [ -n "$$SNAP" ] && [ "$$SNAP" != "None" ]; then \
 		echo "Restoring $(DEV_DB_INSTANCE) from snapshot: $$SNAP"; \
