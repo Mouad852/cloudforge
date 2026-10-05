@@ -9,13 +9,14 @@ set -euo pipefail
 # refresh and k6 gate.
 
 ENVIRONMENT="${1:-dev}"
+AWS_REGION="${AWS_REGION:-eu-west-3}"
 TF_DIR="terraform/environments/${ENVIRONMENT}"
 APP_DIR="app"
 
 ARTIFACTS_BUCKET=$(terraform -chdir="${TF_DIR}" output -raw artifacts_bucket_name)
 ARTIFACT_KEY=$(terraform -chdir="${TF_DIR}" output -raw artifact_key)
 
-if HEAD_ERR=$(aws s3api head-object --bucket "${ARTIFACTS_BUCKET}" --key "${ARTIFACT_KEY}" 2>&1 >/dev/null); then
+if HEAD_ERR=$(aws s3api head-object --region "${AWS_REGION}" --bucket "${ARTIFACTS_BUCKET}" --key "${ARTIFACT_KEY}" 2>&1 >/dev/null); then
   echo "==> s3://${ARTIFACTS_BUCKET}/${ARTIFACT_KEY} already exists - leaving the deployed version alone"
   exit 0
 fi
@@ -29,4 +30,4 @@ fi
 
 echo "==> No artifact in s3://${ARTIFACTS_BUCKET} yet - building and uploading"
 make -C "${APP_DIR}" build
-aws s3 cp "${APP_DIR}/bin/cloudstore-api" "s3://${ARTIFACTS_BUCKET}/${ARTIFACT_KEY}"
+aws s3 cp --region "${AWS_REGION}" "${APP_DIR}/bin/cloudstore-api" "s3://${ARTIFACTS_BUCKET}/${ARTIFACT_KEY}"
