@@ -479,12 +479,12 @@ timestamps) and the k6 summary as text. No five-screenshot quota.
 
 | Task | Tag | Notes |
 |---|---|---|
-| 14.1 Root `README.md` | MUST | Structure below. Not a tutorial; no install steps above the fold. |
-| 14.2 One canonical as-built diagram | MUST | `docs/diagrams/architecture-high-level.md` (Mermaid, already as-built). Optionally export one clean PNG for the README. No CloudFront, no Multi-AZ, nothing unbuilt. |
-| 14.3 Incident case study surfaced | MUST | Short chain in the README: symptom → detection gap → root cause → fix → validation → observability change → lesson. Link the full report. |
+| 14.1 Root `README.md` | MUST — done 2026-10-05 | The root README gives the project purpose, evidence-backed results, operating model, trade-offs and documentation map without tutorial steps above the fold. |
+| 14.2 One canonical as-built diagram | MUST — done 2026-10-05 | `docs/diagrams/architecture-high-level.md` remains canonical and is summarised in the root README. It contains no CloudFront, Multi-AZ RDS or unbuilt components. |
+| 14.3 Incident case study surfaced | MUST — done 2026-10-05 | The root README links the password-rotation incident through symptom, detection gap, root cause, fix, validation and observability change. |
 | 14.4 Demo video, 3–5 min | MUST | Recorded in Session B, no extra AWS time. Script below. |
 | 14.5 Repo polish | MUST | LICENSE (none today), description and topics, pinned on the profile, badges for `terraform`, `app`, `drift`. |
-| 14.6 Index READMEs current | MUST | `docs/README.md`, `adr/README.md`, `experiments/README.md`: every link resolves, nothing says "not yet" for finished work. |
+| 14.6 Index READMEs current | MUST — done 2026-10-05 | `docs/README.md`, `adr/README.md` and `experiments/README.md` reflect the ADRs, prepared experiment reports and implemented DR workflow without claiming unrun results. |
 | 14.7 Public write-up (LinkedIn / dev.to) | NICE | The outage story plus one game-day finding. Moves to M15 if time is short. |
 | ~~`docs/architecture/overview.md`~~ | REMOVE | The README's engineer section + diagrams + ADR index cover it. |
 | ~~GitHub Pages, Projects board, release tags, pinned issues~~ | REMOVE | Nobody evaluating the repo opens them. |
