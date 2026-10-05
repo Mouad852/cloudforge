@@ -189,7 +189,7 @@ diagram. Supporting diagrams: `network-vpc.md`, `traffic-flow.md`, `data-flow.md
 | 016 | Terraform native tests for every module | accepted |
 | 017 | Blue/green as a second deploy strategy | **built, never exercised end to end** |
 | 018 | RDS-native recovery over AWS Backup | accepted |
-| 019 | Fault-injection approach | **reserved for M12** (FIS is unavailable on this plan) |
+| 019 | Scripted AWS CLI fault injection over AWS FIS | accepted |
 | 020 | SLOs before game days | accepted |
 | 021 | Long-lived admin key over IAM Identity Center | accepted |
 | 022 | Redis TLS server name decoupled from dial address | accepted |

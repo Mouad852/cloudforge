@@ -4,8 +4,8 @@ One file per experiment, written in M12 (`PLAN.md` §9). Every number in `PLAN.m
 measurements table must trace back to a file here, to a disaster-recovery drill in
 `../disaster-recovery/`, or to a real incident in `../incidents/`.
 
-No experiment has been run yet. Do not pre-fill results: an unmeasured field left honestly
-blank is worth more than a plausible invented one.
+The six MUST reports are prepared but unrun. Do not pre-fill results: an unmeasured field left
+honestly blank is worth more than a plausible invented one.
 
 ## Planned experiments
 

@@ -25,7 +25,7 @@ superseding ADR rather than being rewritten.
 | [016](016-terraform-native-tests.md) | Terraform native tests for every module | accepted |
 | [017](017-bluegreen-second-strategy.md) | Blue/green as a second deploy strategy | built, not yet exercised (status note) |
 | [018](018-rds-native-recovery-over-aws-backup.md) | RDS-native recovery over AWS Backup | accepted |
-| 019 | Fault-injection approach (AWS FIS is unavailable on this account's plan) | reserved for M12 |
+| [019](019-scripted-cli-fault-injection.md) | Scripted AWS CLI fault injection over AWS FIS | accepted |
 | [020](020-slos-before-gamedays.md) | SLOs defined before game days | accepted |
 | [021](021-long-lived-key-over-identity-center.md) | Long-lived admin key over IAM Identity Center | accepted |
 | [022](022-redis-tls-servername-decoupled-from-dial-address.md) | Redis TLS server name decoupled from the dial address | accepted |
