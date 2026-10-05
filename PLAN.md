@@ -148,7 +148,7 @@ diagram. Supporting diagrams: `network-vpc.md`, `traffic-flow.md`, `data-flow.md
 
 ---
 
-## 5. Current operational state (2026-10-03)
+## 5. Current operational state (2026-10-05)
 
 | Item | State |
 |---|---|
@@ -159,7 +159,7 @@ diagram. Supporting diagrams: `network-vpc.md`, `traffic-flow.md`, `data-flow.md
 | Burn rate | **3.4–3.9 USD/day** before credits with prod up (Cost Explorer, 2026-09-28 to 10-02). About **16 days of runway** if nothing changes. |
 | CI history | 106 workflow runs, 3 PRs (#1, #2, #5), 244 commits over 22 active days (2026-09-05 to 10-03). |
 | Open issues | None. #7 (drift, prod) closed 2026-10-03: everything it reported (a newer Amazon Linux AMI on the launch template, a deploy description, the new `canary-failed` alarm) was code in `main` waiting for an apply, applied at 12:38 UTC. A read-only prod plan afterwards returned "No changes" (`-detailed-exitcode` 0). |
-| Broken today | `prod-cloudforge-asg-in-service-instances` has never received data: ASG group metrics are not enabled (`EnabledMetrics` empty), so with `treat_missing_data = notBreaching` it stays OK forever. Its threshold (< 2) also assumes a 2-instance fleet. See C1. |
+| C1 status | Applied 2026-10-05. Both ASGs publish `GroupInServiceInstances`; recent dev and prod datapoints are `1`, and the alarms use the environment floor (`1`), `Minimum`, and `treat_missing_data = missing`. The first dev replacement stayed at `1` because the replacement launched before termination completed, so no `ALARM` transition or notification was observed yet. |
 | Unavailable on this plan | GuardDuty, Security Hub, Inspector, **AWS FIS** (`SubscriptionRequiredException`, FIS checked 2026-10-03), CloudFront (denied by AWS Support), RDS backup retention above 1 day. |
 | Error budget | Availability budget for the 30 days after 2026-09-30 was spent about eleven times over by the 40-hour outage (§8). The window clears around 2026-10-31. |
 
@@ -380,8 +380,8 @@ M15 ≈ 1 week. Everything AWS-dependent should finish in October 2026.
 
 | # | Task | Status |
 |---|---|---|
-| C1 | **Make the ASG in-service alarm real.** Enable group metrics on the blue ASG (`enabled_metrics`, 1-minute granularity). The threshold follows `asg_min_size`, passed from the environment, instead of a hardcoded 2. `treat_missing_data = "missing"`, so absent data shows as INSUFFICIENT_DATA, never OK. `Minimum` statistic. Module tests for each. Same batch: the D2 IP set, the window script and runbook, the drift-check backstop, and the stale `db_multi_az` descriptions. Prod plan: 1 to add, 3 in-place, 0 to destroy, no instance replaced. | MUST — implemented in the working tree 2026-10-03, not yet applied |
-| C1-verify | After the apply: (1) `describe-auto-scaling-groups` lists the enabled metrics; (2) `get-metric-statistics` returns `GroupInServiceInstances` datapoints; (3) the alarm's state reason quotes a datapoint, not "no datapoints"; (4) a **real transition**, not `set-alarm-state`: terminate dev's instance with `terminate-instance-in-auto-scaling-group --no-should-decrement-desired-capacity`, see the alarm reach ALARM and the email arrive, then OK and the recovery email once the replacement is in service. Record the timings as **a new, separate measurement** (dev, one instance, no load, C1 verification). They neither replace nor compare with the historical 3m 8s (dev, two instances, M3), and they are a rehearsal for E1, not E1. | MUST |
+| C1 | **Make the ASG in-service alarm real.** Enable group metrics on the blue ASG (`enabled_metrics`, 1-minute granularity). The threshold follows `asg_min_size`, passed from the environment, instead of a hardcoded 2. `treat_missing_data = "missing"`, so absent data shows as INSUFFICIENT_DATA, never OK. `Minimum` statistic. Module tests for each. Same batch: the D2 IP set, the window script and runbook, the drift-check backstop, and the stale `db_multi_az` descriptions. Prod plan: 1 to add, 3 in-place, 0 to destroy, no instance replaced. | **Applied 2026-10-05; read-only metric and alarm checks passed.** |
+| C1-verify | After the apply: (1) `describe-auto-scaling-groups` lists the enabled metrics; (2) `get-metric-statistics` returns `GroupInServiceInstances` datapoints; (3) the alarm's state reason quotes a datapoint, not "no datapoints"; (4) a **real transition**, not `set-alarm-state`: terminate dev's instance with `terminate-instance-in-auto-scaling-group --no-should-decrement-desired-capacity`, see the alarm reach ALARM and the email arrive, then OK and the recovery email once the replacement is in service. Record the timings as **a new, separate measurement** (dev, one instance, no load, C1 verification). They neither replace nor compare with the historical 3m 8s (dev, two instances, M3), and they are a rehearsal for E1, not E1. | **Partial 2026-10-05:** the replacement recovered healthy, but the metric stayed at `1` throughout; no ALARM or notification transition occurred. |
 | C2 | Issue #7 | **Done 2026-10-03:** verified applied and closed, see §5. Open question kept: every new Amazon Linux AMI will appear as drift until the next apply. Accept that as an expected signal ("an AMI update is waiting"), or exclude it. Decide when it next fires. |
 | C3 | Well-Architected milestone 2 | **Done:** verified in the tool, see §7, M10. |
 | C4 | CloudTrail bucket in us-east-1 | NICE — accepted gap unless trivial. |

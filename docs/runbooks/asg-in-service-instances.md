@@ -5,14 +5,14 @@
 **Severity:** Page now — with the current sizing, fewer in-service instances than the
 configured size means the app tier is down, not just less redundant.
 
-> **Known defect (found 2026-10-03), fixed in code by `PLAN.md` §9, C1.** Until C1, this alarm
+> **Known defect (found 2026-10-03), fixed in code and applied by `PLAN.md` §9, C1.** Before C1, this alarm
 > never received a datapoint: the ASG did not enable group metrics, so
 > `GroupInServiceInstances` was never published, and with `treat_missing_data = notBreaching`
 > the alarm stayed OK no matter what happened. Its threshold (< 2) also predated the current
 > sizing. C1 enables the group metrics, sets the threshold to the ASG's `asg_min_size` and
-> treats missing data as missing (INSUFFICIENT_DATA, not OK). **Until C1 is applied and its
-> verification is recorded in `PLAN.md`,** use `alb-unhealthy-hosts` and `canary-failed` to
-> detect a lost instance.
+> treats missing data as missing (INSUFFICIENT_DATA, not OK). Datapoints are now present in
+> both environments; until a real failure transition is observed and recorded in `PLAN.md`,
+> use `alb-unhealthy-hosts` and `canary-failed` as the corroborating lost-instance signals.
 
 ---
 
