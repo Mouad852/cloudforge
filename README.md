@@ -1,5 +1,9 @@
 # CloudForge
 
+[![Terraform](https://github.com/Mouad852/cloudforge/actions/workflows/terraform.yml/badge.svg)](https://github.com/Mouad852/cloudforge/actions/workflows/terraform.yml)
+[![App](https://github.com/Mouad852/cloudforge/actions/workflows/app.yml/badge.svg)](https://github.com/Mouad852/cloudforge/actions/workflows/app.yml)
+[![Drift detection](https://github.com/Mouad852/cloudforge/actions/workflows/drift.yml/badge.svg)](https://github.com/Mouad852/cloudforge/actions/workflows/drift.yml)
+
 CloudForge is a production-style AWS environment built in Terraform and operated through real
 incidents, recovery drills and measured game days. The Go API is deliberately small; the
 infrastructure, operational decisions and evidence are the product.

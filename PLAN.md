@@ -56,7 +56,7 @@ that plainly in the README.
 
 | Claim | Evidence today | Still missing |
 |---|---|---|
-| I can design AWS infrastructure and justify every choice | 24 ADRs, Well-Architected review, threat model, compromises table (§6) | One clean as-built diagram in the README (M14) |
+| I can design AWS infrastructure and justify every choice | 26 ADRs, Well-Architected review, threat model, compromises table (§6) | — |
 | I can build it reproducibly and test it | 8 Terraform modules, 108 `terraform test` runs, 2 environments from one module set, published public module | A timed full rebuild of prod (M11/M12) |
 | I can deploy without long-lived CI credentials | GitHub OIDC, plan role (read-only) and apply role, approval-gated applies | — |
 | I can observe a running system and detect failure | 12 metric alarms + 1 composite, 2 dashboards, Synthetics canary, structured logs | Fix the one alarm that never receives data (§9, C1) |
@@ -483,7 +483,7 @@ timestamps) and the k6 summary as text. No five-screenshot quota.
 | 14.2 One canonical as-built diagram | MUST — done 2026-10-05 | `docs/diagrams/architecture-high-level.md` remains canonical and is summarised in the root README. It contains no CloudFront, Multi-AZ RDS or unbuilt components. |
 | 14.3 Incident case study surfaced | MUST — done 2026-10-05 | The root README links the password-rotation incident through symptom, detection gap, root cause, fix, validation and observability change. |
 | 14.4 Demo video, 3–5 min | MUST | Recorded in Session B, no extra AWS time. Script below. |
-| 14.5 Repo polish | MUST | LICENSE (none today), description and topics, pinned on the profile, badges for `terraform`, `app`, `drift`. |
+| 14.5 Repo polish | MUST | CI badges for `terraform`, `app` and `drift` are now in the root README. LICENSE selection, GitHub description/topics and profile pin remain external polish. |
 | 14.6 Index READMEs current | MUST — done 2026-10-05 | `docs/README.md`, `adr/README.md` and `experiments/README.md` reflect the ADRs, prepared experiment reports and implemented DR workflow without claiming unrun results. |
 | 14.7 Public write-up (LinkedIn / dev.to) | NICE | The outage story plus one game-day finding. Moves to M15 if time is short. |
 | ~~`docs/architecture/overview.md`~~ | REMOVE | The README's engineer section + diagrams + ADR index cover it. |
@@ -581,7 +581,7 @@ Cost per prod-up hour: ~0.15 USD (from the daily figure; refine in M13) · resti
 
 Done:
 
-- [x] 24 ADRs, including superseded ones kept as history
+- [x] 26 ADRs, including superseded ones kept as history
 - [x] SEV1 post-incident review (`docs/incidents/`)
 - [x] Threat model, encryption inventory, data classification, incident response plan
 - [x] Well-Architected review with remediation (22 → 16)
@@ -598,7 +598,7 @@ Remaining:
 - [ ] `docs/resilience/capacity-planning.md` (M13)
 - [ ] `docs/cost-analysis.md` with real numbers (M13)
 - [ ] Error-budget report in `slo.md` (M13)
-- [ ] Root README for two readers (M14)
+- [x] Root README for two readers (M14)
 - [ ] 3–5 minute demo video (M14)
 - [ ] LICENSE, topics, badges, pin (M14)
 - [ ] Story bank, questions practised, 2–3 CV bullets (M15)
