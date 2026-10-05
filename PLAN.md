@@ -399,6 +399,11 @@ measured numbers. Not an enterprise DR platform.
 | 11.4 DR strategy document | MUST — done 2026-10-05 | [`docs/disaster-recovery/strategy.md`](docs/disaster-recovery/strategy.md) records backup/restore versus pilot light, warm standby and active-active; the targets, planned-teardown data boundary, Free-plan limit, capacity risk, and a Mermaid recovery flow. It distinguishes targets from pending actuals. |
 | 11.5 ADR-018 | MUST — done 2026-10-05 | [`docs/adr/018-rds-native-recovery-over-aws-backup.md`](docs/adr/018-rds-native-recovery-over-aws-backup.md) records D4: RDS-native backups, final snapshots and a tested drill are mandatory; AWS Backup remains NICE until it adds a distinct capability. |
 | 11.6 Restore capacity finding | MUST — implemented, untested | Three gp2 restores of dev failed with `InsufficientDBInstanceCapacity` (2026-10-03); a later gp3 dev rebuild also failed. `strategy.md` records this real risk, and `restore-test.sh` tries the source configuration first, then explicit gp2/gp3 and subnet-AZ fallbacks while preserving every attempted result. |
+> **11.3/11.6 evidence update (2026-10-05):** the first prod point-in-time drill wrote and
+> cleaned up its marker and reached RDS, but the temporary restore was rejected with
+> `InstanceQuotaExceeded` because the Free plan had no spare DB-instance slot. No RTO,
+> row-count or integrity result is claimed; retry after a slot is available.
+
 | 11.7 Cross-region snapshot copy + one restore | NICE | `copy-db-snapshot` to a second region and one restore there: measured data-tier survival of a region loss for cents. State plainly that only the data tier is covered; the stack's region is hardcoded in the providers. |
 | 11.8 `restore-test.yml` (manual dispatch) | NICE | Only if the script is stable and the OIDC role change is small. Not scheduled, because prod will usually be down. |
 | ~~SSM Automation runbooks~~ | REMOVE | A tested script is just as executable and needs no extra IAM or YAML. |

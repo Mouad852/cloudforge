@@ -71,12 +71,18 @@ timestamped timeline outside the repository. It tries the live configuration fir
 other gp storage type and the DB subnet group's other Availability Zone only after an explicit
 `InsufficientDBInstanceCapacity` error. The timeline includes failed capacity attempts, so a
 successful fallback is never presented as if the first configuration had capacity. No capacity
-result is claimed until the point-in-time drill succeeds.
+result is claimed until the point-in-time drill succeeds. On 2026-10-05 the first prod drill
+reached the restore request, but RDS rejected it with `InstanceQuotaExceeded`: the Free plan
+had no additional DB-instance slot for the temporary target. The source marker was removed by
+the cleanup path, and no restore duration or integrity result is claimed. A retry requires a
+free RDS instance slot (for example, `make dev-down` before retrying the prod drill, followed
+by `make dev-up` to restore dev from its final snapshot) or an account-plan change.
 
 ## What is measured next
 
-1. Run `scripts/restore-test.sh prod` twice on different days: marker timestamp, latest
-   restorable time, restore duration, row count and marker integrity.
+1. After a free RDS instance slot is available, run `scripts/restore-test.sh prod` twice on
+   different days: marker timestamp, latest restorable time, restore duration, row count and
+   marker integrity.
 2. Run one complete `prod-down` / `prod-up` cycle, recording the UTC boundary timestamps printed
    by the Make targets and the time to a healthy application.
 3. Compare actual values with the targets above, including misses, in this document and the
