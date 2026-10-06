@@ -1,7 +1,7 @@
 # Experiment E4 — Rolling deployment under load
 
-**Status:** prepared, not run.
-**Environment:** prod during Session A
+**Status:** completed 2026-10-06.
+**Environment:** prod, eu-west-3 (Session A)
 
 ## Hypothesis
 
@@ -23,31 +23,41 @@ investigate and do not present the rollout as zero-downtime.
 
 ## Timeline (UTC)
 
-| Time | Event |
+| Time (UTC) | Event |
 |---|---|
-| | k6 gate started |
-| | Instance refresh started |
-| | Replacement healthy |
-| | Old instance terminated |
-| | k6 gate completed |
+| 2026-10-06 16:29:28 | Launch-template version 11 created (`deploy-752698d`) |
+| 2026-10-06 16:29:37 | Instance refresh `451f28df-1e51-406c-98f3-4f4b896284a6` started |
+| 2026-10-06 16:35:21 | Instance refresh became `Successful` |
+| 2026-10-06 16:37:31 | 8-minute k6 gate completed |
+| 2026-10-06 16:37:31 | Final ASG state: one `InService`/`Healthy` instance |
 
 ## Measurements
 
-- k6 total requests / failed / error rate:
-- Rollout duration and phase durations:
-- ALB 5xx count:
-- Error-budget consumption:
-- Comparison with the 198-error historical baseline:
+- k6 total requests / failed / error rate: `2179 / 0 / 0%`.
+- Rollout duration and phase durations: instance refresh `344s` (5m44s); k6 gate `8m00.8s`.
+- ALB 5xx count: no 5xx responses were observed by k6; the targeted CloudWatch 5xx query
+  returned no datapoints for the rollout window.
+- Error-budget consumption: `0` failed requests in the deploy-gate sample.
+- Comparison with the 198-error historical baseline: `0` current failures versus `198`
+  historical failures before the launch-before-terminate ordering fix.
+- Latency: p95 `664.13 ms`, maximum `916.15 ms`; the deploy gate checked failure rate only,
+  so this latency observation is recorded separately from its pass/fail result.
 
 ## What surprised me
 
-Pending the run.
+The rollout had zero failed requests, but p95 reached `664.13 ms` even with only five VUs. The
+launch-before-terminate strategy protected correctness while still allowing a measurable latency
+increase during the refresh.
 
 ## What I changed as a result
 
-Pending the run.
+No configuration change was made. The successful refresh confirms the current replacement order
+and 100% healthy-capacity preference are effective for this workload; latency should remain a
+separate operational signal.
 
 ## Evidence
 
-Pending: one CloudWatch graph and the k6 summary. The existing 2026-09-25 evidence is retained in
+Evidence: instance-refresh ID `451f28df-1e51-406c-98f3-4f4b896284a6`, launch-template version
+11 (`deploy-752698d`), and the k6 summary pasted above. The final ASG check showed one healthy
+instance. No CloudWatch graph was captured; the existing 2026-09-25 evidence is retained in
 ADR-026.

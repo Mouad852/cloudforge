@@ -439,7 +439,7 @@ Free plan.
 | E1 | **Instance failure, 1 instance vs 2** | **Measured 2026-10-06:** at 5 req/s against `/api/products`, one instance produced 3 HTTP 503s in 269 requests (1.115%); two instances produced 0 failures in 314 requests but a p95 spike to 623ms. Desired capacity was restored to 1. | The run confirms the single-instance availability trade-off and shows that two instances prevent failed requests during replacement, although latency can still spike briefly. | MUST |
 | E2 | **Redis failure** | **Measured 2026-10-06:** two 2 req/s `/api/products` runs rebooted the single prod Redis node. The first measured 93.65s to `available`; the second ran through recovery for the full 5m30s with `--no-thresholds`. | 0 failed requests in both runs (`167` and `659` requests); aggregate p95 `763.17ms` and `677.23ms`, with maxima `3699.23ms` and `6452.45ms`. | MUST |
 | E3 | **Load and scaling** | **Measured 2026-10-06, generator-bounded:** the WAF window opened and closed cleanly; k6 ramped to a 400 req/s target for 20 minutes. The generator delivered 224.11 req/s, reached 500 VUs and dropped 609 iterations; CPU peaked at 33%. | Delivered traffic stayed at p95 51.09ms with 0% errors across 268,940 requests. This is a lower bound, not CloudForge's saturation point; a stronger/distributed generator is required for that claim. | MUST |
-| E4 | **Rolling deploy under load** | `scripts/deploy.sh prod` with k6 running. | Failed requests (target 0), rollout duration per phase. Also write up the existing 198 → 0 evidence from 2026-09-25 as the "before". | MUST |
+| E4 | **Rolling deploy under load** | **Measured 2026-10-06:** launch template version 11 refreshed prod successfully in `344s` while the 8-minute k6 gate ran. | `0/2179` failed requests; p95 `664.13ms`, max `916.15ms`. This improves on the historical `198` errors; latency remains a separate signal. | MUST |
 | E5 | **Database recovery** | The M11 point-in-time restore drill. | Restore duration, measured RPO, integrity. No extra spend. | MUST (shared with M11) |
 | E6 | **Full rebuild from zero** | `prod-down` → `prod-up` (M11). Cross-check against the dev nightly round trips in CI history. | Wall-clock from an empty account state to a serving, data-restored environment. | MUST (shared with M11) |
 | E7 | Blue/green cutover + rollback under load | Local `terraform apply -var` weight shift (D3). | Failed requests, cutover and rollback times. | NICE |
@@ -578,7 +578,7 @@ plausible invented one. "Pending" means planned in §9.
 | E1 instance failure, 2 instances | no failed requests | replacement launched while survivor served | 0/314 (0%) | short-sample only | M12 |
 | E2 Redis failure | cache node restarted at 15:31:40Z and 15:40:18Z | 93.65s measured in first run | 0/167 and 0/659 (0%) | aggregate p95 763ms and 677ms; max 6.45s | M12 |
 | E3 max sustainable req/s, p95 at that load | generator-bounded at 400 req/s target | 51.09ms at 224.11 delivered req/s | 0/268,940 (0%) | generator dropped 609 iterations | M12/M13 |
-| E4 rolling deploy under load | n/a | pending | pending | pending | M12 |
+| E4 rolling deploy under load | refresh successful | 344s refresh; 8m00.8s k6 gate | 0/2179 (0%) | p95 664.13ms; max 916.15ms | M12 |
 | E5 point-in-time restore | n/a | 1141s (one run) | n/a | n/a | M11 |
 | E6 full rebuild from zero | n/a | pending | n/a | n/a | M11/M12 |
 
