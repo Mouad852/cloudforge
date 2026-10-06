@@ -111,6 +111,8 @@ The complete list of accepted risks and production-grade alternatives is in
 - [SLOs, alarms and runbooks](docs/observability/README.md)
 - [Game-day evidence](docs/experiments/README.md)
 - [Disaster recovery](docs/disaster-recovery/README.md)
+- [Demo recording script](docs/demo-script.md)
+- [Cost analysis](docs/cost-analysis.md)
 - [Terraform environments](terraform/environments/)
 - [CloudStore API](app/README.md)
 

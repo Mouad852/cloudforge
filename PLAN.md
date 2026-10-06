@@ -505,7 +505,7 @@ timestamps) and the k6 summary as text. No five-screenshot quota.
 | 14.1 Root `README.md` | MUST — done 2026-10-05 | The root README gives the project purpose, evidence-backed results, operating model, trade-offs and documentation map without tutorial steps above the fold. |
 | 14.2 One canonical as-built diagram | MUST — done 2026-10-05 | `docs/diagrams/architecture-high-level.md` remains canonical and is summarised in the root README. It contains no CloudFront, Multi-AZ RDS or unbuilt components. |
 | 14.3 Incident case study surfaced | MUST — done 2026-10-05 | The root README links the password-rotation incident through symptom, detection gap, root cause, fix, validation and observability change. |
-| 14.4 Demo video, 3–5 min | MUST | Recorded in Session B, no extra AWS time. Script below. |
+| 14.4 Demo video, 3–5 min | MUST | Recording script prepared in [`docs/demo-script.md`](docs/demo-script.md); record locally from committed evidence, with no extra AWS time. |
 | 14.5 Repo polish | MUST | CI badges for `terraform`, `app` and `drift` are now in the root README. LICENSE selection, GitHub description/topics and profile pin remain external polish. |
 | 14.6 Index READMEs current | MUST — done 2026-10-06 | `docs/README.md`, `adr/README.md` and `experiments/README.md` reflect the measured E1–E6 reports, M13 evidence and implemented DR workflow without overstating generator-bounded or no-data results. |
 | 14.7 Public write-up (LinkedIn / dev.to) | NICE | The outage story plus one game-day finding. Moves to M15 if time is short. |
