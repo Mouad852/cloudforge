@@ -394,12 +394,12 @@ measured numbers. Not an enterprise DR platform.
 | Task | Tag | Notes |
 |---|---|---|
 | 11.1 `prod-down` / `prod-up` | MUST — implemented, untested | Guarded Makefile targets turn off deletion protection, destroy (the final RDS snapshot is automatic), then restore the newest final snapshot and run `ensure-artifact.sh`. They print UTC phase boundaries. A planned teardown also deletes the environment's S3 buckets; it restores PostgreSQL rows, not product images, artifacts or operational logs. This is the executable recovery workflow, credit saver (D1) and full-rebuild experiment (E6). |
-| 11.2 Recovery objectives | MUST — done 2026-10-05 | `docs/disaster-recovery/strategy.md` sets targets before any drill: unplanned database-loss RPO ≤ 15 min; planned-teardown RDS RPO = 0; point-in-time database RTO ≤ 60 min; full environment RTO ≤ 45 min. Planned-teardown S3 data has no recovery target by decision. Actuals remain pending. |
-| 11.3 Point-in-time restore drill | MUST — implemented, untested | `scripts/restore-test.sh prod` writes a marker row, waits for `LatestRestorableTime` to include it, restores a temporary instance, checks the marker and product row count over SSM, records timing and deletes the instance. Run it at least twice on different days; actuals remain pending. |
+| 11.2 Recovery objectives | MUST — measured once 2026-10-06 | `docs/disaster-recovery/strategy.md` sets targets before any drill: unplanned database-loss RPO ≤ 15 min; planned-teardown RDS RPO = 0; point-in-time database RTO ≤ 60 min; full environment RTO ≤ 45 min. Planned-teardown S3 data has no recovery target by decision. The first point-in-time run observed 286s RPO and 1141s RTO; repeat and full-rebuild actuals remain pending. |
+| 11.3 Point-in-time restore drill | MUST — one successful run 2026-10-06 | `scripts/restore-test.sh prod` restored and verified the marker with `MARKER_FOUND=1`, observed `PRODUCT_ROW_COUNT=0`, and cleaned up the temporary instance. The successful fallback used `db.t3.micro`/`gp2` in `eu-west-3a`; run it at least once more on a different day. |
 | 11.4 DR strategy document | MUST — done 2026-10-05 | [`docs/disaster-recovery/strategy.md`](docs/disaster-recovery/strategy.md) records backup/restore versus pilot light, warm standby and active-active; the targets, planned-teardown data boundary, Free-plan limit, capacity risk, and a Mermaid recovery flow. It distinguishes targets from pending actuals. |
 | 11.5 ADR-018 | MUST — done 2026-10-05 | [`docs/adr/018-rds-native-recovery-over-aws-backup.md`](docs/adr/018-rds-native-recovery-over-aws-backup.md) records D4: RDS-native backups, final snapshots and a tested drill are mandatory; AWS Backup remains NICE until it adds a distinct capability. |
 | 11.6 Restore capacity finding | MUST — implemented, untested | Three gp2 restores of dev failed with `InsufficientDBInstanceCapacity` (2026-10-03); a later gp3 dev rebuild also failed. `strategy.md` records this real risk, and `restore-test.sh` tries the source configuration first, then explicit gp2/gp3 and subnet-AZ fallbacks while preserving every attempted result. |
-> **11.3/11.6 evidence update (2026-10-05):** the first prod point-in-time drill wrote and
+> **11.3/11.6 evidence update (2026-10-06):** the first prod point-in-time drill wrote and
 > cleaned up its marker and reached RDS, but the temporary restore was rejected with
 > `InstanceQuotaExceeded` because the Free plan had no spare DB-instance slot. No RTO,
 > row-count or integrity result is claimed. After dev was torn down, the retry reached all
@@ -407,7 +407,9 @@ measured numbers. Not an enterprise DR platform.
 > `InsufficientDBInstanceCapacity`; no temporary instance or restore result exists yet.
 > A later attempt on 2026-10-06 accepted the `db.t3.micro`/gp2 fallback and RDS completed its
 > restore and backup events, but the original 30-minute script timeout deleted the target before
-> verification. The wait is now 60 minutes; no RPO/RTO or integrity result is claimed yet.
+> verification. The wait was extended to 60 minutes. The subsequent run completed successfully:
+> `MARKER_FOUND=1`, `PRODUCT_ROW_COUNT=0`, observed RPO `286s`, and restore-ready time `1141s`.
+> The temporary DB and source marker were cleaned up; a repeat run and full rebuild remain open.
 
 | 11.7 Cross-region snapshot copy + one restore | NICE | `copy-db-snapshot` to a second region and one restore there: measured data-tier survival of a region loss for cents. State plainly that only the data tier is covered; the stack's region is hardcoded in the providers. |
 | 11.8 `restore-test.yml` (manual dispatch) | NICE | Only if the script is stable and the OIDC role change is small. Not scheduled, because prod will usually be down. |
@@ -577,11 +579,11 @@ plausible invented one. "Pending" means planned in §9.
 | E2 Redis failure | pending | pending | pending (degraded?) | pending | M12 |
 | E3 max sustainable req/s, p95 at that load | — | — | pending | — | M12/M13 |
 | E4 rolling deploy under load | n/a | pending | pending | pending | M12 |
-| E5 point-in-time restore | n/a | pending | n/a | n/a | M11 |
+| E5 point-in-time restore | n/a | 1141s (one run) | n/a | n/a | M11 |
 | E6 full rebuild from zero | n/a | pending | n/a | n/a | M11/M12 |
 
-RPO target: proposed in M11 · measured: pending.
-RTO target: proposed in M11 · measured: pending.
+RPO target: proposed in M11 · measured: 286s (one production run; repeat pending).
+RTO target: proposed in M11 · measured: 1141s (one production run; repeat pending).
 Cost per prod-up hour: ~0.15 USD (from the daily figure; refine in M13) · resting cost: pending
 (measured after `prod-down`).
 

@@ -1,6 +1,7 @@
 # Disaster recovery strategy
 
-**Status:** recovery targets set before the first drill. Actual RPO and RTO remain pending.
+**Status:** recovery targets set before the first drill; one successful point-in-time run is
+measured, with a repeat and full rebuild still pending.
 **Scope:** the CloudForge environment in `eu-west-3`; this is a credit-bounded portfolio
 workload, not a multi-Region production service.
 
@@ -24,14 +25,15 @@ application data. This is an accepted project boundary, recorded in
 
 | Scenario | Target | Why | Actual |
 |---|---:|---|---|
-| Unplanned database loss | RPO <= 15 minutes | RDS point-in-time restore is the recovery path while the database exists. | Pending M11.3 |
+| Unplanned database loss | RPO <= 15 minutes | RDS point-in-time restore is the recovery path while the database exists. | 286s observed in one M11.3 run; repeat pending |
 | Planned prod teardown, PostgreSQL rows | RPO = 0 | Terraform requires a final RDS snapshot before deletion. | Pending E6 |
 | Planned prod teardown, S3 objects and operational logs | No recovery target | `prod-down` intentionally deletes them to make the environment truly ephemeral. | Pending E6 confirmation |
-| Point-in-time database restore | RTO <= 60 minutes | Includes restoring a temporary instance and verifying the marker and row count. | Pending M11.3 |
+| Point-in-time database restore | RTO <= 60 minutes | Includes restoring a temporary instance and verifying the marker and row count. | 1141s observed in one M11.3 run; repeat pending |
 | Full environment restore from a final snapshot | RTO <= 45 minutes | Measures `prod-up` through a healthy application after the artifact is present. | Pending E6 |
 
 The point-in-time target is allowed more time than the full-rebuild target because it is a
-separate, integrity-checked database drill. Neither target is a measured result yet.
+separate, integrity-checked database drill. The first successful run met both targets; a repeat
+run is still required before treating these as repeatable performance numbers.
 
 ## Why backup and restore
 
@@ -84,8 +86,10 @@ slot but reported `InsufficientDBInstanceCapacity` for gp2 and gp3 in both `eu-w
 result exists from that attempt either.
 On 2026-10-06 the `db.t3.micro`/gp2 fallback was accepted. RDS emitted restoration and
 backup-complete events, but the backup finished after the drill's original 30-minute wait;
-the script deleted the target at timeout before endpoint/row verification. The default wait is
-now 60 minutes, matching the RTO target, and this attempt still has no measured restore result.
+the script deleted the target at timeout before endpoint/row verification. The default wait was
+extended to 60 minutes, matching the RTO target. A subsequent run completed successfully with
+`MARKER_FOUND=1`, `PRODUCT_ROW_COUNT=0`, observed RPO `286s`, and restore-ready time `1141s`.
+The temporary DB and source marker were cleaned up; a repeat run remains pending.
 
 ## What is measured next
 
