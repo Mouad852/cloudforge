@@ -82,6 +82,10 @@ After dev was torn down and the drill was retried on 2026-10-05, RDS accepted th
 slot but reported `InsufficientDBInstanceCapacity` for gp2 and gp3 in both `eu-west-3a` and
 `eu-west-3b`. The marker was cleaned up; no temporary instance, restore duration or integrity
 result exists from that attempt either.
+On 2026-10-06 the `db.t3.micro`/gp2 fallback was accepted. RDS emitted restoration and
+backup-complete events, but the backup finished after the drill's original 30-minute wait;
+the script deleted the target at timeout before endpoint/row verification. The default wait is
+now 60 minutes, matching the RTO target, and this attempt still has no measured restore result.
 
 ## What is measured next
 

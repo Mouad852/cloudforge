@@ -14,7 +14,7 @@ Usage: scripts/restore-test.sh <dev|prod> [options]
 
 Options:
   --out <dir>              Write the drill timeline here (must be outside a git worktree).
-  --max-wait-seconds <n>   Wait at most n seconds for RDS and SSM steps (default: 1800).
+  --max-wait-seconds <n>   Wait at most n seconds for RDS and SSM steps (default: 3600).
   --yes                    Run without the final interactive confirmation.
 
 The drill writes a small marker row to the live database, then creates and
@@ -34,7 +34,7 @@ shift
 [[ "${ENVIRONMENT}" =~ ^(dev|prod)$ ]] || usage
 
 OUT_DIR=""
-MAX_WAIT_SECONDS=1800
+MAX_WAIT_SECONDS=3600
 ASSUME_YES=false
 while [[ $# -gt 0 ]]; do
   case "$1" in

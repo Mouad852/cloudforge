@@ -405,6 +405,9 @@ measured numbers. Not an enterprise DR platform.
 > row-count or integrity result is claimed. After dev was torn down, the retry reached all
 > four gp2/gp3 and eu-west-3a/eu-west-3b combinations, but every request returned
 > `InsufficientDBInstanceCapacity`; no temporary instance or restore result exists yet.
+> A later attempt on 2026-10-06 accepted the `db.t3.micro`/gp2 fallback and RDS completed its
+> restore and backup events, but the original 30-minute script timeout deleted the target before
+> verification. The wait is now 60 minutes; no RPO/RTO or integrity result is claimed yet.
 
 | 11.7 Cross-region snapshot copy + one restore | NICE | `copy-db-snapshot` to a second region and one restore there: measured data-tier survival of a region loss for cents. State plainly that only the data tier is covered; the stack's region is hardcoded in the providers. |
 | 11.8 `restore-test.yml` (manual dispatch) | NICE | Only if the script is stable and the OIDC role change is small. Not scheduled, because prod will usually be down. |
