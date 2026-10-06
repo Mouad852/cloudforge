@@ -505,7 +505,7 @@ timestamps) and the k6 summary as text. No five-screenshot quota.
 | 14.1 Root `README.md` | MUST — done 2026-10-05 | The root README gives the project purpose, evidence-backed results, operating model, trade-offs and documentation map without tutorial steps above the fold. |
 | 14.2 One canonical as-built diagram | MUST — done 2026-10-05 | `docs/diagrams/architecture-high-level.md` remains canonical and is summarised in the root README. It contains no CloudFront, Multi-AZ RDS or unbuilt components. |
 | 14.3 Incident case study surfaced | MUST — done 2026-10-05 | The root README links the password-rotation incident through symptom, detection gap, root cause, fix, validation and observability change. |
-| 14.4 Visual evidence pack | MUST | Use selective PNG screenshots and measured graphs under [`docs/screenshots/`](docs/screenshots/); each image must prove one specific claim and include visible context/timestamps. |
+| 14.4 Visual evidence pack | MUST — done 2026-10-06 | Generated summary graphs for E1–E6 are in [`docs/screenshots/14-portfolio/`](docs/screenshots/14-portfolio/); each is labeled as an aggregate and links back to the measured reports. |
 | 14.5 Repo polish | MUST | CI badges for `terraform`, `app` and `drift` are now in the root README. LICENSE selection, GitHub description/topics and profile pin remain external polish. |
 | 14.6 Index READMEs current | MUST — done 2026-10-06 | `docs/README.md`, `adr/README.md` and `experiments/README.md` reflect the measured E1–E6 reports, M13 evidence and implemented DR workflow without overstating generator-bounded or no-data results. |
 | 14.7 Public write-up (LinkedIn / dev.to) | NICE | The outage story plus one game-day finding. Moves to M15 if time is short. |
@@ -628,7 +628,7 @@ Remaining:
 - [x] `docs/cost-analysis.md` with real numbers (M13; resting-cost window still open)
 - [x] Error-budget report in `slo.md` (M13; canary measured, ALB 5xx explicitly no-data)
 - [x] Root README for two readers (M14)
-- [ ] Visual evidence pack: selective screenshots and measured graphs (M14)
+- [x] Visual evidence pack: selective screenshots and measured graphs (M14)
 - [ ] LICENSE, topics, badges, pin (M14)
 - [ ] Story bank, questions practised, 2–3 CV bullets (M15)
 - [ ] NICE: public write-up, blue/green measurement, cross-region restore

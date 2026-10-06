@@ -24,6 +24,15 @@ One subfolder per milestone. Folders aren't pre-created — git doesn't track em
 
 ## Portfolio evidence pack
 
+The first generated summary set is:
+
+- [`e1-instance-failure-comparison.png`](14-portfolio/e1-instance-failure-comparison.png)
+- [`e2-e4-latency-summary.png`](14-portfolio/e2-e4-latency-summary.png)
+- [`e5-e6-recovery-timings.png`](14-portfolio/e5-e6-recovery-timings.png)
+
+Regenerate them with `python scripts/generate-evidence-graphs.py` after changing the measured
+inputs in that script.
+
 The project does not require a demo recording. For presentation, assemble a small visual pack from
 the existing evidence: the canonical architecture diagram, one CloudWatch graph or generated
 measurement graph for each important result, and the matching k6/CLI output in the experiment
