@@ -437,7 +437,7 @@ Free plan.
 | # | Experiment | Method | Key measurement | Tag |
 |---|---|---|---|---|
 | E1 | **Instance failure, 1 instance vs 2** | **Measured 2026-10-06:** at 5 req/s against `/api/products`, one instance produced 3 HTTP 503s in 269 requests (1.115%); two instances produced 0 failures in 314 requests but a p95 spike to 623ms. Desired capacity was restored to 1. | The run confirms the single-instance availability trade-off and shows that two instances prevent failed requests during replacement, although latency can still spike briefly. | MUST |
-| E2 | **Redis failure** | `aws elasticache reboot-cache-cluster` under k6 on `/api/products` (not `/readyz`, which reports Redis down by design). | 5xx count (hypothesis: 0) and the p95 change while the app falls back to Postgres. If it 500s, fix and re-run. | MUST |
+| E2 | **Redis failure** | **Measured once 2026-10-06:** rebooted the single prod Redis node under 2 req/s `/api/products` load; Redis returned to `available` after 93.65s. | 0 failed requests out of 167 (`0%`); aggregate p95 `763.17ms`, max `3699.23ms`. The latency threshold stopped k6 during the reboot, so a post-recovery sample remains pending. | MUST |
 | E3 | **Load and scaling** | A dedicated window through `scripts/waf-benchmark-window.sh` (D2), from whichever generator gives the most trustworthy measurement: near `eu-west-3`, with CPU and bandwidth to outrun one `t4g.small` (CloudShell in eu-west-3 is one option, not a requirement). Benchmark: `scripts/capacity-test.js`, a `ramping-arrival-rate` scenario that stops at the first sustained breach of p95 < 500 ms or 1% errors. | Max sustainable req/s on 1 × t4g.small at the p95 target, where it saturates (app CPU, DB, connection pool), whether CPU target tracking at 60% triggers 1 → 2 in time. If the generator saturates first (CPU ≥ 85% or k6 `dropped_iterations`), the run measured the generator: report it as such, never as CloudForge's capacity. The report includes the window's timeline (exemption opened, closed, verified empty). Feeds M13. | MUST |
 | E4 | **Rolling deploy under load** | `scripts/deploy.sh prod` with k6 running. | Failed requests (target 0), rollout duration per phase. Also write up the existing 198 → 0 evidence from 2026-09-25 as the "before". | MUST |
 | E5 | **Database recovery** | The M11 point-in-time restore drill. | Restore duration, measured RPO, integrity. No extra spend. | MUST (shared with M11) |
@@ -576,7 +576,7 @@ plausible invented one. "Pending" means planned in §9.
 |---|---|---|---|---|---|
 | E1 instance failure, 1 instance | 3 HTTP 503s | replacement activity completed 13s after fault command | 3/269 (1.115%) | short-sample only | M12 |
 | E1 instance failure, 2 instances | no failed requests | replacement launched while survivor served | 0/314 (0%) | short-sample only | M12 |
-| E2 Redis failure | pending | pending | pending (degraded?) | pending | M12 |
+| E2 Redis failure | cache node restarted at 15:31:40Z | 93.65s to `available` | 0/167 (0%) | short-sample only; post-recovery p95 pending | M12 |
 | E3 max sustainable req/s, p95 at that load | — | — | pending | — | M12/M13 |
 | E4 rolling deploy under load | n/a | pending | pending | pending | M12 |
 | E5 point-in-time restore | n/a | 1141s (one run) | n/a | n/a | M11 |
