@@ -1,7 +1,7 @@
 # Experiment E3 — Load and scaling
 
-**Status:** prepared, not run.
-**Environment:** prod during Session A
+**Status:** completed 2026-10-06; generator-bounded result.
+**Environment:** prod, eu-west-3 (Session A)
 
 ## Hypothesis
 
@@ -24,31 +24,43 @@ application capacity number.
 
 ## Timeline (UTC)
 
-| Time | Event |
+| Time (UTC) | Event |
 |---|---|
-| | WAF exemption opened and verified |
-| | Load ramp started |
-| | First sustained SLO breach or generator limit |
-| | Scaling action and outcome |
-| | WAF exemption removed and verified |
+| 2026-10-06 16:01:58 | WAF exemption window opened |
+| 2026-10-06 16:02:06 | Exemption active and verified |
+| 2026-10-06 16:03:06 | Load ramp started |
+| 2026-10-06 16:23:07 | Ramp reached 400 req/s target; generator reported 609 dropped iterations |
+| 2026-10-06 16:23:15 | Exemption removed and verified empty |
+| 2026-10-06 16:23:17 | WAF lock token unchanged; window closed |
 
 ## Measurements
 
-- Highest sustainable requests/second at the p95 target:
-- First sustained breach and bottleneck:
-- Generator CPU peak and dropped iterations:
-- Scale-out request and time to second healthy target:
-- Error-budget consumption:
+- Highest sustainable requests/second at the p95 target: not measured; the generator delivered
+  `224.11 req/s` while the application remained below the latency and error targets.
+- First sustained breach and bottleneck: no application SLO breach; k6 dropped `609` iterations
+  while targeting `400 req/s`, so the load generator was the limiting component.
+- Generator CPU peak and dropped iterations: `33%` CPU peak; `609` dropped iterations; k6 reached
+  its `500` VU ceiling.
+- Scale-out request and time to second healthy target: no scale-out result was captured during
+  this generator-bounded run.
+- Error-budget consumption: `0` failed requests out of `268,940` (`0%`).
 
 ## What surprised me
 
-Pending the run.
+The generator could not sustain the requested `400 req/s` even though its CPU peaked at only 33%:
+it reached 500 VUs and dropped 609 iterations. That is a generator/runtime ceiling, not evidence
+that CloudForge saturated.
 
 ## What I changed as a result
 
-Pending the run.
+No infrastructure change was made. The result is reported as a lower bound: CloudForge handled
+the `224.11 req/s` actually delivered with p95 `51.09 ms` and zero errors, but a stronger or
+distributed generator is required to measure the application's saturation point.
 
 ## Evidence
 
-Pending: WAF-window timeline, k6 summary, generator CPU sample and one CloudWatch graph. This
-report feeds `docs/resilience/capacity-planning.md` in M13.
+Evidence directory:
+`C:\Users\user\cloudforge-benchmarks\prod-20261006T155751Z`.
+The timeline records the WAF open/close and cleanup, `benchmark.log` contains the k6 summary,
+and `generator-cpu.csv` records the 33% peak. No CloudWatch graph was captured during this run.
+This report feeds `docs/resilience/capacity-planning.md` in M13.
