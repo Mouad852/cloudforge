@@ -30,8 +30,6 @@ The first generated summary set is:
 - [`e2-e4-latency-summary.png`](14-portfolio/e2-e4-latency-summary.png)
 - [`e5-e6-recovery-timings.png`](14-portfolio/e5-e6-recovery-timings.png)
 
-Regenerate them with `python scripts/generate-evidence-graphs.py` after changing the measured
-inputs in that script.
 
 The project does not require a demo recording. For presentation, assemble a small visual pack from
 the existing evidence: the canonical architecture diagram, one CloudWatch graph or generated
