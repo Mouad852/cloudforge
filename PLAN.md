@@ -362,7 +362,7 @@ Never hide or soften them.
 
 **Order:** close-out → M11 → M12 (the only AWS-heavy work) → M13 → M14 → M15 (local, ~0 USD).
 **Sessions on AWS:** two prod sessions in total (Session A for M11/M12, Session B for the
-rebuild and the video), with prod torn down between them (D1).
+rebuild and evidence review), with prod torn down between them (D1).
 **Rough effort:** close-out + M11 ≈ 1 week, M12 ≈ 1 week, M13 ≈ 3 days, M14 ≈ 1–2 weeks,
 M15 ≈ 1 week. Everything AWS-dependent should finish in October 2026.
 
@@ -475,7 +475,7 @@ fleet, and it would need infrastructure built just for the test); CPU stress via
 
 **Session plan:** E1–E4 (and E7 if time allows) back to back in **Session A**, with the E5
 drill in the same session. End the session with `prod-down` (E6, first half). **Session B:**
-`prod-up` (E6, second half) and the demo recording (M14), then `prod-down`.
+`prod-up` (E6, second half), review the visual evidence, then `prod-down`.
 **Evidence:** per experiment, one CloudWatch graph spanning the incident window (with visible
 timestamps) and the k6 summary as text. No five-screenshot quota.
 **DoD:** E1–E6 reports exist with real numbers or honestly blank fields, each with a filled
@@ -505,7 +505,7 @@ timestamps) and the k6 summary as text. No five-screenshot quota.
 | 14.1 Root `README.md` | MUST — done 2026-10-05 | The root README gives the project purpose, evidence-backed results, operating model, trade-offs and documentation map without tutorial steps above the fold. |
 | 14.2 One canonical as-built diagram | MUST — done 2026-10-05 | `docs/diagrams/architecture-high-level.md` remains canonical and is summarised in the root README. It contains no CloudFront, Multi-AZ RDS or unbuilt components. |
 | 14.3 Incident case study surfaced | MUST — done 2026-10-05 | The root README links the password-rotation incident through symptom, detection gap, root cause, fix, validation and observability change. |
-| 14.4 Demo video, 3–5 min | MUST | Recording script prepared in [`docs/demo-script.md`](docs/demo-script.md); record locally from committed evidence, with no extra AWS time. |
+| 14.4 Visual evidence pack | MUST | Use selective PNG screenshots and measured graphs under [`docs/screenshots/`](docs/screenshots/); each image must prove one specific claim and include visible context/timestamps. |
 | 14.5 Repo polish | MUST | CI badges for `terraform`, `app` and `drift` are now in the root README. LICENSE selection, GitHub description/topics and profile pin remain external polish. |
 | 14.6 Index READMEs current | MUST — done 2026-10-06 | `docs/README.md`, `adr/README.md` and `experiments/README.md` reflect the measured E1–E6 reports, M13 evidence and implemented DR workflow without overstating generator-bounded or no-data results. |
 | 14.7 Public write-up (LinkedIn / dev.to) | NICE | The outage story plus one game-day finding. Moves to M15 if time is short. |
@@ -520,7 +520,7 @@ timestamps) and the k6 summary as text. No five-screenshot quota.
 2. The as-built diagram.
 3. 4–6 strongest measured results (from §10, real only).
 4. Tech stack line.
-5. Demo video link.
+5. Links to the strongest screenshots and measured graphs.
 6. Links: incidents and experiments · ADRs · public Terraform module · security and
    Well-Architected · DR · cost analysis.
 
@@ -533,13 +533,12 @@ testing · observability and SLOs · security · DR · cost · running it yourse
 last.
 
 **Evidence hierarchy**, highest first: reproducible code → git history → CI history → incident
-and experiment reports → measurements → diagrams → selective screenshots → video. A screenshot
+and experiment reports → measurements → diagrams → selective screenshots and graphs. A screenshot
 earns its place only by proving one specific claim.
 
-**Demo script (one story):** architecture in 20 s → a PR with the plan comment and checks (30 s)
-→ live traffic, `/whoami` and the Golden Signals dashboard → terminate the instance → the canary
-and alarm react, the ALB returns errors (one instance) → the ASG replaces it → recovery → end on
-the measured number from E1. Optionally close on the 2-instance run showing 0 failures.
+**Visual evidence pack:** one architecture image, one incident-window graph for each measured
+experiment where available, and the corresponding k6 or CLI summary as text. Do not add decorative
+captures; every image should support a claim already documented in the repository.
 
 ### M15 — Interview and CV finalisation
 
@@ -555,7 +554,7 @@ the measured number from E1. Optionally close on the 2-instance run showing 0 fa
 
 | Tier | Tasks |
 |---|---|
-| **MUST** | C1 + C1-verify · 11.1 `prod-down`/`prod-up` · 11.2 RPO/RTO targets · 11.3 point-in-time restore drill · 11.4 `strategy.md` · 11.5 ADR-018 · 11.6 restore-capacity finding · ADR-019 (scripted fault injection) · E1 instance failure (1 vs 2) · E2 Redis failure · E3 load and scaling (D2 window) · E4 rolling deploy under load · E5 restore (= 11.3) · E6 full rebuild (= 11.1) · 13.1 measurements table · 13.2 capacity planning · 13.3 error-budget report · 13.4 cost analysis · 13.5 RPO/RTO actual vs target · 14.1 README · 14.2 canonical diagram · 14.3 incident case study · 14.4 demo video · 14.5 LICENSE, topics, badges, pin · 14.6 index READMEs · 15.1 story bank · 15.2 questions cold · 15.3 CV bullets · 15.4 cold read |
+| **MUST** | C1 + C1-verify · 11.1 `prod-down`/`prod-up` · 11.2 RPO/RTO targets · 11.3 point-in-time restore drill · 11.4 `strategy.md` · 11.5 ADR-018 · 11.6 restore-capacity finding · ADR-019 (scripted fault injection) · E1 instance failure (1 vs 2) · E2 Redis failure · E3 load and scaling (D2 window) · E4 rolling deploy under load · E5 restore (= 11.3) · E6 full rebuild (= 11.1) · 13.1 measurements table · 13.2 capacity planning · 13.3 error-budget report · 13.4 cost analysis · 13.5 RPO/RTO actual vs target · 14.1 README · 14.2 canonical diagram · 14.3 incident case study · 14.4 visual evidence pack · 14.5 LICENSE, topics, badges, pin · 14.6 index READMEs · 15.1 story bank · 15.2 questions cold · 15.3 CV bullets · 15.4 cold read |
 | **NICE TO HAVE** | C4 CloudTrail bucket region · 11.7 cross-region snapshot copy + restore · 11.8 `restore-test.yml` (manual) · 11.9 AWS Backup (D4) · E7 blue/green cutover (D3) · 13.6 `deployment-strategies.md` · 14.7 / 15.5 public write-up · optional PNG export of the diagram · WAF SQLi screenshot |
 | **REMOVE** | AZ impairment · RDS Multi-AZ failover · FIS CPU stress · region loss as a game day · the 10-experiment quota · SSM Automation runbooks · weekly scheduled restore test · rebuilding Multi-AZ, NAT Gateway or CloudFront to satisfy the old plan · `docs/architecture/overview.md` · GitHub Pages, Projects board, release tags, pinned issues · backfilling screenshots for 04, 07, 08 · five-screenshot-per-experiment quota · the "bottleneck moved app → DB → cache" narrative unless the data shows it · six-bullet CV section |
 
@@ -629,7 +628,7 @@ Remaining:
 - [x] `docs/cost-analysis.md` with real numbers (M13; resting-cost window still open)
 - [x] Error-budget report in `slo.md` (M13; canary measured, ALB 5xx explicitly no-data)
 - [x] Root README for two readers (M14)
-- [ ] 3–5 minute demo video (M14)
+- [ ] Visual evidence pack: selective screenshots and measured graphs (M14)
 - [ ] LICENSE, topics, badges, pin (M14)
 - [ ] Story bank, questions practised, 2–3 CV bullets (M15)
 - [ ] NICE: public write-up, blue/green measurement, cross-region restore
@@ -662,7 +661,7 @@ Remaining:
 |---|---|
 | Close-out applies (C1) | ~1 USD (dev rebuild cycle) |
 | Session A (≈ 6 h prod + drills + E1 second instance) | ~1.5 USD |
-| Session B (rebuild + video, ≈ 3 h) | ~0.5 USD |
+| Session B (rebuild + evidence review, ≈ 3 h) | ~0.5 USD |
 | Resting cost between sessions (state, snapshots, logs) | measured in M13; expected well under 1 USD/week |
 | Margin kept untouched | ≥ 30 USD |
 
@@ -690,7 +689,7 @@ Operational and process gaps; the architectural compromises are in §6.2.
 | CloudTrail bucket in us-east-1, not the EU | Accepted (C4) |
 | Postgres TLS not server-verified (`sslmode=require`, G3) | Candidate fix, not planned |
 | Dev and prod in one account; long-lived admin key | Accepted, plan limit (ADR-021) |
-| Credit fate on a Paid-plan upgrade is unclear: AWS's billing docs say remaining credits carry over to future bills; ADR-021 records the console's Organizations screen saying they would expire | Unresolved. Matters only if an upgrade is ever considered (for example, to keep live demos after 2027-03-02); check the console's upgrade screen first |
+| Credit fate on a Paid-plan upgrade is unclear: AWS's billing docs say remaining credits carry over to future bills; ADR-021 records the console's Organizations screen saying they would expire | Unresolved. Matters only if an upgrade is ever considered (for example, to keep live access after 2027-03-02); check the console's upgrade screen first |
 | Terraform state holds the Redis AUTH token (G7) | Accepted |
 | Retried `POST` creates a duplicate (REL 4) | Accepted; design written in `well-architected.md` |
 

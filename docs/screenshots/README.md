@@ -21,3 +21,11 @@ One subfolder per milestone. Folders aren't pre-created — git doesn't track em
 - **Full context, not crops.** A CloudWatch graph needs its visible axis and timestamp to mean anything; a cropped panel is decoration, not evidence (`PLAN.md` Appendix C).
 - **Redact before saving, not after.** Check for account IDs and anything on the redaction checklist (`PLAN.md` Appendix C) before the file is ever committed — not in a follow-up "remove sensitive info" commit.
 - **Filename convention:** `kebab-case-description.png`, named for the one claim it proves.
+
+## Portfolio evidence pack
+
+The project does not require a demo recording. For presentation, assemble a small visual pack from
+the existing evidence: the canonical architecture diagram, one CloudWatch graph or generated
+measurement graph for each important result, and the matching k6/CLI output in the experiment
+report. Graphs must be labeled as summaries when they are derived from aggregate measurements rather
+than raw time-series data; do not imply an application saturation point that was not measured.

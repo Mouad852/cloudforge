@@ -81,8 +81,8 @@ timeline, evidence and lessons are in the [incident review](docs/incidents/2026-
 CloudForge is designed around a fixed AWS credit balance, not permanent uptime:
 
 - `dev` is destroyed nightly and rebuilt from its latest final RDS snapshot.
-- `prod` is ephemeral: it is brought up for implementation, validation, experiments or demos and
-  taken down otherwise.
+- `prod` is ephemeral: it is brought up for implementation, validation, experiments or evidence
+  capture and taken down otherwise.
 - A planned `prod-down` preserves PostgreSQL in a final snapshot but intentionally removes product
   images, build artifacts, canary output and ALB logs. This recovery boundary is explicit in the
   [DR strategy](docs/disaster-recovery/strategy.md).
@@ -111,7 +111,7 @@ The complete list of accepted risks and production-grade alternatives is in
 - [SLOs, alarms and runbooks](docs/observability/README.md)
 - [Game-day evidence](docs/experiments/README.md)
 - [Disaster recovery](docs/disaster-recovery/README.md)
-- [Demo recording script](docs/demo-script.md)
+- [Visual evidence convention](docs/screenshots/README.md)
 - [Cost analysis](docs/cost-analysis.md)
 - [Terraform environments](terraform/environments/)
 - [CloudStore API](app/README.md)
@@ -120,6 +120,6 @@ The complete list of accepted risks and production-grade alternatives is in
 
 The infrastructure and its core operational controls are built. E1–E6, the point-in-time restore,
 the prod rebuild and the M13 cost/SLO evidence are recorded. Remaining work is deliberately
-narrow: record the short demo, finish repository/profile polish, and optionally repeat the
-point-in-time drill or measure a three-day resting-cost window. The authoritative status and
+narrow: assemble selective screenshots and measured graphs, finish repository/profile polish,
+and optionally repeat the point-in-time drill or measure a three-day resting-cost window. The authoritative status and
 completion criteria are in [PLAN.md](PLAN.md).
