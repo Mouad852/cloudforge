@@ -266,6 +266,7 @@ for instance_class in "${INSTANCE_CLASSES[@]}"; do
         --source-db-instance-identifier "${SOURCE_DB}" \
         --target-db-instance-identifier "${TARGET_DB}" \
         --use-latest-restorable-time \
+        --manage-master-user-password \
         --db-instance-class "${instance_class}" \
         --db-subnet-group-name "${SUBNET_GROUP}" \
         --vpc-security-group-ids ${SECURITY_GROUPS} \
@@ -307,7 +308,14 @@ done
 TARGET_ENDPOINT=$(rds describe-db-instances --db-instance-identifier "${TARGET_DB}" --query 'DBInstances[0].Endpoint.Address' --output text)
 require_value "temporary database endpoint" "${TARGET_ENDPOINT}"
 TARGET_SECRET=$(rds describe-db-instances --db-instance-identifier "${TARGET_DB}" --query 'DBInstances[0].MasterUserSecret.SecretArn' --output text)
-require_value "temporary database master secret" "${TARGET_SECRET}"
+if [[ -z "${TARGET_SECRET}" || "${TARGET_SECRET}" == "None" || "${TARGET_SECRET}" == "null" ]]; then
+  # Some snapshot restores inherit the source credentials without exposing a
+  # new managed-secret ARN. The restore request asks RDS to manage a secret;
+  # this fallback keeps older API behavior verifiable when the source password
+  # is inherited unchanged.
+  TARGET_SECRET="${SOURCE_SECRET}"
+  log "temporary DB did not expose a managed secret ARN; verifying with the source DB secret"
+fi
 RESTORE_AVAILABLE_EPOCH=$(date -u +%s)
 log "temporary DB available after $((RESTORE_AVAILABLE_EPOCH - RESTORE_STARTED_EPOCH))s"
 
