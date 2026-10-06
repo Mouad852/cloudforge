@@ -740,7 +740,7 @@ Where to find the answer is given for each, so practice draws on the record, not
 | 3. Alarms that never emailed anyone | `well-architected.md`, G12 |
 | 4. Automation that silently failed (PR plans, drift, nightly destroy) | PRs #1, #2, #5, issues #3–#6 |
 | 5. No timeouts: a hung database holds every request for 60 s | REL 5, `app/timeouts_test.go` |
-| 6. One game-day finding | M12 report, chosen after the runs |
+| 6. Game-day resilience findings: one-vs-two-instance failure, Redis reboot and generator-bounded load | E1–E3 reports |
 | 7. Cost: NAT instance, the pre-credit budget, ephemeral environments | ADR-008, `budget.tf`, `cost-analysis.md` |
 | 8. Terraform: state isolation, tests, the local-tfvars trap | ADR-002, ADR-016, §8 #5 |
 
@@ -749,8 +749,8 @@ Each story: context → problem → diagnosis → decision → trade-off → imp
 
 ### 14.3 CV bullets — draft candidates (finalise in M15)
 
-Only numbers measured today are filled in; `[E1]` and similar mark slots for M12/M13 results.
-Not inserted into any CV until M15.
+Only measured numbers are filled in; the bullets remain candidates and are not inserted into any
+CV automatically.
 
 > **CloudForge — AWS infrastructure operated through real incidents**
 > *AWS (EC2 ASG, ALB, WAF, RDS, ElastiCache, S3, CloudWatch, IAM) · Terraform · GitHub Actions
@@ -763,9 +763,10 @@ Not inserted into any CV until M15.
 >   7-day credential rotation, fixed it and verified it against a forced rotation; found and
 >   fixed alarms that had never delivered, silently failing automation, and a deploy ordering
 >   that cut errors from 198 to 0. Took a Well-Architected review from 22 to 16 high risks.
-> - Measured resilience with scripted game days and timed restores: instance-failure recovery
->   in [E1], point-in-time database restore in [E5] with RPO [M11], full rebuild from zero in
->   [E6], on a platform costing ~3.5 USD/day to run and [M13] at rest.
+> - Measured resilience with scripted game days and timed restores: one-instance replacement
+>   produced 3 HTTP 503s while two instances produced 0 failures [E1]; point-in-time database
+>   restore completed in 1,141s with 286s observed RPO [E5]; full rebuild phase took about
+>   31m12s [E6], on a platform measured at about $2.93/day while prod was running.
 
 **LinkedIn headline candidate:** *"Built and operated an AWS platform in Terraform: real
 incidents, measured game days and timed restores, on a credit budget."*
