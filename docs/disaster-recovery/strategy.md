@@ -1,7 +1,8 @@
 # Disaster recovery strategy
 
-**Status:** recovery targets set before the first drill; one successful point-in-time run is
-measured, with a repeat and full rebuild still pending.
+**Status:** recovery targets set before the drills; one successful point-in-time run and one
+successful full rebuild are measured. The full rebuild required Redis-secret recovery after the
+first `prod-up` attempt.
 **Scope:** the CloudForge environment in `eu-west-3`; this is a credit-bounded portfolio
 workload, not a multi-Region production service.
 
@@ -26,10 +27,10 @@ application data. This is an accepted project boundary, recorded in
 | Scenario | Target | Why | Actual |
 |---|---:|---|---|
 | Unplanned database loss | RPO <= 15 minutes | RDS point-in-time restore is the recovery path while the database exists. | 286s observed in one M11.3 run; repeat pending |
-| Planned prod teardown, PostgreSQL rows | RPO = 0 | Terraform requires a final RDS snapshot before deletion. | Pending E6 |
-| Planned prod teardown, S3 objects and operational logs | No recovery target | `prod-down` intentionally deletes them to make the environment truly ephemeral. | Pending E6 confirmation |
+| Planned prod teardown, PostgreSQL rows | RPO = 0 | Terraform requires a final RDS snapshot before deletion. | Final snapshot `prod-cloudforge-db-final-31dbae1e` restored; API healthy, product rows `[]` |
+| Planned prod teardown, S3 objects and operational logs | No recovery target | `prod-down` intentionally deletes them to make the environment truly ephemeral. | Confirmed: new artifact bucket was created and the binary rebuilt/uploaded |
 | Point-in-time database restore | RTO <= 60 minutes | Includes restoring a temporary instance and verifying the marker and row count. | 1141s observed in one M11.3 run; repeat pending |
-| Full environment restore from a final snapshot | RTO <= 45 minutes | Measures `prod-up` through a healthy application after the artifact is present. | Pending E6 |
+| Full environment restore from a final snapshot | RTO <= 45 minutes | Measures `prod-up` through a healthy application after the artifact is present. | `prod-up` phase about 31m12s; `/readyz` and `/api/products` returned 200 |
 
 The point-in-time target is allowed more time than the full-rebuild target because it is a
 separate, integrity-checked database drill. The first successful run met both targets; a repeat
@@ -96,8 +97,8 @@ The temporary DB and source marker were cleaned up; a repeat run remains pending
 1. After a free RDS instance slot and a capacity window are available, run
    `scripts/restore-test.sh prod` twice on different days: marker timestamp, latest restorable
    time, restore duration, row count and marker integrity.
-2. Run one complete `prod-down` / `prod-up` cycle, recording the UTC boundary timestamps printed
-   by the Make targets and the time to a healthy application.
+2. Capture `prod-down` boundary timestamps on the next lifecycle cycle so the complete wall-clock
+   E6 duration can be calculated, rather than only the `prod-up` phase.
 3. Compare actual values with the targets above, including misses, in this document and the
    corresponding experiment report.
 

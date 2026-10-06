@@ -152,7 +152,7 @@ diagram. Supporting diagrams: `network-vpc.md`, `traffic-flow.md`, `data-flow.md
 
 | Item | State |
 |---|---|
-| **prod** | **Running continuously** since 2026-09-16 (serving since 2026-09-25): 1 app instance in `eu-west-3b`, NAT instance and RDS in `eu-west-3a`. `prod-down` / `prod-up` are committed but untested; prod remains up until Session A or an earlier credit-saving teardown. **Decision D1 (approved 2026-10-03):** prod becomes ephemeral, up only for implementation, experiments, validation or demos. |
+| **prod** | Ephemeral per D1. The 2026-10-06 E6 cycle restored final snapshot `prod-cloudforge-db-final-31dbae1e`; post-rebuild health checks passed. `prod-down` / `prod-up` are now exercised, with a Redis-secret recovery preflight added after the first rebuild attempt exposed the 30-day deletion window. |
 | **dev** | Ephemeral. Destroyed nightly at 23:00 UTC with a final snapshot; rebuilt by any `terraform.yml` run, restoring the newest snapshot (ADR-026). Every prod apply rebuilds dev, because `apply (prod)` needs `apply (dev)`. |
 | Credit | **56.39 USD** left (`aws freetier get-account-plan-state`, 2026-10-03). Free plan expires **2027-03-02**. |
 | Account-plan risk | Per AWS's documentation, the Free plan **expires** six months after the account opened **or when the credits are used up**, whichever comes first. On expiry the account is closed and **access** to its resources and data is lost, but nothing is deleted at that point: AWS **retains the content for 90 days**, and upgrading to the Paid plan within those 90 days restores access. Only if no upgrade happens in that period does AWS **permanently delete** the account and its content. ([AWS Billing: Choosing a plan](https://docs.aws.amazon.com/awsaccountbilling/latest/aboutv2/free-tier-plans.html), [AWS Free Tier terms](https://aws.amazon.com/free/terms/), read 2026-10-03.) So running out of credit stops the project's AWS side until an upgrade; it is not just a bill. Even unspent, the plan expires on 2027-03-02, before graduation, so live demos after that date need an upgrade. The repository is unaffected. |
@@ -376,6 +376,17 @@ M15 ≈ 1 week. Everything AWS-dependent should finish in October 2026.
 | D4 | **Backup tooling** (ADR-018). | **Decided 2026-10-03:** AWS Backup stays NICE TO HAVE, adopted only if it demonstrates something RDS snapshots, point-in-time restore and a tested drill cannot (for example, keeping recovery points past the Free plan's 1-day cap). The mandatory outcome is proof: data restored, integrity verified, recovery time and RPO measured, whichever service does it. |
 | D5 | **Where the interview story bank lives.** | **Approved 2026-10-03:** private, outside the public repository. The repo carries the technical evidence (incident reports, ADRs, experiments, measurements, diagrams, runbooks), never rehearsed STAR or interview answers. |
 
+### E6 evidence update (2026-10-06)
+
+The full rebuild was exercised. Final snapshot `prod-cloudforge-db-final-31dbae1e` was
+available at `2026-10-06T17:14:41Z`; `prod-up` started at `17:18:05Z` and completed at
+`17:49:17Z` (about 31m12s for the rebuild phase). The ASG had one InService/Healthy instance,
+RDS was `available`, `/readyz` returned `{"postgres":"ok","redis":"ok"}`, and
+`/api/products` returned HTTP 200 with `[]`. The complete teardown-to-ready wall clock is not
+available because the `prod-down` boundaries were not captured. The first `prod-up` attempt
+failed because the prod Redis secret was scheduled for deletion; `restore-secret` plus Terraform
+import recovered it. `scripts/ensure-redis-secret.sh` now automates that preflight.
+
 ### Close-out (before Session A)
 
 | # | Task | Status |
@@ -393,8 +404,8 @@ measured numbers. Not an enterprise DR platform.
 
 | Task | Tag | Notes |
 |---|---|---|
-| 11.1 `prod-down` / `prod-up` | MUST — implemented, untested | Guarded Makefile targets turn off deletion protection, destroy (the final RDS snapshot is automatic), then restore the newest final snapshot and run `ensure-artifact.sh`. They print UTC phase boundaries. A planned teardown also deletes the environment's S3 buckets; it restores PostgreSQL rows, not product images, artifacts or operational logs. This is the executable recovery workflow, credit saver (D1) and full-rebuild experiment (E6). |
-| 11.2 Recovery objectives | MUST — measured once 2026-10-06 | `docs/disaster-recovery/strategy.md` sets targets before any drill: unplanned database-loss RPO ≤ 15 min; planned-teardown RDS RPO = 0; point-in-time database RTO ≤ 60 min; full environment RTO ≤ 45 min. Planned-teardown S3 data has no recovery target by decision. The first point-in-time run observed 286s RPO and 1141s RTO; repeat and full-rebuild actuals remain pending. |
+| 11.1 `prod-down` / `prod-up` | MUST — measured 2026-10-06 | Guarded Makefile targets turn off deletion protection, destroy (the final RDS snapshot is automatic), then restore the newest final snapshot and run `ensure-artifact.sh`. They print UTC phase boundaries. `prod-up` now restores/imports a scheduled-for-deletion Redis secret before Terraform apply. A planned teardown also deletes the environment's S3 buckets; it restores PostgreSQL rows, not product images, artifacts or operational logs. |
+| 11.2 Recovery objectives | MUST — measured once 2026-10-06 | `docs/disaster-recovery/strategy.md` sets targets before any drill: unplanned database-loss RPO ≤ 15 min; planned-teardown RDS RPO = 0; point-in-time database RTO ≤ 60 min; full environment RTO ≤ 45 min. Planned-teardown S3 data has no recovery target by decision. The point-in-time run observed 286s RPO and 1141s RTO; E6 measured about 31m12s for the `prod-up` phase. |
 | 11.3 Point-in-time restore drill | MUST — one successful run 2026-10-06 | `scripts/restore-test.sh prod` restored and verified the marker with `MARKER_FOUND=1`, observed `PRODUCT_ROW_COUNT=0`, and cleaned up the temporary instance. The successful fallback used `db.t3.micro`/`gp2` in `eu-west-3a`; run it at least once more on a different day. |
 | 11.4 DR strategy document | MUST — done 2026-10-05 | [`docs/disaster-recovery/strategy.md`](docs/disaster-recovery/strategy.md) records backup/restore versus pilot light, warm standby and active-active; the targets, planned-teardown data boundary, Free-plan limit, capacity risk, and a Mermaid recovery flow. It distinguishes targets from pending actuals. |
 | 11.5 ADR-018 | MUST — done 2026-10-05 | [`docs/adr/018-rds-native-recovery-over-aws-backup.md`](docs/adr/018-rds-native-recovery-over-aws-backup.md) records D4: RDS-native backups, final snapshots and a tested drill are mandatory; AWS Backup remains NICE until it adds a distinct capability. |
@@ -441,7 +452,7 @@ Free plan.
 | E3 | **Load and scaling** | **Measured 2026-10-06, generator-bounded:** the WAF window opened and closed cleanly; k6 ramped to a 400 req/s target for 20 minutes. The generator delivered 224.11 req/s, reached 500 VUs and dropped 609 iterations; CPU peaked at 33%. | Delivered traffic stayed at p95 51.09ms with 0% errors across 268,940 requests. This is a lower bound, not CloudForge's saturation point; a stronger/distributed generator is required for that claim. | MUST |
 | E4 | **Rolling deploy under load** | **Measured 2026-10-06:** launch template version 11 refreshed prod successfully in `344s` while the 8-minute k6 gate ran. | `0/2179` failed requests; p95 `664.13ms`, max `916.15ms`. This improves on the historical `198` errors; latency remains a separate signal. | MUST |
 | E5 | **Database recovery** | The M11 point-in-time restore drill. | Restore duration, measured RPO, integrity. No extra spend. | MUST (shared with M11) |
-| E6 | **Full rebuild from zero** | `prod-down` → `prod-up` (M11). Cross-check against the dev nightly round trips in CI history. | Wall-clock from an empty account state to a serving, data-restored environment. | MUST (shared with M11) |
+| E6 | **Full rebuild from zero** | **Measured 2026-10-06:** final snapshot `prod-cloudforge-db-final-31dbae1e` restored; `prod-up` completed in about 31m12s after a Redis-secret recovery/import workaround. | ASG healthy, RDS available, `/readyz` returned PostgreSQL/Redis `ok`, `/api/products` returned 200 with `[]`; full teardown-to-ready wall clock unavailable because `prod-down` boundaries were not captured. | MUST (shared with M11) |
 | E7 | Blue/green cutover + rollback under load | Local `terraform apply -var` weight shift (D3). | Failed requests, cutover and rollback times. | NICE |
 | — | 2026-09-30 rotation outage | Already a full post-incident review. Link it from the experiments index; do not recreate it. | — | done |
 
@@ -580,7 +591,7 @@ plausible invented one. "Pending" means planned in §9.
 | E3 max sustainable req/s, p95 at that load | generator-bounded at 400 req/s target | 51.09ms at 224.11 delivered req/s | 0/268,940 (0%) | generator dropped 609 iterations | M12/M13 |
 | E4 rolling deploy under load | refresh successful | 344s refresh; 8m00.8s k6 gate | 0/2179 (0%) | p95 664.13ms; max 916.15ms | M12 |
 | E5 point-in-time restore | n/a | 1141s (one run) | n/a | n/a | M11 |
-| E6 full rebuild from zero | n/a | pending | n/a | n/a | M11/M12 |
+| E6 full rebuild from zero | 45 min `prod-up` target | ~31m12s rebuild phase; full wall clock not captured | API checks 200; product rows `[]` | first attempt required secret recovery/import | M11/M12 |
 
 RPO target: proposed in M11 · measured: 286s (one production run; repeat pending).
 RTO target: proposed in M11 · measured: 1141s (one production run; repeat pending).

@@ -1,4 +1,4 @@
-.PHONY: dev-up dev-down prod-up prod-down restore-test
+.PHONY: dev-up dev-down prod-up prod-down restore-test ensure-redis-secret
 
 AWS_REGION ?= eu-west-3
 
@@ -57,6 +57,7 @@ prod-down:
 # to create an empty database: prod-up is the tested recovery path, not a
 # fresh-environment shortcut.
 prod-up:
+	AWS_DEFAULT_REGION=$(AWS_REGION) bash scripts/ensure-redis-secret.sh prod
 	@echo "==> prod-up: finding the newest final snapshot at $$(date -u '+%Y-%m-%dT%H:%M:%SZ')"
 	@SNAP=$$(aws rds describe-db-snapshots \
 		--region $(AWS_REGION) \
@@ -73,6 +74,9 @@ prod-up:
 	@echo "==> prod-up: ensuring the rebuild has an artifact at $$(date -u '+%Y-%m-%dT%H:%M:%SZ')"
 	AWS_DEFAULT_REGION=$(AWS_REGION) bash scripts/ensure-artifact.sh prod
 	@echo "==> prod-up: complete at $$(date -u '+%Y-%m-%dT%H:%M:%SZ')"
+
+ensure-redis-secret:
+	AWS_DEFAULT_REGION=$(AWS_REGION) bash scripts/ensure-redis-secret.sh $(RESTORE_ENV)
 
 # Manual, destructive-cost DR evidence only: asks for confirmation before it
 # writes a marker and creates a temporary RDS instance, then always removes it.
