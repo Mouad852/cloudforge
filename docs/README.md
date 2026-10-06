@@ -13,14 +13,14 @@ and the [as-built architecture](diagrams/architecture-high-level.md).
 | [`adr/`](adr/) | Architecture Decision Records, the decision log | 26 ADRs, current |
 | [`incidents/`](incidents/) | Post-incident reviews of real outages | 1 (SEV1, 2026-09-30) |
 | [`security/`](security/) | Threat model, IAM walkthrough, OIDC trust policy, encryption inventory, data classification, incident response, Well-Architected review | current |
-| [`observability/`](observability/) | SLOs, SLIs and the error-budget policy | current; error-budget report in M13 |
+| [`observability/`](observability/) | SLOs, SLIs and the error-budget policy | current; error-budget snapshot measured through 2026-10-06 |
 | [`runbooks/`](runbooks/) | One runbook per alarm, deployment and rollback, readiness checklist, account teardown | current |
-| [`experiments/`](experiments/) | One report per game day | reports prepared; live results pending (M12) |
-| [`disaster-recovery/`](disaster-recovery/) | DR strategy, RPO/RTO targets and tested results | strategy and drill implemented; live results pending (M11) |
-| [`resilience/`](resilience/) | Capacity planning from load tests | template ready; measurements pending (M13) |
+| [`experiments/`](experiments/) | One report per game day | E1–E6 measured; E7 optional |
+| [`disaster-recovery/`](disaster-recovery/) | DR strategy, RPO/RTO targets and tested results | point-in-time restore and full rebuild measured; repeat restore remains open |
+| [`resilience/`](resilience/) | Capacity planning from load tests | E3 measured; generator-bounded conclusion recorded |
 | [`infrastructure/`](infrastructure/) | Deployment strategies compared | optional (M13) |
 | [`screenshots/`](screenshots/) | Selected evidence, by milestone | partial by design |
-| [`cost-analysis.md`](cost-analysis.md) | Real Cost Explorer numbers | template ready; measurements pending (M13) |
+| [`cost-analysis.md`](cost-analysis.md) | Real Cost Explorer numbers | prod run-rate measured; resting-cost window remains open |
 
 **Convention:** nothing here is filled in ahead of the work. A folder marked "planned" means
 that phase hasn't happened yet.

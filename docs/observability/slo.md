@@ -61,7 +61,7 @@ An alarm firing doesn't automatically mean the SLO is at risk — a single 6-min
 can trip the `alb-latency-p95` alarm and barely dent a 30-day error budget. The alarms are
 the smoke detector; the SLOs are the monthly inspection report.
 
-## Current status (2026-10-03)
+## Current status (2026-10-06)
 
 The canary has hit the ALB directly since ADR-025 (2026-09-22; CloudFront was denied), so
 `SuccessPercent` carries real samples in both environments. Until 2026-10-02 it only fed the
@@ -74,7 +74,22 @@ outage (`docs/incidents/2026-09-30-db-password-rotation.md`) failed every canary
 2026-10-31. Under the policy above this is a deploy freeze with reliability work only. M12's
 game days count as reliability work, so they go ahead, and each records the budget it consumes.
 
-The error-budget report for the whole period is written in M13 (`PLAN.md` §9).
+The measured snapshot below is the M13 error-budget report; future monthly windows should be
+appended rather than replacing this incident-inclusive baseline.
+
+## Measured error-budget snapshot (2026-09-29 through 2026-10-06)
+
+CloudWatch `CloudWatchSynthetics/SuccessPercent` for `prod-api-avail` returned 2,231 samples
+from `2026-09-29T00:00:00Z` through `2026-10-07T00:00:00Z`. Weighted by each hourly sample
+count, 1,746 were successful and 485 failed: **78.26% availability**. The failures are
+dominated by the approximately 40-hour database-password rotation outage documented in the
+incident review; the remaining samples were 100% except for the rebuild window's partial hour.
+
+The 99.5% availability objective allowed about 11 failed samples in this observation window, so
+the budget was exhausted by the incident. `AWS/ApplicationELB` had no datapoints for
+`HTTPCode_Target_5XX_Count` for the same prod ALB and period; that is recorded as **no ALB
+5xx data**, not as proof of zero errors. The k6 game-day reports remain the authoritative
+request-level evidence for E1–E4.
 
 ## See also
 

@@ -54,11 +54,16 @@ The complete diagram and the supporting network, traffic, data and security flow
 | The rotation fix survived a forced password rotation on the same instance. | [Incident verification](docs/incidents/2026-09-30-db-password-rotation.md#verification) |
 | A rolling-deploy ordering fix reduced a dev rollout from 198 ALB errors to zero. | [ADR-026](docs/adr/026-environments-rebuild-themselves.md) |
 | A prod deploy gate recorded zero failed requests across 2,215 requests. | [As-built measurements](PLAN.md#10-measurements-table) |
-| A historical instance replacement took 3m 8s on dev with two instances and no load. | [Measurement context](PLAN.md#10-measurements-table) |
+| E1: one-instance replacement caused 3 HTTP 503s; two instances had 0 failures during replacement. | [E1 report](docs/experiments/01-instance-failure.md) |
+| E2: two Redis reboot runs had 0 failed requests; p95 was 763ms and 677ms. | [E2 report](docs/experiments/02-cache-failure.md) |
+| E3: the generator delivered 224.11 req/s at p95 51.09ms with 0 errors; saturation was not reached. | [E3 report](docs/experiments/03-load-and-scaling.md) |
+| E4: a prod rolling refresh completed in 344s with 0 failed requests during the k6 gate. | [E4 report](docs/experiments/04-rolling-deploy.md) |
+| E5/E6: point-in-time restore took 1,141s; the full rebuild phase took about 31m12s and health checks passed. | [E5 report](docs/experiments/05-database-restore.md), [E6 report](docs/experiments/06-full-rebuild.md) |
 
-The remaining resilience figures are intentionally not filled in. The prepared [game-day
-reports](docs/experiments/README.md) and [recovery strategy](docs/disaster-recovery/strategy.md)
-separate targets from actual measurements until the live exercises complete.
+The reports distinguish measured results from honest limits: E3 is generator-bounded rather than
+an application saturation claim, and the full teardown-to-ready E6 wall clock was not captured
+because the `prod-down` boundaries were missing. The [game-day reports](docs/experiments/README.md)
+and [recovery strategy](docs/disaster-recovery/strategy.md) contain the evidence and caveats.
 
 ## A real incident and what changed
 
@@ -111,7 +116,8 @@ The complete list of accepted risks and production-grade alternatives is in
 
 ## Current close-out status
 
-The infrastructure and its core operational controls are built. Remaining work is deliberately
-narrow: apply and verify the ASG alarm fix, run the prepared restoration and game-day exercises,
-record the resulting measurements, complete the two-session prod rebuild proof, and record a
-short demo. The authoritative status and completion criteria are in [PLAN.md](PLAN.md).
+The infrastructure and its core operational controls are built. E1–E6, the point-in-time restore,
+the prod rebuild and the M13 cost/SLO evidence are recorded. Remaining work is deliberately
+narrow: record the short demo, finish repository/profile polish, and optionally repeat the
+point-in-time drill or measure a three-day resting-cost window. The authoritative status and
+completion criteria are in [PLAN.md](PLAN.md).

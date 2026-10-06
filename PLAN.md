@@ -62,8 +62,8 @@ that plainly in the README.
 | I can observe a running system and detect failure | 12 metric alarms + 1 composite, 2 dashboards, Synthetics canary, structured logs | Fix the one alarm that never receives data (§9, C1) |
 | I can debug real failures | 7+ real incidents and silent failures, found and fixed (§8), one SEV1 post-incident review | Story bank (M15) |
 | I can restore data and know how long it takes | Final snapshot round trip on dev, nightly | A timed, verified restore with RPO/RTO vs target (M11) |
-| I have measured recovery and performance behaviour | Deploy measurements (198 → 0 errors), rotation fix verification | 5 game days, capacity number (M12/M13) |
-| I operate it like it costs money | Budget measured before credits, ephemeral dev, cost-driven ADRs | Cost analysis with real numbers, prod made ephemeral (M11/M13) |
+| I have measured recovery and performance behaviour | E1–E6 game days, rotation-fix verification, RPO/RTO and generator-bounded capacity evidence | Repeat point-in-time restore, application saturation and E7 remain optional/open (M11–M13) |
+| I operate it like it costs money | Budget measured before credits, ephemeral environments, tagged Cost Explorer analysis | Three-day resting-cost window (M13) |
 
 ---
 
@@ -488,9 +488,9 @@ timestamps) and the k6 summary as text. No five-screenshot quota.
 | Task | Tag | Notes |
 |---|---|---|
 | 13.1 Fill §10 from the reports only | MUST | Anything not measured comes out of the headline table, no "~" estimates in it. |
-| 13.2 `docs/resilience/capacity-planning.md` | MUST | Template prepared. Fill it from E3 with req/s at the p95 target, the saturation point, the bottleneck, whether 60% CPU is the right target and one graph. If E3 was WAF-bounded, say so. |
-| 13.3 Error-budget report in `slo.md` | MUST | Canary `SuccessPercent` and ALB 5xx over the period, including the outage and the game days. |
-| 13.4 `docs/cost-analysis.md` | MUST | Template prepared. Fill it with pre-credit Cost Explorer data: September total, cost per prod-up day and hour, resting cost after `prod-down` (at least 3 days of data), and cost by tag from 2026-09-30 (tags were inactive before). Optimisation deltas only where measured; list-price comparisons (NAT instance vs gateway) labelled as such. |
+| 13.2 `docs/resilience/capacity-planning.md` | MUST | Measured from E3: 224.11 delivered req/s at p95 51.09ms with 0% errors; the local generator reached 500 VUs and dropped 609 iterations, so application saturation and the 60% CPU target remain unmeasured. |
+| 13.3 Error-budget report in `slo.md` | MUST | Measured 2026-10-06: 2,231 prod canary samples, 78.26% weighted availability and 485 failed samples across the outage/rebuild window; ALB target-5xx metric had no datapoints. |
+| 13.4 `docs/cost-analysis.md` | MUST | Measured: September pre-credit total $113.26; prod averaged $2.9308/day ($0.1221/hour) on Oct 1–5; tagged CloudForge spend was $17.4432 from Sep 30–Oct 6; remaining credit was $44.11. Resting cost still needs a three-day teardown window. |
 | 13.5 RPO/RTO actual vs target | MUST | In `strategy.md` (M11). |
 | 13.6 `docs/infrastructure/deployment-strategies.md` | NICE | Short. Rolling measured (E4); blue/green measured (E7) or stated as not exercised. Can live inside the E4 report instead. |
 | ~~"Bottleneck moved app → DB → cache" narrative~~ | REMOVE | Only if the data shows it. |
@@ -507,7 +507,7 @@ timestamps) and the k6 summary as text. No five-screenshot quota.
 | 14.3 Incident case study surfaced | MUST — done 2026-10-05 | The root README links the password-rotation incident through symptom, detection gap, root cause, fix, validation and observability change. |
 | 14.4 Demo video, 3–5 min | MUST | Recorded in Session B, no extra AWS time. Script below. |
 | 14.5 Repo polish | MUST | CI badges for `terraform`, `app` and `drift` are now in the root README. LICENSE selection, GitHub description/topics and profile pin remain external polish. |
-| 14.6 Index READMEs current | MUST — done 2026-10-05 | `docs/README.md`, `adr/README.md` and `experiments/README.md` reflect the ADRs, prepared experiment reports and implemented DR workflow without claiming unrun results. |
+| 14.6 Index READMEs current | MUST — done 2026-10-06 | `docs/README.md`, `adr/README.md` and `experiments/README.md` reflect the measured E1–E6 reports, M13 evidence and implemented DR workflow without overstating generator-bounded or no-data results. |
 | 14.7 Public write-up (LinkedIn / dev.to) | NICE | The outage story plus one game-day finding. Moves to M15 if time is short. |
 | ~~`docs/architecture/overview.md`~~ | REMOVE | The README's engineer section + diagrams + ADR index cover it. |
 | ~~GitHub Pages, Projects board, release tags, pinned issues~~ | REMOVE | Nobody evaluating the repo opens them. |
@@ -581,6 +581,13 @@ plausible invented one. "Pending" means planned in §9.
 | Well-Architected high risks | 22 → 16 | 2026-09-27 → 10-03 | `well-architected.md` |
 | Pre-credit cost | 113.26 USD (September); 3.4–3.9 USD per prod-up day | Cost Explorer | §12 |
 
+### M13 measurement update (2026-10-06)
+
+Capacity and cost evidence are now recorded. E3 is generator-bounded at 224.11 delivered req/s
+with p95 51.09ms and zero errors. Prod averaged $2.9308/day ($0.1221/hour) on Oct 1–5;
+tagged CloudForge spend was $17.4432 from Sep 30–Oct 6, and remaining Free-plan credit was
+$44.11. Resting cost remains intentionally open until a three-day teardown window is available.
+
 ### Pending
 
 | Scenario | Detection | Recovery | Failed requests | Error budget | Source |
@@ -595,8 +602,8 @@ plausible invented one. "Pending" means planned in §9.
 
 RPO target: proposed in M11 · measured: 286s (one production run; repeat pending).
 RTO target: proposed in M11 · measured: 1141s (one production run; repeat pending).
-Cost per prod-up hour: ~0.15 USD (from the daily figure; refine in M13) · resting cost: pending
-(measured after `prod-down`).
+Cost per prod-up hour: $0.1221 derived from the Oct 1–5 prod average; resting cost remains
+unmeasured because prod was rebuilt before a three-day teardown window.
 
 ---
 
@@ -616,11 +623,11 @@ Done:
 
 Remaining:
 
-- [ ] `docs/disaster-recovery/strategy.md` with tested RPO/RTO (M11)
-- [ ] 6 experiment reports with "what I changed" (M12)
-- [ ] `docs/resilience/capacity-planning.md` (M13)
-- [ ] `docs/cost-analysis.md` with real numbers (M13)
-- [ ] Error-budget report in `slo.md` (M13)
+- [x] `docs/disaster-recovery/strategy.md` with tested RPO/RTO (M11)
+- [x] 6 experiment reports with "what I changed" (M12)
+- [x] `docs/resilience/capacity-planning.md` (M13; generator-bounded result recorded)
+- [x] `docs/cost-analysis.md` with real numbers (M13; resting-cost window still open)
+- [x] Error-budget report in `slo.md` (M13; canary measured, ALB 5xx explicitly no-data)
 - [x] Root README for two readers (M14)
 - [ ] 3–5 minute demo video (M14)
 - [ ] LICENSE, topics, badges, pin (M14)
