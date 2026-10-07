@@ -29,6 +29,6 @@ As-built diagram of the `dev` network, from the actual M1 apply — not the pre-
 
 - **Public route table** (`dev-public-rt`, associated with `public-a`/`public-b`): `0.0.0.0/0 → igw-0cacc84cf4e4427f3`, plus the S3 prefix-list route to the gateway endpoint.
 - **Private route table** (`dev-private-rt`, associated with all four of `app-a`/`app-b`/`data-a`/`data-b`): `0.0.0.0/0 → dev-nat-instance`'s ENI, plus the same S3 prefix-list route.
-- One shared private route table, one NAT instance — `app-b` and `data-b` in `eu-west-3b` reach the internet through the NAT instance sitting in `eu-west-3a`'s public subnet. This is the single-point-of-failure trade-off documented in ADR-008: acceptable for an ephemeral `dev` box, would be a NAT Gateway per-AZ (or at least HA) in `prod`. **Prod has the same layout:** the NAT Gateway planned for it was never built (ADR-008, known gap; `PLAN.md` §6.2), so prod's egress is also one NAT instance in `eu-west-3a`.
+- One shared private route table and one NAT instance — `app-b` and `data-b` in `eu-west-3b` reach the internet through the NAT instance in `eu-west-3a`'s public subnet. This is the single-point-of-failure trade-off documented in ADR-008. Both environments use this layout, so prod's egress also depends on one NAT instance in `eu-west-3a`.
 
 See ADR-001/002 (state/backend), ADR-005 (SSM access into this network), ADR-008 (NAT strategy, including the `eth0`/`ens5` forwarding bug hit while building this), and ADR-012 (why this is `dev` only, ephemeral) for the reasoning behind what's shown here.

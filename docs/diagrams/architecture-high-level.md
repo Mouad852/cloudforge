@@ -1,9 +1,8 @@
 # High-Level Architecture — as built
 
-**This is the canonical architecture diagram.** It shows what is deployed today (`PLAN.md` §4),
-not the original target design. The original showed CloudFront in front of the ALB, Multi-AZ RDS
-and two instances per environment; none of that is built. CloudFront was denied by AWS Support
-(ADR-025), and the rest are recorded compromises (`PLAN.md` §6.2).
+**This is the canonical architecture diagram.** It shows what is deployed today. CloudFront was
+denied by AWS Support (ADR-025); the platform uses Single-AZ RDS and one application instance at
+rest as intentional budget-conscious trade-offs.
 
 ## Rendered overview
 
@@ -56,8 +55,8 @@ flowchart TB
 | Golden Signals and SLO dashboards | CloudTrail, Access Analyzer, VPC Flow Logs | Daily drift check, nightly dev destroy |
 | Synthetics canary on the ALB + `canary-failed` alarm | Encryption at rest and in transit behind the ALB | Rebuilt environments converge on their own (ADR-026) |
 
-Everything above is provisioned by Terraform. Dev is destroyed every night; prod is meant to be
-up only for working sessions (`PLAN.md` §12, decision D1).
+Everything above is provisioned by Terraform. Dev is destroyed nightly, and prod is brought up
+for implementation, validation, and demonstrations before being torn down.
 
 Detail diagrams: [`network-vpc.md`](network-vpc.md), [`traffic-flow.md`](traffic-flow.md),
 [`data-flow.md`](data-flow.md), [`security-flow.md`](security-flow.md).

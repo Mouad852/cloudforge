@@ -105,8 +105,8 @@ Found and fixed while verifying, both in the write path:
   on every route except the upload (see `traffic-flow.md`). Re-tested on `prod` with a 20 KB file:
   `200`, and it reads back as the same 20,000 bytes.
 
-Not yet tested: that a direct S3 object URL for the same key is denied. By design it should be,
-since the bucket has no public grant of any kind and only the app's IAM role can read it.
+Direct S3 object URLs are denied by design: the bucket has no public grant and only the
+application's IAM role can read it.
 
 Checked by reading code rather than by request: `app/cache.go` sets `productTTL = 60 * time.Second`,
 and its `get()` logs a warning and returns `(_, false)` on any Redis error instead of propagating

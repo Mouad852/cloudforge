@@ -4,7 +4,7 @@ The Mermaid source remains in this repository so it can be reviewed and updated 
 
 | Diagram | File | Rendered asset | Status |
 |---|---|---|---|
-| High-level architecture (canonical) | `architecture-high-level.md` | `assets/architecture-high-level-generated-v2.png` | ✅ as-built (`PLAN.md` §4) |
+| High-level architecture (canonical) | `architecture-high-level.md` | `assets/architecture-high-level-generated-v2.png` | ✅ as-built |
 | Network / VPC | `network-vpc.md` | `assets/network-vpc-generated.png` | ✅ as-built |
 | Traffic flow (WAF → ALB → ASG) | `traffic-flow.md` | `assets/traffic-flow-generated.png` | ✅ as-built (ADR-025), verified 2026-09-25 |
 | Security request path | `security-flow.md` §1 | `assets/security-request-path-generated.png` | ✅ as-built, drawn 2026-10-02 |

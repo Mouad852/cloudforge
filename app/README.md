@@ -2,8 +2,8 @@
 
 A deliberately trivial CRUD API for "products" (create, list, get, delete, upload an image).
 It exists to give the infrastructure something real to run, scale, and break — it is not the
-point of this project. See the root `PLAN.md` (§ M2) and `docs/adr/` for the actual portfolio
-content: the AWS architecture around this app.
+primary focus of the project. See the root [README](../README.md) and [architecture decision
+records](../docs/adr/README.md) for the AWS platform around this app.
 
 ## Endpoints
 
@@ -50,8 +50,8 @@ REDIS_ADDR=localhost:6379 go test ./...
 
 ## Config
 
-Everything is env vars, read once at boot (a restart is the deploy mechanism — see M3's ASG
-instance refresh). **The one exception is the database password**, which is not cached: see
+Everything is env vars, read once at boot (a restart is the deployment mechanism). **The one
+exception is the database password**, which is not cached: see
 below.
 
 | Var | Default | Notes |
@@ -84,5 +84,5 @@ below.
 - **`/healthz` never touches Postgres or Redis.** It's the ALB's health check; if it depended on
   a dependency, that dependency's outage would pull every instance out of rotation.
 - **Graceful shutdown** on `SIGTERM`/`SIGINT`: stops accepting new connections and drains
-  in-flight requests for up to 35s — longer than the ALB's 30s deregistration delay (M4), so a
+  in-flight requests for up to 35s — longer than the ALB's 30s deregistration delay, so a
   deploy never cuts off a request mid-response.

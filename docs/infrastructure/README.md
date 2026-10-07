@@ -2,10 +2,9 @@
 
 Terraform module structure, environment strategy (dev/prod) and deployment mechanics.
 
-- `deployment-strategies.md` — optional (M13, `PLAN.md` §9). Rolling (ASG instance refresh,
-  launch before terminate) measured in the M12 rolling-deploy experiment; blue/green (ALB
-  weighted forward) either measured in the optional E7 or stated as implemented but not
-  exercised (ADR-017). May live inside the E4 experiment report instead. **Not written yet.**
+Rolling deployments are measured in the [rolling-deploy experiment](../experiments/04-rolling-deploy.md).
+The repository also implements blue/green routing through weighted ALB forwarding; its design is
+recorded in [ADR-017](../adr/017-bluegreen-second-strategy.md).
 
 The deploy and rollback procedure itself is [`../runbooks/deployment.md`](../runbooks/deployment.md).
 Module-level documentation (`terraform-docs`-generated) lives alongside each module in
