@@ -5,6 +5,13 @@ not the original target design. The original showed CloudFront in front of the A
 and two instances per environment; none of that is built. CloudFront was denied by AWS Support
 (ADR-025), and the rest are recorded compromises (`PLAN.md` §6.2).
 
+## Rendered overview
+
+![Rendered high-level architecture](assets/architecture-high-level-generated-v2.png)
+
+<details>
+<summary>Editable Mermaid source</summary>
+
 ```mermaid
 flowchart TB
     Client(("Client<br/>HTTP :80"))
@@ -37,6 +44,8 @@ flowchart TB
     ASG -->|via NAT| SM
     ASG -.-> DNS
 ```
+
+</details>
 
 **Cross-cutting, not shown above:**
 

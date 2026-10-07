@@ -2,7 +2,7 @@
 
 As-built diagram of the `dev` network, from the actual M1 apply — not the pre-implementation target. Produced as a generated image rather than Mermaid (deliberate exception to this project's usual "diagrams as text" convention, see `README.md` in this folder) because the routing relationships (which subnets share a route table, which route goes where) came out clearer as an illustrated diagram than a flowchart graph.
 
-![Network VPC diagram](assets/network-vpc.jpg)
+![Rendered Network VPC diagram](assets/network-vpc-generated.png)
 
 ## Real resource IDs (`dev`, `eu-west-3`)
 

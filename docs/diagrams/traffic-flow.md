@@ -12,6 +12,13 @@ CloudFront, that whole problem disappears along with its solution — the ALB is
 edge now, the way any internet-facing ALB with no CDN in front of it works, and the WAF is
 associated with it directly.
 
+## Rendered overview
+
+![Rendered traffic flow](assets/traffic-flow-generated.png)
+
+<details>
+<summary>Editable Mermaid source</summary>
+
 ```mermaid
 flowchart TB
     Viewer(("Legitimate client"))
@@ -36,6 +43,8 @@ flowchart TB
     TG --> ASG_A
     TG --> ASG_B
 ```
+
+</details>
 
 ## Why one layer is now correct, where two were needed before
 

@@ -8,8 +8,13 @@ can change what.
 
 ## 1. A request, from the internet to the data
 
+![Rendered security request path](assets/security-request-path-generated.png)
+
 Every hop after the first accepts traffic only from the hop before it. The first hop is open to
 the whole internet on purpose: with no CloudFront (ADR-025), the ALB is the public edge.
+
+<details>
+<summary>Editable Mermaid source</summary>
 
 ```mermaid
 flowchart TB
@@ -53,6 +58,8 @@ flowchart TB
     App -->|"443"| S3EP --> S3
 ```
 
+</details>
+
 | Hop | What stops an attacker here | Threats |
 |---|---|---|
 | Internet to ALB | Shield Standard; nothing else at the network layer, by design | T4 |
@@ -66,6 +73,11 @@ flowchart TB
 host, so a compromised instance could exfiltrate (T5); viewer traffic is plain HTTP (G11).
 
 ## 2. Identities, and what each one can change
+
+![Rendered identity and permission path](assets/security-identity-path-generated.png)
+
+<details>
+<summary>Editable Mermaid source</summary>
 
 ```mermaid
 flowchart LR
@@ -101,6 +113,8 @@ flowchart LR
     ApplyRole -->|"create, change, destroy"| Account
     ApplyRole -->|"creates and passes"| workloads
 ```
+
+</details>
 
 | Boundary | How it is enforced | Weakness | Threats |
 |---|---|---|---|

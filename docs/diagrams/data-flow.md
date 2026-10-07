@@ -5,6 +5,13 @@ diagram showed images served straight out of S3 through CloudFront's Origin Acce
 Support permanently denied CloudFront access (ADR-025), so image reads now go through the app
 instead — the same route the read and write paths already used for everything else.
 
+## Rendered overview
+
+![Rendered data flow](assets/data-flow-generated.png)
+
+<details>
+<summary>Editable Mermaid source</summary>
+
 ```mermaid
 flowchart TB
     subgraph readpath["Cache-aside read path"]
@@ -58,6 +65,8 @@ flowchart TB
         DirectS3 -.->|bypasses the app entirely| Forbidden403
     end
 ```
+
+</details>
 
 ## Why
 

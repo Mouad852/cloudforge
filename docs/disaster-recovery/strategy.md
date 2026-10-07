@@ -47,6 +47,11 @@ run is still required before treating these as repeatable performance numbers.
 
 ## Recovery flow
 
+![Rendered disaster recovery flow](../diagrams/assets/disaster-recovery-flow-generated.png)
+
+<details>
+<summary>Editable Mermaid source</summary>
+
 ```mermaid
 flowchart LR
     A[Session ends or database loss] --> B{Planned teardown?}
@@ -60,6 +65,8 @@ flowchart LR
     I --> J[Instance starts, migrations run, health checks pass]
     G --> K[Check marker and row count]
 ```
+
+</details>
 
 ## Capacity risk and mitigation
 
