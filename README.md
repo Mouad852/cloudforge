@@ -1,72 +1,68 @@
 # CloudForge
 
+CloudForge is a production-style AWS platform engineered with Terraform. It focuses on the work behind dependable delivery: secure infrastructure, CI/CD, observability, resilience testing, disaster recovery, and learning from production failure—not just provisioning a demo API.
+
 [![Terraform](https://github.com/Mouad852/cloudforge/actions/workflows/terraform.yml/badge.svg)](https://github.com/Mouad852/cloudforge/actions/workflows/terraform.yml)
 [![Application](https://github.com/Mouad852/cloudforge/actions/workflows/app.yml/badge.svg)](https://github.com/Mouad852/cloudforge/actions/workflows/app.yml)
 [![Drift detection](https://github.com/Mouad852/cloudforge/actions/workflows/drift.yml/badge.svg)](https://github.com/Mouad852/cloudforge/actions/workflows/drift.yml)
 
-**CloudForge is a production-style AWS platform built with Terraform, delivered through GitHub Actions, and validated through real incident response and resilience experiments.** The Go API is intentionally small; the focus is infrastructure engineering, operational judgment, and evidence.
-
-![CloudForge architecture](docs/diagrams/assets/architecture-high-level-generated-v2.png)
-
-## At a glance
-
-| Area | Implementation |
-|---|---|
-| Infrastructure | Terraform modules for networking, edge, compute, database, cache, storage, observability, and CI/CD |
-| AWS platform | VPC across two AZs, WAF-protected ALB, Auto Scaling Groups, RDS PostgreSQL, ElastiCache Redis, S3, Secrets Manager, CloudWatch, and Route 53 private DNS |
-| Delivery | GitHub Actions with OIDC, approval-gated applies, policy checks, Terraform-native tests, rolling deployments, and a k6 verification gate |
-| Operations | SLOs, CloudWatch alarms, synthetic canary, per-alarm runbooks, daily drift detection, and an explicit ephemeral-environment lifecycle |
-| Resilience | Tested instance replacement, cache failure, load/scaling, rolling deployment, point-in-time recovery, and full environment rebuild |
-
 ## Architecture
 
-Traffic reaches a regional AWS WAF and Application Load Balancer. The ALB fronts an Auto Scaling
-Group within a two-AZ VPC. The application connects privately to PostgreSQL and Redis, retrieves
-credentials from Secrets Manager, and stores artifacts, images, and ALB logs in private S3
-buckets.
+![CloudForge high-level AWS architecture](docs/diagrams/assets/architecture-high-level-generated-v2.png)
 
-The deployed design deliberately favors a bounded personal AWS budget: one application instance at rest (scaling to two), Single-AZ RDS, a NAT instance, and ephemeral `dev` and `prod` environments. Those constraints and their consequences are recorded transparently in the [architecture decision records](docs/adr/README.md) and [disaster-recovery strategy](docs/disaster-recovery/strategy.md).
+Internet traffic passes through AWS WAF to an Application Load Balancer and Auto Scaling Group in a two-AZ VPC. The Go service uses RDS PostgreSQL, ElastiCache Redis, private S3 buckets, Secrets Manager, and Route 53 private DNS; CloudWatch provides the operational signal. Terraform provisions the platform and GitHub Actions uses AWS OIDC for delivery.
 
-For implementation detail, see the [architecture diagrams](docs/diagrams/README.md), including network, request, data, and security flows.
+## Engineering results
 
-## Evidence
+CloudForge was deployed, measured, intentionally broken, recovered, and improved. Results below are linked to the underlying evidence rather than presented as unqualified capacity claims.
 
-| Outcome | Verified result | Detail |
+| Exercise | Verified result | Important qualification |
 |---|---|---|
-| Real incident response | An RDS password rotation caused a service outage; the application, alerting, and verification path were corrected and then force-tested. | [SEV1 incident review](docs/incidents/2026-09-30-db-password-rotation.md) |
-| Instance resilience | Replacing one instance caused 3 HTTP 503s; testing with two instances produced 0 failed requests during replacement. | [E1: instance failure](docs/experiments/01-instance-failure.md) |
-| Cache resilience | Two Redis reboot runs completed with 0 failed requests; p95 latency was 763 ms and 677 ms. | [E2: cache failure](docs/experiments/02-cache-failure.md) |
-| Load and scaling | The test generator delivered 224.11 req/s at p95 51.09 ms with 0 errors; the application saturation point was not reached. | [E3: load and scaling](docs/experiments/03-load-and-scaling.md) |
-| Deployment safety | A rolling refresh completed in 344 seconds with 0 failed requests during the k6 gate. | [E4: rolling deploy](docs/experiments/04-rolling-deploy.md) |
-| Recovery | Point-in-time recovery took 1,141 seconds; a rebuild from teardown reached healthy service in about 31 minutes. | [E5: database restore](docs/experiments/05-database-restore.md), [E6: full rebuild](docs/experiments/06-full-rebuild.md) |
+| [Load test](docs/experiments/03-load-and-scaling.md) | **224.11 delivered req/s**, **51.09 ms p95**, **0 failed requests** (268,940) | The k6 generator reached its limit; application saturation and scale-out timing were not measured. |
+| [Rolling deployment](docs/experiments/04-rolling-deploy.md) | **0 failed requests** in 2,179 requests during a **344 s** instance refresh | The gate measured failures; p95 was 664.13 ms during the sample. |
+| [Redis reboot](docs/experiments/02-cache-failure.md) | **0 failed requests** in each of two runs | Cache recovery increased latency; the app served through its PostgreSQL fallback. |
+| [Instance replacement](docs/experiments/01-instance-failure.md) | **0 failed requests** with two instances during replacement | The normal one-instance configuration did produce 3 HTTP 503s. |
+| [Point-in-time recovery](docs/experiments/05-database-restore.md) | RDS restore ready in **1,141 s (19m01s)** | The successful drill measured an RPO of 286 s (4m46s). |
+| [Environment rebuild](docs/experiments/06-full-rebuild.md) | Measured `prod-up` phase: **about 31m12s** | Full teardown-to-ready time was not captured; only the rebuild phase is timed. |
 
-Results include their limits. For example, the load result is generator-bounded rather than a claim of application saturation, and the full teardown-to-ready wall-clock duration was not captured. The reports retain those qualifications rather than turning measurements into marketing claims.
+## What makes CloudForge different
 
-## Engineering highlights
+- **Modular infrastructure as code:** Terraform modules compose networking, edge, compute, data, storage, observability, and CI/CD.
+- **Keyless delivery:** GitHub Actions exchanges its identity for short-lived AWS credentials through OIDC; cloud credentials are not stored in the repository.
+- **Security designed into the platform:** WAF, private application/data tiers, least-privilege IAM, SSM-only access, IMDSv2, encryption, CloudTrail, VPC Flow Logs, and Access Analyzer.
+- **Operations with a feedback loop:** SLOs, CloudWatch alarms, dashboards, a deep synthetic canary, and linked runbooks turn signals into actions.
+- **Failure evidence, not just design claims:** fault injection covers instance replacement and Redis failure alongside deployment and recovery drills.
+- **Lifecycle-aware engineering:** daily drift detection and deliberately ephemeral environments are paired with documented data-recovery boundaries.
 
-- **Keyless CI/CD:** GitHub Actions exchanges its identity for short-lived AWS credentials through OIDC; no cloud credentials are stored in the repository.
-- **Defense in depth:** regional WAF, private application and data tiers, least-privilege IAM, SSM-only host access, IMDSv2, encryption at rest and in transit, CloudTrail, VPC Flow Logs, and IAM Access Analyzer.
-- **Operationally tested:** alarms are paired with runbooks; the synthetic canary detects deep dependency failures that an ALB health check cannot see.
-- **Reproducible infrastructure:** modules are tested with `terraform test`, policy checks run in CI, and drift is checked daily.
-- **Intentional recovery boundary:** final RDS snapshots and point-in-time recovery preserve relational data; the documented lifecycle intentionally does not preserve ephemeral S3 artifacts and logs.
+## Real incident → diagnosis → remediation
 
-## Repository guide
+An RDS/Secrets Manager password rotation caused a production outage because the application cached credentials at startup. Health checks stayed green and the existing monitoring did not detect the dependency failure correctly. Operational evidence—canary history, secret rotation time, ALB access logs, and application logs—led to the diagnosis.
 
-| Start here | What it shows |
-|---|---|
-| [Architecture diagrams](docs/diagrams/README.md) | The deployed topology and network, traffic, data, and security paths |
-| [Incident review](docs/incidents/2026-09-30-db-password-rotation.md) | Diagnosis, remediation, and forced-rotation validation of a real outage |
-| [Resilience experiments](docs/experiments/README.md) | Measured fault injection, deployments, scaling, and recovery |
-| [Security review](docs/security/README.md) | Threat model, Well-Architected findings, encryption, data handling, IAM, and incident response |
-| [Observability and runbooks](docs/observability/README.md) | SLOs, alarms, dashboards, and operational procedures |
-| [Disaster recovery](docs/disaster-recovery/README.md) | Recovery objectives, restoration drills, and lifecycle controls |
-| [Architecture decision records](docs/adr/README.md) | Trade-offs and decisions made as the platform evolved |
-| [Terraform environments](terraform/environments/) | Environment composition and configuration |
-| [Go API](app/README.md) | The service deployed by the platform |
+The fix refreshes credentials for new database connections, logs the cause behind 5xx responses, adds a canary-failure alarm and runbook, and was verified by deliberately forcing another secret rotation. Read the full [SEV1 incident review](docs/incidents/2026-09-30-db-password-rotation.md) for the timeline, impact, remediation, and validation.
+
+## Current operating boundaries
+
+CloudForge makes its budget and recovery trade-offs explicit: one application instance and Single-AZ RDS at rest, with scale-out capability; a NAT instance; and ephemeral environments. The load test did not establish application saturation, blue/green cutover was not measured, and cross-region recovery is not implemented or tested. These limits are part of the evidence, not hidden behind the results.
 
 ## Technology
 
-Terraform · AWS · GitHub Actions · OIDC · Go · PostgreSQL · Redis · S3 · CloudWatch · AWS WAF · k6 · Checkov
+AWS · Terraform · GitHub Actions · OIDC · Go · PostgreSQL · Redis · S3 · CloudWatch · AWS WAF · k6 · Checkov
+
+## Explore the engineering evidence
+
+### [Architecture](docs/diagrams/architecture-high-level.md)
+
+See the deployed topology, then follow the network, traffic, data, and security views.
+
+### [Engineering experiments](docs/experiments/README.md)
+
+Review measured load, fault-injection, deployment, database-recovery, and environment-rebuild exercises.
+
+### [Production incident](docs/incidents/2026-09-30-db-password-rotation.md)
+
+See a real outage investigated, remediated, and deliberately re-tested.
+
+For engineers and interviewers, the [deep technical documentation](docs/README.md) includes ADRs · Security · Observability · Runbooks · Disaster Recovery · Terraform implementation details.
 
 ## License
 
