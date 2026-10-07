@@ -378,6 +378,12 @@ M15 ≈ 1 week. Everything AWS-dependent should finish in October 2026.
 
 ### E6 evidence update (2026-10-06)
 
+> **Current lifecycle status:** D1's "prod is up today" sentence records the decision-day
+> condition on 2026-10-03, not the continuing operating state. `prod-down`/`prod-up` were
+> exercised on 2026-10-06; prod is now intentionally ephemeral between operational sessions.
+> The drift workflow distinguishes that declared teardown from unexpected deletion only when its
+> explicit lifecycle signal and empty Terraform state agree.
+
 The full rebuild was exercised. Final snapshot `prod-cloudforge-db-final-31dbae1e` was
 available at `2026-10-06T17:14:41Z`; `prod-up` started at `17:18:05Z` and completed at
 `17:49:17Z` (about 31m12s for the rebuild phase). The ASG had one InService/Healthy instance,
@@ -515,6 +521,10 @@ timestamps) and the k6 summary as text. No five-screenshot quota.
 
 **README, first screen:**
 
+**Status (2026-10-06):** 14.1–14.4 and 14.6 are complete. This cleanup adds the repository
+license; GitHub description, topics and profile pinning remain external manual actions. The public
+write-up remains NICE, not a completion requirement.
+
 1. One sentence: *a multi-AZ-capable AWS environment in Terraform, operated through real
    incidents, game days and restores; the app is a deliberate prop.*
 2. The as-built diagram.
@@ -551,6 +561,12 @@ captures; every image should support a claim already documented in the repositor
 | 15.5 Public write-up | NICE | If not done in M14. |
 
 ### All remaining work at a glance
+
+**Current status (2026-10-06):** M11–M13 and the evidence/documentation portions of M14 are
+complete. The remaining MUST work is M15 interview rehearsal, CV-bullet selection and an
+independent recruiter cold read; the ASG alarm still lacks a real ALARM/notification transition.
+The table below is retained as the historical close-out scope, not a claim that every listed item
+is still open.
 
 | Tier | Tasks |
 |---|---|
@@ -776,20 +792,20 @@ incidents, measured game days and timed restores, on a credit budget."*
 
 CloudForge is finished when each line below is **proven**, not claimed, with the evidence named:
 
-- [ ] I can design AWS infrastructure and explain the trade-offs: ADRs, §6.2, Well-Architected.
-- [ ] I can implement it reproducibly with Terraform: modules, two environments, a timed rebuild (E6).
-- [ ] I can test and validate infrastructure code: `terraform test`, Checkov custom policies, the bad-PR demo.
-- [ ] I can deploy through CI without long-lived CI credentials: OIDC, gated applies, E4.
-- [ ] I can observe a running system: dashboards, alarms that are verified to fire, the canary.
-- [ ] I can detect and debug failures: §8, incident report, M12 reports.
-- [ ] I can explain the real incidents I encountered: story bank, practised.
-- [ ] I can restore important data: M11 drill with an integrity check.
-- [ ] I have measured selected recovery and performance behaviour: §10 with no pending rows in the headline.
-- [ ] I know which parts are compromises and what real production would change: §6.2.
-- [ ] I can explain the infrastructure cost: `cost-analysis.md`.
-- [ ] A recruiter understands the project in under 90 seconds: cold read (15.4).
-- [ ] An engineer can find deep evidence behind every README claim: every claim links to a source.
-- [ ] I can defend every important claim in an interview: 15.2.
+- [x] I can design AWS infrastructure and explain the trade-offs: ADRs, §6.2, Well-Architected.
+- [x] I can implement it reproducibly with Terraform: modules, two environments, a timed rebuild (E6).
+- [x] I can test and validate infrastructure code: `terraform test`, Checkov custom policies, the bad-PR demo.
+- [x] I can deploy through CI without long-lived CI credentials: OIDC, gated applies, E4.
+- [ ] I can observe a running system completely: dashboards, canary and alarms exist, but the ASG in-service alarm has not yet had a real ALARM/notification transition.
+- [x] I can detect and debug failures: §8, incident report, M12 reports.
+- [ ] I can explain the real incidents I encountered: private story bank drafted; interview rehearsal remains active M15 work.
+- [x] I can restore important data: one M11 point-in-time drill with an integrity check and one E6 rebuild phase are measured.
+- [x] I have measured selected recovery and performance behaviour: §10 reports measured results and their explicit pending limits.
+- [x] I know which parts are compromises and what real production would change: §6.2.
+- [x] I can explain the infrastructure cost: `cost-analysis.md`, including the unmeasured resting-cost boundary.
+- [ ] A recruiter understands the project in under 90 seconds: independent cold read (15.4) remains active M15 work.
+- [x] An engineer can find deep evidence behind every README claim: the README links to source reports and the status boundaries are stated.
+- [ ] I can defend every important claim in an interview: answer practice (15.2) remains active M15 work.
 
 When these are ticked, **stop.** CloudForge is meant to be complete, not endlessly extensible.
 New ideas go to a short "v2 ideas" list in the README, not into the plan.

@@ -34,6 +34,11 @@ superseding ADR rather than being rewritten.
 | [025](025-cloudfront-denied-edge-redesign.md) | CloudFront denied — the ALB becomes the public edge | accepted |
 | [026](026-environments-rebuild-themselves.md) | A rebuilt environment brings itself back | accepted |
 
+**Current status correction (2026-10-06):** ADR-012's historical status note predates the
+measured E6 lifecycle cycle. Both `dev` and `prod` are now intentionally ephemeral; `prod-down`
+and `prod-up` were exercised, with a measured rebuild phase of about 31m12s. The complete
+teardown-to-ready wall clock was not captured.
+
 Start with **025** (an external constraint forcing a redesign), **009** (a decision whose
 consequence caused a real outage) and **026** (making a destroyed environment rebuild itself).
 

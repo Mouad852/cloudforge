@@ -89,6 +89,9 @@ CloudForge is designed around a fixed AWS credit balance, not permanent uptime:
 
 The guarded lifecycle commands and the manual point-in-time restore drill are documented in
 [the disaster-recovery guide](docs/disaster-recovery/README.md).
+The daily drift check suppresses an intentionally torn-down environment only when an explicit
+lifecycle signal says it is down and its Terraform state is empty; missing or contradictory state
+continues to alert.
 
 ## Trade-offs
 
@@ -113,13 +116,15 @@ The complete list of accepted risks and production-grade alternatives is in
 - [Disaster recovery](docs/disaster-recovery/README.md)
 - [Visual evidence convention](docs/screenshots/README.md)
 - [Cost analysis](docs/cost-analysis.md)
+- [Public Terraform cache module](https://registry.terraform.io/modules/Mouad852/cache/aws)
 - [Terraform environments](terraform/environments/)
 - [CloudStore API](app/README.md)
 
 ## Current close-out status
 
 The infrastructure and its core operational controls are built. E1–E6, the point-in-time restore,
-the prod rebuild and the M13 cost/SLO evidence are recorded. Remaining work is deliberately
-narrow: assemble selective screenshots and measured graphs, finish repository/profile polish,
-and optionally repeat the point-in-time drill or measure a three-day resting-cost window. The authoritative status and
-completion criteria are in [PLAN.md](PLAN.md).
+the prod rebuild, M13 cost/SLO evidence and the M14 visual evidence package are recorded. Remaining
+work is deliberately narrow: M15 interview and CV preparation, GitHub metadata polish, and optional
+repeat PITR, blue/green, cross-region-recovery or resting-cost evidence. ASG in-service metrics and
+alarms are implemented, but a real ALARM transition and notification have not yet been verified.
+The authoritative status and completion criteria are in [PLAN.md](PLAN.md).

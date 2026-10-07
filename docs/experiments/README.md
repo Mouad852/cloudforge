@@ -7,11 +7,11 @@ measurements table must trace back to a file here, to a disaster-recovery drill 
 The six MUST reports have now been run and contain measured results. E7 remains optional. Do not
 fill an unmeasured field with an estimate: an honest blank is worth more than an invented one.
 
-## Planned experiments
+## Measured experiments
 
-Five high-value experiments, chosen for what the as-built system can actually demonstrate.
-Faults are injected with scripted AWS CLI commands, because AWS FIS is not available on this
-account's plan (ADR-019, M12).
+The six MUST reports have been run with measured results. E7 remains optional. Faults were
+injected with scripted AWS CLI commands because AWS FIS is not available on this account's plan
+(ADR-019, M12).
 
 | # | File | Experiment |
 |---|---|---|

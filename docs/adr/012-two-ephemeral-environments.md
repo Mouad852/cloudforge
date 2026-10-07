@@ -14,6 +14,12 @@ Exactly **two** environments — `dev` and `prod` — and both are **ephemeral b
 
 The tooling that makes teardown-and-restore painless (RDS snapshot-based `dev-down`/`dev-up`, per ADR-015) lands later, once there's an RDS instance to snapshot — this ADR fixes the structural decision (two environments, neither meant to run continuously) now, at the point where the second environment directory (`dev`) first exists.
 
+> **Status correction (2026-10-06):** The status update below was written before E6. `prod-down`
+> and `prod-up` have since been exercised, so prod now follows the same intentional ephemeral
+> operating model as dev. E6 measured the `prod-up` rebuild phase at about 31m12s; the full
+> teardown-to-ready wall clock remains unmeasured because the teardown boundaries were not
+> captured. The planned-teardown S3 data boundary is unchanged.
+
 ## Alternatives considered
 
 - **Three always-on environments (dev/staging/prod)** — closer to a typical team setup, but a middle "staging" tier adds a third full set of fixed costs (NAT, compute, database) for a single-person project with no second team to gate a staging step for. Rejected on cost, not on the general merit of staging environments.
