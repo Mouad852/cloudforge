@@ -44,7 +44,7 @@ cleanup/recovery path. A real incident is evidence, not an experiment to recreat
 The repository documents exactly what is deliberately broken, by which command, and how it is
 expected to recover. The scripts and reports do not make a fault safe in every context: they still
 require a human confirmation, a live session, and review of the resulting CloudWatch and k6 data.
-E1–E6 have now been executed and their measured outcomes are recorded in
+The six experiments have been executed and their measured outcomes are recorded in
 `docs/experiments/01-instance-failure.md` through `docs/experiments/06-full-rebuild.md`.
-E7 remains optional; the C1 alarm-transition check is still explicitly partial because no
-ALARM/email transition was observed during the measured window.
+The alarm-transition evidence is deliberately limited to the observations recorded in the
+associated runbook.

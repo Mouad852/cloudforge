@@ -4,14 +4,17 @@
 
 ## Context
 
-PLAN.md's M9 rule is "every hardcoded value becomes a module variable with defaults and `validation` blocks", and it also says dev and prod may differ **only** in sizes, counts, `multi_az`, `nat_type`, retention and deletion protection. Taken literally the first rule produces a variable for every number in every module, including ones that no caller should change. Each variable is also a promise: it needs a default that matches what already runs, a `validation`, a test that it reaches the resource, and a line in the generated README. A knob nobody can safely turn is cost with no benefit, and it is one more combination that the tests do not cover.
+Not every hardcoded value deserves a module input. Every input is a promise: it needs a default,
+validation, a test that it reaches the resource, and documentation. A knob nobody can safely turn
+adds cost without benefit and creates combinations the tests do not cover.
 
 ## Decision
 
 A value becomes a variable when at least one of these is true:
 
 - a plausible caller would want a different value, for example the health check interval, the WAF rate limit or the CloudFront price class;
-- it is one of the values PLAN.md allows dev and prod to differ in, for example instance sizes, backup and log retention, `multi_az` and deletion protection.
+- it is a value environments legitimately need to vary, for example instance sizes, backup and log
+  retention, `multi_az`, or deletion protection.
 
 Every variable defaults to the value the live environments already run, so introducing it changes no plan. Bounds in `validation` come from the AWS limits, not from taste.
 
@@ -35,4 +38,7 @@ A value stays hardcoded, on purpose, when it falls into one of these groups:
 - Making one of the fixed values a variable later is a normal change: add the variable with today's value as the default, a `validation` and tests. This ADR should then be updated, not ignored.
 - The `nat_type` and cache node-count gaps stay open. Both are recorded here or in ADR-008, so a reviewer reading the code finds the reason, not a missing feature.
 
-> **Status update (2026-10-03):** one alarm threshold is no longer fixed. `asg-in-service-instances` used a hardcoded `< 2`, written for a two-instance fleet, while both environments run one instance; it had also never received a datapoint, because the ASG did not publish group metrics. Its threshold now follows the environment's `asg_min_size` through a new `modules/observability` variable, with a `validation` (>= 1) and tests, as the consequence above describes. It is a fleet-floor alarm, coupled to the ASG's size, not one of the SLO thresholds, which stay fixed. `PLAN.md` §9, C1.
+> **Status update (2026-10-03):** one alarm threshold is no longer fixed.
+> `asg-in-service-instances` now follows the environment's `asg_min_size` through a
+> `modules/observability` variable with validation and tests. It is a fleet-floor alarm,
+> coupled to the ASG's size, not an SLO threshold.

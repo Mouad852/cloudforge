@@ -105,8 +105,7 @@ Redesign the edge without CloudFront. The ALB becomes the public edge itself:
 - **Every CloudFront-dependent screenshot already captured for M4, M6, M8 and M9** (WAF rules on
   CloudFront, the CDN-vs-direct-ALB comparison, the `/images/*` behavior, cache-hit ratio) stands
   as historical evidence of what was actually built and verified before this denial — not
-  retracted, but no longer describes the current architecture. `PLAN.md`'s evidence lists for
-  those milestones are now stale in the same way; updating them is a separate, later task.
+  retracted, but no longer describes the current architecture.
 - **If CloudFront access is ever granted later**, re-adding it is additive: a distribution with an
   ALB origin and an OAC-fronted S3 origin, same shape as before, laid on top of an edge that
   already works correctly without it — not a prerequisite this project is blocked on a second time.

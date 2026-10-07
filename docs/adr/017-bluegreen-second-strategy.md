@@ -4,7 +4,9 @@
 
 ## Context
 
-M3 already gives CloudForge zero-downtime rolling deploys: a new launch template version plus an ASG instance refresh, replacing instances a few at a time while the ALB drains and re-registers targets. That's a complete, working deploy path on its own. PLAN.md's decision #017 calls for a second strategy anyway — blue/green — specifically so the project can show two implemented, measured deployment strategies side by side rather than asserting "I could also do blue/green" without evidence.
+CloudForge supports zero-downtime rolling deployments through a new launch-template version and
+an ASG instance refresh. Blue/green routing was also implemented to provide a second deployment
+strategy backed by a separate application fleet and weighted traffic shifting.
 
 Rolling and blue/green trade off differently: rolling deploys are cheap (no idle fleet) but a bad new version is validated in production, request by request, host by host — controlled, but coupled to the customer path from the first instance onward. Blue/green removes that coupling: the new version runs on a fully separate fleet, health-checked in isolation, before it takes any real traffic — the tradeoff is cost (a second fleet exists at all, even briefly) and requiring a routing layer that can shift traffic in graduated steps rather than an ASG's automatic host-by-host replacement.
 
@@ -32,4 +34,6 @@ Blue/green is built on infrastructure that already existed for other reasons, no
 > **Status update (2026-10-03):**
 >
 > - Since ADR-025 (2026-09-22) there is no `from_cloudfront` listener rule: the weighted `forward` is now the ALB listener's **default action** (`aws_lb_listener.http` in `modules/edge`). The CloudFront and ADR-014 reasoning in the alternatives above is history.
-> - **Blue/green has never been run end to end.** The green ASG, the second target group and the weights exist and are covered by module tests, but no cutover has been done and nothing has been measured. CI passes only `environment` and `alert_email`, so a weight shift needs a local `terraform apply -var`. `PLAN.md` §9 makes one measured cutover and rollback optional (M12, E7, decision D3). Until it runs, the project claims one measured deploy strategy (rolling) and one implemented one.
+> - **Blue/green is implemented but not presented as a measured deployment result.** The green
+>   ASG, second target group, and weighted listener rule are covered by module tests. Rolling
+>   deployment is the measured strategy documented in the experiment reports.

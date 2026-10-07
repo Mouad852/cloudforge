@@ -32,7 +32,7 @@ triggered by a pipeline instead of a person.
   during active development would cost more time than it saves.
 - **Docker on EC2** — would need a container runtime installed and managed on every instance,
   and starts pulling the whole architecture toward "just use ECS/EKS," which isn't this
-  project's story (`PLAN.md`'s stack is EC2 + ASG, not a container orchestrator).
+  project's architecture (EC2 + ASG, not a container orchestrator).
 
 ## Consequences
 

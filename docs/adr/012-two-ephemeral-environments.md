@@ -4,7 +4,9 @@
 
 ## Context
 
-A typical team setup runs three always-on environments — dev, staging, prod — each a full copy of the infrastructure. On a fixed personal credit balance (PLAN.md §4), every environment left running around the clock multiplies the fixed costs (NAT, RDS, ALB, CloudFront) by however many environments exist, regardless of whether anyone is actually using them at that moment.
+A typical team setup runs three always-on environments — dev, staging, prod — each a full copy
+of the infrastructure. On a fixed personal credit balance, every environment left running around
+the clock multiplies the fixed costs, regardless of whether anyone is using it.
 
 This project's actual usage pattern is: build, demo, or test against an environment for a session, then not touch it again for days. Paying 24/7 rates for that pattern is the wrong trade — the same one behind ADR-008's NAT choice.
 
@@ -28,7 +30,8 @@ The tooling that makes teardown-and-restore painless (RDS snapshot-based `dev-do
 ## Consequences
 
 - Nothing runs by default; forgetting to `apply` an environment is the safe failure mode, not forgetting to destroy one.
-- The Makefile targets referenced in PLAN.md §7 (`dev-up`, `dev-down`, `prod-up`, `prod-down`) are the enforced entry point for this workflow once they exist — direct `terraform apply`/`destroy` inside an environment directory still works today because that tooling isn't built yet.
+- The Makefile targets `dev-up`, `dev-down`, `prod-up`, and `prod-down` are the supported
+  lifecycle entry points.
 - Demoing the project means a short "bring it up" wait before it's usable, rather than an always-warm environment — an accepted trade for a portfolio project, not something a real product would choose.
 
 > **Status update (2026-10-05):** `dev` is ephemeral: `nightly-destroy.yml` destroys it every night with a final snapshot, and any `terraform` run rebuilds it from that snapshot (ADR-015, ADR-026). `prod` has run continuously since 2026-09-16 at about 3.5 USD a day before credits, but M11 now provides guarded `prod-down` and `prod-up` targets. They have been dry-run only; the first timed Session A teardown and rebuild is still E6. A prod teardown intentionally deletes the environment's S3 buckets, so the final snapshot restores PostgreSQL rows, not product images, artifacts or operational logs. The exact boundary is in `docs/disaster-recovery/strategy.md`.

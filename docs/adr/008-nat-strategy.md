@@ -6,7 +6,9 @@
 
 Private subnets (`app`, `data`) need outbound internet access for things like OS package updates, without being reachable from the internet themselves. AWS's managed answer is a NAT Gateway — highly available within its AZ, zero maintenance, billed per hour plus per-GB processed (~$32-33/mo just sitting idle in `eu-west-3`). The alternative is a self-managed NAT instance: a regular EC2 box with IP forwarding and a MASQUERADE rule, billed as a normal instance (a `t3.micro` is a few dollars a month).
 
-This project runs on a fixed personal credit balance (see PLAN.md §4), and `dev` in particular is meant to be disposable — spun up to demo or test against, torn down when not in use (ADR-012). Paying gateway rates for an environment that is not always running is the wrong trade.
+This project runs on a fixed personal credit balance, and `dev` is disposable — spun up to demo
+or test against, then torn down when not in use (ADR-012). Paying gateway rates for an
+environment that is not always running is the wrong trade.
 
 ## Decision
 
@@ -75,9 +77,11 @@ Root cause: the data source's AMI filter (`al2023-ami-*-x86_64`) is a wildcard b
 
 Same underlying lesson as the `eth0`/`ens5` bug: user-data that assumes a tool is already present is one AMI refresh away from silently not being true anymore. Three for three now on "the NAT instance's user-data assumed something that wasn't actually there" — worth treating that whole script as the single most fragile piece of this project's infrastructure, not a one-off annoyance.
 
-## Known gap (M9): prod runs the NAT instance too, and AMI releases no longer replace it
+## Current implementation: prod also uses the NAT instance
 
-**The gap.** The Decision above says prod gets a NAT Gateway, and PLAN.md's M9 rule lists `nat_type` as one of the things dev and prod may differ in. Neither is true of the code: `terraform/modules/network` has only the NAT instance path, with no `nat_type` input, and prod was built on 2026-09-16 with the same instance as dev. The "add the gateway when prod is built" step in Consequences was never done. Today dev and prod differ in sizes, counts, `multi_az`, retention and deletion protection, but not in `nat_type`.
+**Current state.** Both environments use the NAT-instance path in
+`terraform/modules/network`; there is no `nat_type` input. Dev and prod differ in sizes,
+counts, `multi_az`, retention, and deletion protection, but not egress topology.
 
 **Why it is deferred, not built.** A NAT Gateway is about $0.045 an hour, roughly $1.08 a day, for as long as prod exists, on top of the rest of prod. Prod is meant to be up only for game-day sessions, and the account is on a fixed credit balance, so the gateway would be the single largest line item of an environment that runs for hours. Building the switch also means real work with real risk: a `nat_type` variable, `count` on the instance and its EIP, an `aws_nat_gateway` with its own EIP in `public-a`, the private route pointing at `nat_gateway_id` instead of the instance's network interface, `moved` blocks so dev's live instance is not destroyed, and tests for both paths. It is left until a game day that needs an HA egress path, and until then prod's egress is a single point of failure, exactly as this ADR says of dev.
 

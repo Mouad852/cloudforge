@@ -6,8 +6,8 @@
 
 The compute layer needs an instance family for the ASG's launch template. AWS's Graviton
 (ARM) instances are consistently ~20% cheaper than the equivalent x86 (`t3`) family at
-equal performance, which matters on a project run against a fixed personal credit balance
-(`PLAN.md` §4). The usual objection to ARM — "our software doesn't support it" — doesn't
+equal performance, which matters on a project run against a fixed personal credit balance. The
+usual objection to ARM — "our software doesn't support it" — doesn't
 apply here: the app is a Go binary, and Go cross-compiles to `arm64` with one environment
 variable (`GOARCH=arm64`, already exercised in M2's `make build` target), so there is no
 toolchain cost to paying for.

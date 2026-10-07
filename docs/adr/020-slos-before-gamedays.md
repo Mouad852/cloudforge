@@ -27,5 +27,6 @@ These are a starting proposal, not a permanent contract — see Consequences.
 ## Consequences
 
 - `docs/observability/slo.md` exists before M12 starts, so every game-day experiment measures itself against a real, pre-committed number instead of an after-the-fact judgment call.
-- The numbers in that document are explicitly marked as a starting proposal (PLAN.md §10) — once M12 produces real baseline data, targets get adjusted, and the reason for adjusting gets documented rather than silently changing the number.
+- The SLO document distinguishes targets from measured baselines; any target change is documented
+  with its rationale rather than silently changing the standard.
 - Reporting game-day results can now say things like "this experiment consumed 31% of the monthly availability budget," which is a data-grounded prioritization statement, not just "this took N minutes."

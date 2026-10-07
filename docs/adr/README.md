@@ -18,12 +18,12 @@ superseding ADR rather than being rewritten.
 | [009](009-secrets-manager-rds-password.md) | RDS master password managed by Secrets Manager | accepted, corrected 2026-10-01 (rotation) |
 | [010](010-cloudfront-two-origins.md) | One CloudFront distribution, two origins | superseded by 025 |
 | [011](011-no-custom-domain.md) | No custom domain | superseded by 025 |
-| [012](012-two-ephemeral-environments.md) | Two environments, both ephemeral | accepted — prod not yet ephemeral (status note) |
+| [012](012-two-ephemeral-environments.md) | Two environments, both ephemeral | accepted |
 | [013](013-private-hosted-zone.md) | Route 53 private hosted zone | accepted |
 | [014](014-alb-locked-to-cloudfront.md) | ALB locked to CloudFront | superseded by 025 |
 | [015](015-snapshot-lifecycle.md) | Snapshot on down, restore on up | accepted |
 | [016](016-terraform-native-tests.md) | Terraform native tests for every module | accepted |
-| [017](017-bluegreen-second-strategy.md) | Blue/green as a second deploy strategy | built, not yet exercised (status note) |
+| [017](017-bluegreen-second-strategy.md) | Blue/green as a second deploy strategy | implemented; rolling is the measured deployment strategy |
 | [018](018-rds-native-recovery-over-aws-backup.md) | RDS-native recovery over AWS Backup | accepted |
 | [019](019-scripted-cli-fault-injection.md) | Scripted AWS CLI fault injection over AWS FIS | accepted |
 | [020](020-slos-before-gamedays.md) | SLOs defined before game days | accepted |
@@ -41,26 +41,3 @@ teardown-to-ready wall clock was not captured.
 
 Start with **025** (an external constraint forcing a redesign), **009** (a decision whose
 consequence caused a real outage) and **026** (making a destroyed environment rebuild itself).
-
-## Template
-
-Copy `000-template.md`. Fill it in on the day the decision is implemented, and commit it with
-the change it describes.
-
-```markdown
-# ADR-0XX: <title>
-
-**Status:** accepted   **Date:** <YYYY-MM-DD>   **Milestone:** MX
-
-## Context
-What problem or choice this addresses.
-
-## Decision
-What was chosen.
-
-## Alternatives considered
-What else was possible, and why it was rejected.
-
-## Consequences
-What this makes easier, harder, or costs.
-```
