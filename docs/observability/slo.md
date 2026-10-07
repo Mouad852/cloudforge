@@ -1,7 +1,7 @@
 # Service Level Objectives
 
-Defined in M7, before any M12 game day (ADR-020). Every chaos experiment measures its
-damage against the numbers on this page — not the other way around.
+Defined before resilience experiments (ADR-020), these objectives provide the standard against
+which each experiment is measured.
 
 All three SLIs are measured from **outside** the application: the Synthetics canary
 (`<env>-api-avail`, hitting the ALB directly since ADR-025) and the ALB's own metrics. Nothing here reads the
@@ -28,13 +28,12 @@ each against a horizontal line marking its target below.
 | Latency (p99 < 500 ms) | 99% | 1% of requests may be slow |
 | Correctness | 99.9% | 0.1% of requests may 5xx |
 
-These are a **starting proposal** (from the original plan, ADR-020), not a permanent contract. Once the canary
-has run for long enough to produce a real baseline, these numbers get revisited — and if
-they change, the reason for the change is written down here, not silently edited away.
+These objectives are a documented baseline. Any change is recorded with its rationale rather than
+silently changing the standard.
 
 ## Error budget policy
 
-Followed during M12's game days, not just referenced:
+Applied during resilience experiments:
 
 - **Budget > 50% remaining** → ship freely, run experiments.
 - **Budget < 50%** → no new experiments until the cause is understood.
@@ -46,7 +45,7 @@ experiment" into a lookup instead of a judgment call made under pressure.
 
 ## Alarms are not the same thing as SLOs
 
-The M7 alarm set (`terraform/modules/observability/alarms.tf`) and the SLOs above both
+The alarm set (`terraform/modules/observability/alarms.tf`) and the SLOs above both
 watch overlapping metrics, but they answer different questions, and their numbers are
 deliberately not identical:
 
@@ -74,8 +73,7 @@ outage (`docs/incidents/2026-09-30-db-password-rotation.md`) failed every canary
 2026-10-31. Under the policy above this is a deploy freeze with reliability work only. M12's
 game days count as reliability work, so they go ahead, and each records the budget it consumes.
 
-The measured snapshot below is the M13 error-budget report; future monthly windows should be
-appended rather than replacing this incident-inclusive baseline.
+The snapshot below captures the incident-inclusive observation window.
 
 ## Measured error-budget snapshot (2026-09-29 through 2026-10-06)
 
@@ -89,11 +87,12 @@ The 99.5% availability objective allowed about 11 failed samples in this observa
 the budget was exhausted by the incident. `AWS/ApplicationELB` had no datapoints for
 `HTTPCode_Target_5XX_Count` for the same prod ALB and period; that is recorded as **no ALB
 5xx data**, not as proof of zero errors. The k6 game-day reports remain the authoritative
-request-level evidence for E1–E4.
+request-level evidence for the first four resilience experiments.
 
 ## See also
 
-- ADR-020 (`docs/adr/020-slos-before-gamedays.md`) — why these are defined now, not in M12.
+- ADR-020 (`docs/adr/020-slos-before-gamedays.md`) — why the objectives were defined before
+  experiments.
 - ADR-025 (`docs/adr/025-cloudfront-denied-edge-redesign.md`) — why the canary targets the
   ALB (ADR-014's CloudFront-only lockdown is superseded).
-- `PLAN.md` §10 — the measurements table that game-day results are filled into.
+- [Resilience experiment reports](../experiments/README.md) — measured game-day outcomes.

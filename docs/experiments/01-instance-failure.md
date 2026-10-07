@@ -8,7 +8,8 @@
 With the normal one-instance ASG, terminating the sole in-service instance creates an observable
 outage until its replacement is healthy. With two instances temporarily in service, the same
 termination should produce no client-visible 5xx responses. This measures the cost trade-off in
-`PLAN.md` §6.2; it is not comparable with M3's historical two-instance, no-load result.
+the current one-instance operating mode; it is not comparable with the historical two-instance,
+no-load result.
 
 ## Method
 

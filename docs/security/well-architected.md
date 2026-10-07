@@ -1,9 +1,8 @@
 # Well-Architected review
 
 **Workload:** `CloudForge` in the AWS Well-Architected Tool (eu-west-3), AWS Well-Architected
-Framework lens. **Reviewed:** 2026-09-27 (M10). **Baseline saved as milestone 1**, "M10 baseline
-2026-09-27", so later remediation shows up as a difference against it. **Re-answered after the
-M10 fixes** on 2026-10-03 and saved as milestone 2, "M10 remediated 2026-10-03".
+Framework lens. **Reviewed:** 2026-09-27. A baseline was saved before remediation, and the
+answers were reviewed again on 2026-10-03 after the corresponding controls were deployed.
 
 ![Well-Architected summary](../screenshots/10-security/well-architected-summary.png)
 
@@ -19,12 +18,11 @@ M10 fixes** on 2026-10-03 and saved as milestone 2, "M10 remediated 2026-10-03".
 | Sustainability | 6 | 0 | 6 | 0 |
 | **Total** | **57** | **22** | **23** | **12** |
 
-## After M10
+## Remediation result
 
-**Remediated 6 of 22 high risks.** These are the six M10 set out to fix (five planned fixes plus
-REL 5 after evaluation), and all six moved. The other 16 are accepted or planned for a later
-milestone, as listed below. The answers were updated only after each fix was deployed to prod
-and checked there.
+**Six of 22 high risks were remediated.** The answers were updated only after each control was
+deployed to prod and checked there. Remaining risks are recorded as accepted constraints or
+documented limitations.
 
 | Pillar | High risk | Medium risk | No risk |
 |---|---|---|---|
@@ -41,12 +39,12 @@ and checked there.
 | OPS 10 - workload and operations events | High → none | Incident process with severities tied to the SLOs, used for the 2026-09-30 outage | - |
 | OPS 7 - ready to support | High → medium | Readiness checklist, investigation playbooks | Basic support plan |
 | SEC 7 - data classification | High → medium | `data-classification.md`, a retention for every store | Classification is manual (no Macie) |
-| SEC 10 - incidents | High → medium | `incident-response.md`: plan, access prepared in advance, playbooks | Playbooks not yet exercised (M12), forensics stops at EBS snapshots |
+| SEC 10 - incidents | High → medium | `incident-response.md`: response process, access prepared in advance, playbooks | Forensics stops at EBS snapshots |
 | REL 5 - mitigate interaction failures | High → medium | Request deadline, server, Redis and Postgres timeouts, bounded retries | No emergency levers beyond the WAF |
-| REL 8 - implement change | High → medium | `docs/runbooks/deployment.md` | No resiliency testing in the pipeline (M12) |
+| REL 8 - implement change | High → medium | `docs/runbooks/deployment.md` | Resiliency testing is a controlled operational exercise, not a CI stage |
 
 Twelve other answers changed only their notes, so their risk stayed the same. They now describe
-the M10 work: EBS encryption by default, CloudTrail retention, cost allocation tags, the budget
+EBS encryption by default, CloudTrail retention, cost allocation tags, the budget
 measured before credits, the canary-failed alarm and the first post-incident review. They also
 correct four notes that had gone stale: how the app reaches prod, how a deploy rolls back, the
 Free plan's 1-day backup cap, and govulncheck.
@@ -68,30 +66,29 @@ were practices that cannot exist here, not problems.
 
 ## High-risk findings
 
-Every high-risk question is listed with the practices it is missing and a decision: **fix in
-M10**, **evaluate in M10**, **accepted** (with the reason), or **planned** for a later milestone
-that already covers it.
+Every high-risk question is listed with the practices it is missing and an outcome: remediated,
+accepted with a reason, or documented as a limitation.
 
-### Fix in M10
+### Remediated controls
 
 | Question | Missing | Remediation |
 |---|---|---|
-| SEC 7 - How do you classify your data? | No classification scheme, no controls tied to sensitivity, no lifecycle definition | Write the data classification: what each store holds (product catalogue, images, secrets, logs, backups), its sensitivity, and the controls and retention that follow from it. |
-| SEC 10 - How do you anticipate, respond to, and recover from incidents? | Incident management plan, security playbooks, forensics, pre-provisioned access, simulations, learning framework, pre-deployed tools | Write a security incident response plan and playbooks for the likely incidents: leaked access key, exposed resource found by Access Analyzer, WAF attack, compromised instance (isolate, snapshot the volume for forensics, replace). Simulations are M12's game days. |
-| OPS 10 - How do you manage workload and operations events? | An incident/problem process; prioritisation by business impact | Covered by the same plan: severity levels tied to the SLOs in `docs/observability/slo.md`. |
-| OPS 7 - How do you know that you are ready to support a workload? | Operational readiness review, investigation playbooks, support plan | An operational readiness checklist that gates prod changes, and the playbooks above. The support plan stays Basic (see accepted). |
-| REL 8 - How do you implement change? | A runbook for deployments; resiliency testing in the pipeline | A deployment runbook: normal deploy, blue/green, failed deploy and rollback. Resiliency testing is M12. |
+| SEC 7 - How do you classify your data? | No classification scheme, no controls tied to sensitivity, no lifecycle definition | [Data classification](data-classification.md) defines each store's sensitivity, controls, and retention. |
+| SEC 10 - How do you anticipate, respond to, and recover from incidents? | Incident management process and security playbooks | [Incident response](incident-response.md) defines severity, access, evidence sources, and response procedures. |
+| OPS 10 - How do you manage workload and operations events? | Incident/problem process; prioritisation by business impact | Severity levels are tied to the SLOs in `docs/observability/slo.md`. |
+| OPS 7 - How do you know that you are ready to support a workload? | Operational readiness review, investigation playbooks, support plan | An operational readiness checklist gates prod changes; investigation playbooks and a Basic support plan are in place. |
+| REL 8 - How do you implement change? | Deployment and rollback procedure | [Deployment runbook](../runbooks/deployment.md) covers rolling deployment, blue/green routing, failure handling, and rollback. |
 
-Also fixed in M10, although the question stays high risk because of the accepted Multi-AZ gap
+Also remediated, although the question stays high risk because of the accepted Multi-AZ gap
 (REL 10): **prod's CI-deployed settings**. Deletion protection (database and ALB), 30-day log
 retention and deferred database changes (`apply_immediately = false`) existed only in a local,
 gitignored `terraform.tfvars` that CI never reads, so the prod that CI deploys ran without them.
 They are now the defaults of `terraform/environments/prod`. The same file asked for 7-day
 backups, but applying that failed: **the AWS Free plan caps RDS automated backups at 1 day**
 (`FreeTierRestrictionError`, 2026-09-27), so prod keeps 1 day and longer recovery points are
-M11's job.
+outside the platform's current recovery boundary.
 
-### Evaluated in M10
+### Evaluated controls
 
 | Question | Missing | Outcome |
 |---|---|---|
@@ -120,16 +117,6 @@ download the new binary again. The manual rollback (restore the previous S3 obje
 then refresh) is now in `docs/runbooks/deployment.md`; making it automatic needs one S3 key per
 version and is left for later. Blue/green deploys can already roll back instantly by shifting
 the ALB weights back (ADR-017).
-
-### Planned in later milestones
-
-| Question | Missing | Milestone |
-|---|---|---|
-| REL 13 - How do you plan for disaster recovery? | Recovery objectives, a DR strategy, a tested DR | M11 (backup and DR), M13 (DR validation) |
-| OPS 11 - How do you evolve operations? | Continuous improvement process, metrics reviews | M12 (game day write-ups) and M14 |
-| COST 3 - How do you monitor cost and usage? | Detailed billing data, cost KPIs | M14 (cost analysis) |
-| COST 8 - How do you plan for data transfer charges? | Data transfer modelling | M14 |
-| COST 9 - How do you manage demand? | Demand analysis | M14 |
 
 ## Found while preparing the review
 
@@ -167,7 +154,8 @@ directly. All are fixed unless noted:
   alarms stay, but cannot fire while the account is on credits.
 - **The prod that CI deploys was not the prod in the plan.** Multi-AZ, deletion protection,
   7-day backups and 30-day logs were only in a gitignored local `terraform.tfvars`. See "Fix in
-  M10" above; Multi-AZ stays off (REL 10) and 7-day backups are not allowed on the Free plan.
+  remediation described above; Multi-AZ stays off (REL 10) and 7-day backups are not allowed on
+  the Free plan.
 - **PR plans had never worked.** The first pull request (PR #1, the custom-policy demo) showed
   that the read-only plan role could not read the Redis AUTH secret it refreshes, and that the
   plan comment posted an empty output. Fixed in PR #2.

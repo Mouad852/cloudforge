@@ -11,7 +11,7 @@
 The ALB's health checker (path-based, hits the app's shallow `/healthz`, ADR-006) has marked
 at least one EC2 instance behind the blue target group as unable to serve traffic. The ALB
 stops routing to that instance immediately. Both environments run **one** instance
-(`min_size = 1`, `PLAN.md` §6.2), so an unhealthy host usually means no healthy target at all
+(`min_size = 1`), so an unhealthy host usually means no healthy target at all
 and the ALB answering 503: treat it as downtime, not reduced redundancy.
 
 `/healthz` never touches Postgres or Redis, so this alarm does **not** fire when a dependency

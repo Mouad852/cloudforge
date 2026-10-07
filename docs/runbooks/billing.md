@@ -10,7 +10,7 @@ cadence — not configurable to a tighter period).
 > measures cost before credits (`terraform/bootstrap/budget.tf`); this runbook's diagnosis and
 > mitigation steps apply to its alerts too.
 
-**Severity:** Page now — this account has no 12-month free tier (`PLAN.md` §12); every
+**Severity:** Page now — this account has no 12-month free tier; every
 running hour draws down a finite, real budget.
 
 ---
@@ -48,12 +48,10 @@ same figure.
 - If something was left running unintentionally: tear it down — either
   `terraform destroy` the environment cleanly, or follow the full manual teardown
   runbook if Terraform state and real AWS state have diverged.
-- If the budget figure itself is simply stale (e.g. more milestones' infra now
-  legitimately costs more than `$20`/month to run continuously): update
+- If the budget figure itself no longer reflects the environment's cost: update
   `billing_budget_usd` in `terraform/environments/dev/main.tf` and document why in the
   commit message — don't just silently raise it without a reason.
-- The nightly-destroy automation planned for M8 (`nightly-destroy.yml`) is the long-term
-  backstop for "forgot to tear it down" — until that exists, this alarm is the backstop.
+- The nightly destroy workflow is the backstop for an environment left running unintentionally.
 
 ## Escalate
 

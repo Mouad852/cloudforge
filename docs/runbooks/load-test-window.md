@@ -1,8 +1,7 @@
 # Runbook — load-test window (WAF rate-limit exemption)
 
-**Used for:** M12 experiment E3 (load and scaling), and any later capacity re-test.
+**Used for:** the E3 load-and-scaling experiment and later capacity re-tests.
 **Script:** `scripts/waf-benchmark-window.sh` · **Benchmark:** `scripts/capacity-test.js` (k6)
-**Decision:** `PLAN.md` §9, D2.
 
 ---
 

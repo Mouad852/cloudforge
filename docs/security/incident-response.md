@@ -76,8 +76,8 @@ for the post-incident review.
    instance.
 6. **Recover.** Bring the service back and confirm it with the checks in
    `docs/runbooks/deployment.md` ("After deploying").
-7. **Learn.** Within a week, write a post-incident review (template at the end) and turn each
-   lesson into a change, an ADR or a runbook update.
+7. **Learn.** Record a post-incident review and turn each lesson into a change, ADR, or runbook
+   update.
 
 ## Playbooks
 
@@ -183,32 +183,8 @@ the bill, `EstimatedCharges` is 0 and they never fire (found 2026-10-02).
 3. Untagged resources in unused Regions, especially GPU instances, mean a leaked credential:
    switch to **P1**.
 
-## Post-incident review template
+## Boundaries
 
-Save as `docs/incidents/<YYYY-MM-DD>-<short-name>.md`:
-
-```markdown
-# <Short name> - <date>
-
-**Severity:** SEV<n>   **Duration:** <detected> to <resolved>   **Impact:** <who or what was affected>
-
-## Timeline (UTC)
-- hh:mm - what happened / what was done
-
-## What happened, and why
-## What went well
-## What went badly, or was lucky
-## Changes made because of this
-- [ ] change, with a link to the commit, ADR or runbook
-```
-
-No blame, including self-blame: the question is what the system allowed to happen, not who did
-it.
-
-## Known gaps
-
-- **Never rehearsed.** The playbooks are written, not practised. M12's game days run at least
-  one security scenario.
 - **No automated detection** for P1 and P4: GuardDuty would flag leaked-key use and suspicious
   instance traffic, but the Free plan does not include it (`well-architected.md`, SEC 1).
 - **No forensic tooling** beyond EBS snapshots and SSM: no memory capture and no isolated

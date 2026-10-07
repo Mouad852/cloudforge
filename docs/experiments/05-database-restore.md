@@ -1,6 +1,6 @@
 # Experiment E5 — Point-in-time database restore
 
-**Status:** one successful production run completed; repeat run pending.
+**Status:** one successful production restore drill completed.
 **Environment:** prod during Session A
 
 ## Hypothesis

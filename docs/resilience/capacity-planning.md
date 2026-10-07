@@ -1,19 +1,19 @@
 # Capacity planning
 
-**Status:** E3 measured 2026-10-06; application saturation remains unmeasured because the
-generator became the bottleneck.
+**Status:** Measured 2026-10-06; the generator became the bottleneck before application
+saturation.
 **Source:** `docs/experiments/03-load-and-scaling.md`
 
-This document will turn the E3 load test into one defensible capacity conclusion. It must use the
-actual k6 summary, generator CPU sample, CloudWatch metrics and WAF-window timeline from one run;
-it must not infer capacity from instance type or list-price assumptions.
+This record derives one defensible capacity conclusion from the k6 summary, generator CPU sample,
+CloudWatch metrics, and WAF-window timeline. It does not infer capacity from instance type or
+list-price assumptions.
 
 ## Target and method
 
-The target is the highest sustained arrival rate for which p95 latency remains below 500 ms and
-the failed-request rate remains below 1%. Run the ramp only through
-`scripts/waf-benchmark-window.sh`, and report the run as generator-bounded if generator CPU reaches
-85% or k6 reports dropped iterations.
+The test target is the highest sustained arrival rate for which p95 latency remains below 500 ms
+and failed-request rate remains below 1%. The ramp ran through
+`scripts/waf-benchmark-window.sh`; a run is classified as generator-bounded if k6 reports
+dropped iterations.
 
 ## Results
 
@@ -34,5 +34,5 @@ the failed-request rate remains below 1%. Run the ramp only through
 The run is generator-bounded. At the `400 req/s` target, the local generator reached 500 VUs and
 dropped 609 iterations, while the requests it did deliver ran at p95 `51.09 ms` with zero errors.
 CloudForge therefore has a measured lower bound of at least `224.11 delivered req/s` for this
-run, but its true saturation point is unmeasured. A stronger or distributed generator is needed
-before making an application-capacity claim; no scale-out conclusion is drawn from this run.
+run. Its true saturation point was not established, and the run does not support a scale-out
+conclusion.

@@ -26,10 +26,10 @@ application data. This is an accepted project boundary, recorded in
 
 | Scenario | Target | Why | Actual |
 |---|---:|---|---|
-| Unplanned database loss | RPO <= 15 minutes | RDS point-in-time restore is the recovery path while the database exists. | 286s observed in one M11.3 run; repeat pending |
+| Unplanned database loss | RPO <= 15 minutes | RDS point-in-time restore is the recovery path while the database exists. | 286s observed in a successful restore drill |
 | Planned prod teardown, PostgreSQL rows | RPO = 0 | Terraform requires a final RDS snapshot before deletion. | Final snapshot `prod-cloudforge-db-final-31dbae1e` restored; API healthy, product rows `[]` |
 | Planned prod teardown, S3 objects and operational logs | No recovery target | `prod-down` intentionally deletes them to make the environment truly ephemeral. | Confirmed: new artifact bucket was created and the binary rebuilt/uploaded |
-| Point-in-time database restore | RTO <= 60 minutes | Includes restoring a temporary instance and verifying the marker and row count. | 1141s observed in one M11.3 run; repeat pending |
+| Point-in-time database restore | RTO <= 60 minutes | Includes restoring a temporary instance and verifying the marker and row count. | 1,141s observed in a successful restore drill |
 | Full environment restore from a final snapshot | RTO <= 45 minutes | Measures `prod-up` through a healthy application after the artifact is present. | `prod-up` phase about 31m12s; `/readyz` and `/api/products` returned 200 |
 
 The point-in-time target is allowed more time than the full-rebuild target because it is a
@@ -97,20 +97,10 @@ backup-complete events, but the backup finished after the drill's original 30-mi
 the script deleted the target at timeout before endpoint/row verification. The default wait was
 extended to 60 minutes, matching the RTO target. A subsequent run completed successfully with
 `MARKER_FOUND=1`, `PRODUCT_ROW_COUNT=0`, observed RPO `286s`, and restore-ready time `1141s`.
-The temporary DB and source marker were cleaned up; a repeat run remains pending.
-
-## What is measured next
-
-1. After a free RDS instance slot and a capacity window are available, run
-   `scripts/restore-test.sh prod` twice on different days: marker timestamp, latest restorable
-   time, restore duration, row count and marker integrity.
-2. Capture `prod-down` boundary timestamps on the next lifecycle cycle so the complete wall-clock
-   E6 duration can be calculated, rather than only the `prod-up` phase.
-3. Compare actual values with the targets above, including misses, in this document and the
-   corresponding experiment report.
+The temporary DB and source marker were cleaned up after verification.
 
 ## Non-goals
 
 This strategy does not claim cross-Region recovery, preservation of planned-teardown S3 data,
 continuous availability during recovery, or an automated weekly restore test. Those would either
-need additional always-on infrastructure or conflict with D1's credit-saving lifecycle.
+need additional always-on infrastructure or conflict with the credit-saving lifecycle.

@@ -5,21 +5,21 @@
 **Severity:** Page now — with the current sizing, fewer in-service instances than the
 configured size means the app tier is down, not just less redundant.
 
-> **Known defect (found 2026-10-03), fixed in code and applied by `PLAN.md` §9, C1.** Before C1, this alarm
+> **Known defect (found 2026-10-03), fixed in code.** Before the correction, this alarm
 > never received a datapoint: the ASG did not enable group metrics, so
 > `GroupInServiceInstances` was never published, and with `treat_missing_data = notBreaching`
 > the alarm stayed OK no matter what happened. Its threshold (< 2) also predated the current
 > sizing. C1 enables the group metrics, sets the threshold to the ASG's `asg_min_size` and
 > treats missing data as missing (INSUFFICIENT_DATA, not OK). Datapoints are now present in
-> both environments; until a real failure transition is observed and recorded in `PLAN.md`,
+> both environments; until a real failure transition is observed,
 > use `alb-unhealthy-hosts` and `canary-failed` as the corroborating lost-instance signals.
 
 ---
 
 ## What it means
 
-Both environments run `min_size = 1`, `desired_capacity = 1`, `max_size = 2` (the committed
-defaults CI applies; one instance is a cost decision, `PLAN.md` §6.2). With one instance there
+Both environments run `min_size = 1`, `desired_capacity = 1`, `max_size = 2`. One instance
+is a deliberate cost decision. With one instance there
 is no redundancy floor: an instance that fails outright or is being replaced means no healthy
 target until the replacement passes its health check, and the ALB returns 503s meanwhile.
 
@@ -51,7 +51,7 @@ target until the replacement passes its health check, and the ALB returns 503s m
   template rather than letting the ASG keep burning through failed launches.
 - If an entire AZ is impaired: the ASG launches the replacement in the other app subnet.
   Note that the NAT instance and the database both sit in `eu-west-3a`, so losing that AZ
-  takes egress and the database with it (`PLAN.md` §6.2).
+  takes egress and the database with it.
 
 ## Escalate
 
