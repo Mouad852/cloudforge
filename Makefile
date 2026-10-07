@@ -1,4 +1,4 @@
-.PHONY: dev-up dev-down prod-up prod-down restore-test ensure-redis-secret
+.PHONY: dev-up dev-down prod-up prod-down restore-test ensure-redis-secret record-lifecycle-state
 
 AWS_REGION ?= eu-west-3
 
@@ -28,12 +28,17 @@ dev-up:
 		cd $(DEV_TF_DIR) && terraform apply; \
 	fi
 	AWS_DEFAULT_REGION=$(AWS_REGION) bash scripts/ensure-artifact.sh dev
+	bash scripts/record-lifecycle-state.sh dev up
 
 # Destroys the dev environment. skip_final_snapshot = false on the database
 # means a final snapshot is always taken first - dev-up finds and restores
 # from it automatically, so tearing down dev never actually loses data.
 dev-down:
 	cd $(DEV_TF_DIR) && terraform destroy
+	@state_file=$$(mktemp); trap 'rm -f "$$state_file"' EXIT; \
+	cd $(DEV_TF_DIR) && terraform state list > "$$state_file"; \
+	test ! -s "$$state_file" || { echo "Refusing to record dev as down: Terraform state is not empty." >&2; exit 1; }
+	bash scripts/record-lifecycle-state.sh dev down
 
 # Turns off prod deletion protection immediately, then destroys the environment.
 # This is a full teardown: the final RDS snapshot preserves relational data,
@@ -51,6 +56,10 @@ prod-down:
 		-var="db_deletion_protection=false" \
 		-var="db_apply_immediately=true" \
 		-var="alb_deletion_protection=false"
+	@state_file=$$(mktemp); trap 'rm -f "$$state_file"' EXIT; \
+	cd $(PROD_TF_DIR) && terraform state list > "$$state_file"; \
+	test ! -s "$$state_file" || { echo "Refusing to record prod as down: Terraform state is not empty." >&2; exit 1; }
+	bash scripts/record-lifecycle-state.sh prod down
 	@echo "==> prod-down: complete at $$(date -u '+%Y-%m-%dT%H:%M:%SZ')"
 
 # Rebuilds prod only from its newest final snapshot. It deliberately refuses
@@ -73,10 +82,15 @@ prod-up:
 	cd $(PROD_TF_DIR) && terraform apply -var="snapshot_identifier=$$SNAP"
 	@echo "==> prod-up: ensuring the rebuild has an artifact at $$(date -u '+%Y-%m-%dT%H:%M:%SZ')"
 	AWS_DEFAULT_REGION=$(AWS_REGION) bash scripts/ensure-artifact.sh prod
+	bash scripts/record-lifecycle-state.sh prod up
 	@echo "==> prod-up: complete at $$(date -u '+%Y-%m-%dT%H:%M:%SZ')"
 
 ensure-redis-secret:
 	AWS_DEFAULT_REGION=$(AWS_REGION) bash scripts/ensure-redis-secret.sh $(RESTORE_ENV)
+
+record-lifecycle-state:
+	@test -n "$(ENVIRONMENT)" && test -n "$(STATE)" || { echo "Run: make record-lifecycle-state ENVIRONMENT=<dev|prod> STATE=<up|down>" >&2; exit 1; }
+	bash scripts/record-lifecycle-state.sh $(ENVIRONMENT) $(STATE)
 
 # Manual, destructive-cost DR evidence only: asks for confirmation before it
 # writes a marker and creates a temporary RDS instance, then always removes it.

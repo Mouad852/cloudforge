@@ -15,3 +15,12 @@ temporary database, checks the marker and product row count through SSM, records
 fallbacks, and deletes the temporary instance. The restore drill (E5) and full rebuild (E6) are
 reported in
 [`../experiments/`](../experiments/) and summarised in the strategy.
+
+## Lifecycle state and drift detection
+
+[`../../scripts/record-lifecycle-state.sh`](../../scripts/record-lifecycle-state.sh) records a
+successful lifecycle operation as an explicit GitHub repository variable. The scheduled drift
+workflow skips an environment only when that signal says `down` **and** `terraform state list` is
+empty. A missing, stale or contradictory signal does not suppress detection.
+
+Setup and recovery: [`../runbooks/environment-lifecycle-state.md`](../runbooks/environment-lifecycle-state.md).

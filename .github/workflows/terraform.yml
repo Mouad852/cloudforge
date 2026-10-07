@@ -259,6 +259,7 @@ jobs:
       group: cloudforge-apply-dev
       cancel-in-progress: false
     permissions:
+      actions: write
       id-token: write
       contents: read
     defaults:
@@ -311,6 +312,12 @@ jobs:
         working-directory: ${{ github.workspace }}
         run: bash scripts/ensure-artifact.sh dev
 
+      - name: record dev as running
+        working-directory: ${{ github.workspace }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: bash scripts/record-lifecycle-state.sh dev up
+
   apply-prod:
     name: apply (prod)
     if: github.event_name != 'pull_request'
@@ -321,6 +328,7 @@ jobs:
       group: cloudforge-apply-prod
       cancel-in-progress: false
     permissions:
+      actions: write
       id-token: write
       contents: read
     defaults:
@@ -356,3 +364,9 @@ jobs:
       - name: upload the app binary if the environment has none
         working-directory: ${{ github.workspace }}
         run: bash scripts/ensure-artifact.sh prod
+
+      - name: record prod as running
+        working-directory: ${{ github.workspace }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: bash scripts/record-lifecycle-state.sh prod up

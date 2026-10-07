@@ -10,6 +10,7 @@ on:
   workflow_dispatch: {}
 
 permissions:
+  actions: write
   contents: read
 
 env:
@@ -31,6 +32,7 @@ jobs:
     # (use_lockfile) keeps an apply and this destroy from running at once, and
     # -lock-timeout below makes the destroy wait for a running apply to finish.
     permissions:
+      actions: write
       id-token: write
       contents: read
     defaults:
@@ -72,3 +74,14 @@ jobs:
             echo "deleting $group"
             aws logs delete-log-group --log-group-name "$group"
           done
+
+      - name: verify Terraform state is empty
+        run: |
+          terraform state list > terraform-state.txt
+          test ! -s terraform-state.txt
+
+      - name: record intentional dev teardown
+        working-directory: ${{ github.workspace }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: bash scripts/record-lifecycle-state.sh dev down

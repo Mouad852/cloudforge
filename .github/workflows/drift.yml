@@ -41,38 +41,82 @@ jobs:
           role-session-name: gha-drift-${{ matrix.environment }}
           aws-region: ${{ env.AWS_REGION }}
 
-      # nightly-destroy.yml tears dev down at 23:00 UTC, so at 06:00 dev is usually
-      # gone and a plan would report every resource as missing - an issue and an
-      # email every morning for an environment that is down on purpose. Only dev
-      # is skipped this way: prod missing is exactly what this check must report.
-      - name: skip dev while it is torn down
-        id: up
+      # A missing resource alone never suppresses drift. A lifecycle operation records
+      # an explicit repository variable only after it succeeds. "down" suppresses a
+      # plan only when Terraform state is also empty; missing, stale or contradictory
+      # values fail safe into normal drift detection or a visible workflow failure.
+      - name: resolve expected lifecycle state
+        id: lifecycle
         run: |
           if [ "${{ matrix.environment }}" = "dev" ]; then
-            VPC=$(aws ec2 describe-vpcs \
-              --filters "Name=tag:Name,Values=dev-cloudforge-vpc" \
-              --query "Vpcs[0].VpcId" --output text)
-            if [ "$VPC" = "None" ]; then
-              echo "dev is torn down (nightly-destroy) - nothing to compare"
-              echo "up=false" >> "$GITHUB_OUTPUT"
-              exit 0
-            fi
+            STATE="${{ vars.CLOUDFORGE_DEV_LIFECYCLE_STATE }}"
+          else
+            STATE="${{ vars.CLOUDFORGE_PROD_LIFECYCLE_STATE }}"
           fi
-          echo "up=true" >> "$GITHUB_OUTPUT"
+          case "$STATE" in
+            down)
+              echo "Expected lifecycle state: down; verifying empty Terraform state."
+              echo "mode=verify-down" >> "$GITHUB_OUTPUT"
+              ;;
+            up)
+              echo "Expected lifecycle state: up; running normal drift detection."
+              echo "mode=plan" >> "$GITHUB_OUTPUT"
+              ;;
+            *)
+              echo "Lifecycle state is missing or invalid; running normal drift detection." >&2
+              echo "mode=plan" >> "$GITHUB_OUTPUT"
+              ;;
+          esac
 
       - uses: hashicorp/setup-terraform@v3
-        if: steps.up.outputs.up == 'true'
         with:
           terraform_version: ${{ env.TF_VERSION }}
           terraform_wrapper: false
 
       - name: terraform init
-        if: steps.up.outputs.up == 'true'
         run: terraform init -input=false
+
+      - name: verify intentional teardown has empty state
+        id: teardown-state
+        if: steps.lifecycle.outputs.mode == 'verify-down'
+        run: |
+          terraform state list > terraform-state.txt
+          if [ -s terraform-state.txt ]; then
+            echo "Lifecycle state says down, but Terraform state still tracks resources:" >&2
+            sed -n '1,20p' terraform-state.txt >&2
+            exit 1
+          fi
+          echo "Lifecycle state and Terraform state agree: environment is intentionally down."
+        continue-on-error: true
+
+      - name: open lifecycle-state inconsistency issue
+        if: steps.teardown-state.outcome == 'failure'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          TITLE="Environment lifecycle state inconsistent (${{ matrix.environment }})"
+          {
+            echo "The lifecycle signal says **${{ matrix.environment }}** is intentionally down, but Terraform state is not empty or could not be read."
+            echo
+            echo "Drift detection was not suppressed. Investigate the incomplete/stale lifecycle operation before changing the signal."
+            echo
+            echo "Workflow run: $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
+          } > lifecycle-issue.md
+          EXISTING_ISSUE=$(gh issue list --repo "$GITHUB_REPOSITORY" --state open \
+            --search "\"$TITLE\" in:title" --json number --jq '.[0].number // empty')
+          if [ -n "$EXISTING_ISSUE" ]; then
+            gh issue comment "$EXISTING_ISSUE" --repo "$GITHUB_REPOSITORY" --body-file lifecycle-issue.md
+          else
+            gh issue create --repo "$GITHUB_REPOSITORY" --title "$TITLE" --body-file lifecycle-issue.md
+          fi
+
+      - name: fail on lifecycle-state inconsistency
+        if: steps.teardown-state.outcome == 'failure'
+        run: exit 1
 
       - name: terraform plan (detailed exit code)
         id: plan
-        if: steps.up.outputs.up == 'true'
+        if: steps.lifecycle.outputs.mode == 'plan'
         run: |
           set +e
           terraform plan -detailed-exitcode -lock=false -input=false -no-color \
@@ -132,7 +176,7 @@ jobs:
       # reports a count only: issues are public, and the list would hold an
       # operator's address.
       - name: check the WAF rate-limit exemption list is empty
-        if: always() && steps.up.outputs.up == 'true'
+        if: always() && steps.lifecycle.outputs.mode == 'plan'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
