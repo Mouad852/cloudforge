@@ -4,7 +4,9 @@
 [![Application](https://github.com/Mouad852/cloudforge/actions/workflows/app.yml/badge.svg)](https://github.com/Mouad852/cloudforge/actions/workflows/app.yml)
 [![Drift detection](https://github.com/Mouad852/cloudforge/actions/workflows/drift.yml/badge.svg)](https://github.com/Mouad852/cloudforge/actions/workflows/drift.yml)
 
-CloudForge is a production-style AWS platform, built with Terraform around a small Go API. It is an AWS Solutions Architect Associate (SAA-C03) graduation project and a cloud-engineering portfolio: it demonstrates the work that makes infrastructure operationally credible—security boundaries, deployment automation, observability, failure testing, recovery drills, and explicit cost/reliability trade-offs.
+CloudForge is an end-to-end AWS infrastructure project designed to deploy, secure, and operate a cloud-native application using **Terraform and DevOps best practices**. It brings together Infrastructure as Code, CI/CD automation, network security, monitoring, and disaster recovery to demonstrate how real-world cloud environments are built and managed.
+
+The project emphasizes **automation, reliability, security, and cost optimization**, with practical implementations of deployment strategies, observability, and infrastructure resilience.
 
 > **Project scope:** CloudForge is a cost-conscious, single-account learning workload in `eu-west-3`, not a claim of enterprise-grade high availability. Its environments are intentionally ephemeral; the production-shaped environment normally runs a single app instance, Single-AZ RDS, and a single Redis node.
 
